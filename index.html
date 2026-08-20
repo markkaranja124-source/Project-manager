@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Waiter Attendance Register</title>
+  <meta name="description" content="Executive Waiter Attendance Management & Monthly Absentee Register">
+  <meta name="theme-color" content="#0A2540">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Main Mobile App Shell -->
+  <div class="app-container" id="app-container">
+
+    <!-- Top Executive Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon-box">AR</div>
+        <div class="brand-titles">
+          <span class="brand-title" id="display-business-name">Executive Register</span>
+          <span class="brand-subtitle">Waiter Attendance System</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="btn-print-quick" title="Print Register" aria-label="Print Register">
+          <!-- Printer Vector Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" id="btn-settings-open" title="Settings & Backup" aria-label="Settings">
+          <!-- Settings Sliders Vector Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Main View Area -->
+    <main class="app-main">
+
+      <!-- ========================================================
+           VIEW 1: DAILY ATTENDANCE REGISTER
+           ======================================================== -->
+      <section class="view-section active" id="view-daily">
+        
+        <!-- Date Selector Navigation Bar -->
+        <div class="date-strip">
+          <button type="button" class="date-nav-btn" id="btn-prev-day">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Prev
+          </button>
+          
+          <div class="date-display-center date-picker-wrapper" title="Click to choose custom date">
+            <span class="current-date-text" id="daily-date-label">Today</span>
+            <span class="current-day-text" id="daily-day-label">Monday</span>
+            <input type="date" id="native-date-selector" class="native-date-input" aria-label="Select Date">
+          </div>
+
+          <button type="button" class="date-nav-btn" id="btn-next-day">
+            Next
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Live Shift Metrics -->
+        <div class="metrics-strip">
+          <div class="metric-card present">
+            <div class="metric-label">Present</div>
+            <div class="metric-value" id="stat-daily-present">0</div>
+          </div>
+          <div class="metric-card absent">
+            <div class="metric-label">Absent</div>
+            <div class="metric-value" id="stat-daily-absent">0</div>
+          </div>
+          <div class="metric-card late">
+            <div class="metric-label">Late/Off</div>
+            <div class="metric-value" id="stat-daily-other">0</div>
+          </div>
+          <div class="metric-card rate">
+            <div class="metric-label">Turnout</div>
+            <div class="metric-value" id="stat-daily-rate">0%</div>
+          </div>
+        </div>
+
+        <!-- Quick Batch Actions Toolbar -->
+        <div class="toolbar-strip">
+          <button type="button" class="btn-primary" id="btn-mark-all-present">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Mark All Present
+          </button>
+          <button type="button" class="btn-secondary" id="btn-add-waiter-quick">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Staff
+          </button>
+        </div>
+
+        <!-- Waiter Search Bar -->
+        <div class="filter-bar">
+          <input type="text" class="form-input" id="search-waiter-daily" placeholder="SEARCH WAITER BY NAME OR ID...">
+        </div>
+
+        <!-- Shift Filter Toolbar Bar -->
+        <div class="shift-filter-bar" id="shift-filter-bar">
+          <button type="button" class="shift-filter-btn active" data-shift-filter="ALL">ALL SHIFTS</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Morning">MORNING (07:00-15:00)</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Evening">EVENING (15:00-23:00)</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Night">NIGHT (23:00-07:00)</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Double">DOUBLE SHIFT</button>
+        </div>
+
+        <!-- Waiter Cards Container -->
+        <div id="waiter-cards-list">
+          <!-- Dynamic Waiter Cards Rendered Here -->
+        </div>
+
+      </section>
+
+
+      <!-- ========================================================
+           VIEW 2: MONTHLY ATTENDANCE MATRIX
+           ======================================================== -->
+      <section class="view-section" id="view-monthly">
+        
+        <div class="section-box">
+          <div class="section-box-header">
+            <span class="section-title">Monthly Calendar Register</span>
+            <span id="matrix-active-period" style="font-size: 11px; font-weight: 700;"></span>
+          </div>
+          <div class="section-box-body">
+            <div class="filter-bar" style="margin-bottom: 8px; padding: 0; border: none;">
+              <select class="select-control" id="select-month-matrix" aria-label="Select Month">
+                <option value="0">January</option>
+                <option value="1">February</option>
+                <option value="2">March</option>
+                <option value="3">April</option>
+                <option value="4">May</option>
+                <option value="5">June</option>
+                <option value="6">July</option>
+                <option value="7">August</option>
+                <option value="8">September</option>
+                <option value="9">October</option>
+                <option value="10">November</option>
+                <option value="11">December</option>
+              </select>
+              <select class="select-control" id="select-year-matrix" aria-label="Select Year" style="max-width: 100px;">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+            
+            <p style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">
+              Legend: 
+              <span style="color: var(--c-navy-primary);">[P] Present</span> | 
+              <span style="color: var(--c-status-absent-bg);">[A] Absent</span> | 
+              <span style="color: var(--c-status-late-bg);">[L] Late</span> | 
+              <span style="color: var(--c-status-off-bg);">[O] Off</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Scrollable Matrix Table -->
+        <div class="matrix-scroll-wrapper" id="matrix-container">
+          <!-- Dynamically Generated Matrix Grid -->
+        </div>
+
+        <button type="button" class="btn-black" id="btn-print-matrix-view" style="width: 100%; margin-top: 4px;">
+          Print Monthly Register
+        </button>
+
+      </section>
+
+
+      <!-- ========================================================
+           VIEW 3: END-OF-MONTH ABSENTEE REPORT
+           ======================================================== -->
+      <section class="view-section" id="view-absentee">
+        
+        <div class="section-box">
+          <div class="section-box-header">
+            <span class="section-title">End-of-Month Absenteeism Audit</span>
+          </div>
+          <div class="section-box-body">
+            <div class="filter-bar" style="margin-bottom: 8px; padding: 0; border: none;">
+              <select class="select-control" id="select-month-absentee" aria-label="Select Report Month">
+                <option value="0">January</option>
+                <option value="1">February</option>
+                <option value="2">March</option>
+                <option value="3">April</option>
+                <option value="4">May</option>
+                <option value="5">June</option>
+                <option value="6">July</option>
+                <option value="7">August</option>
+                <option value="8">September</option>
+                <option value="9">October</option>
+                <option value="10">November</option>
+                <option value="11">December</option>
+              </select>
+              <select class="select-control" id="select-year-absentee" aria-label="Select Report Year" style="max-width: 100px;">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+            <button type="button" class="btn-primary" id="btn-print-absentee-report" style="width: 100%;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Print End-of-Month Register Sheet
+            </button>
+          </div>
+        </div>
+
+        <div id="absentee-cards-list">
+          <!-- Dynamic Absentee Overview Cards -->
+        </div>
+
+      </section>
+
+
+      <!-- ========================================================
+           VIEW 4: STAFF DIRECTORY & ROSTER
+           ======================================================== -->
+      <section class="view-section" id="view-staff">
+        
+        <div class="toolbar-strip">
+          <button type="button" class="btn-primary" id="btn-add-staff-modal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add New Waiter
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" class="form-input" id="search-staff-directory" placeholder="FILTER STAFF DIRECTORY...">
+        </div>
+
+        <div id="staff-directory-list">
+          <!-- Dynamic Staff Roster Rows -->
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Phone Touch Bar) -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button type="button" class="nav-tab active" data-target="view-daily">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <rect x="3" y="4" width="18" height="18"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <polyline points="9 16 11 18 15 14"></polyline>
+        </svg>
+        <span class="nav-tab-label">Daily</span>
+      </button>
+
+      <button type="button" class="nav-tab" data-target="view-monthly">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <rect x="3" y="3" width="18" height="18"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="3" y1="15" x2="21" y2="15"></line>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <line x1="15" y1="3" x2="15" y2="21"></line>
+        </svg>
+        <span class="nav-tab-label">Monthly</span>
+      </button>
+
+      <button type="button" class="nav-tab" data-target="view-absentee">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="9" y1="15" x2="15" y2="15"></line>
+          <line x1="9" y1="11" x2="15" y2="11"></line>
+        </svg>
+        <span class="nav-tab-label">Absentee</span>
+      </button>
+
+      <button type="button" class="nav-tab" data-target="view-staff">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span class="nav-tab-label">Staff</span>
+      </button>
+    </nav>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+  </div> <!-- End .app-container -->
+
+
+  <!-- ========================================================
+       PRINT SHEET CONTAINER (@media print)
+       Formatted for physical A4 paper printout
+       ======================================================== -->
+  <div class="print-sheet-container" id="print-sheet-container">
+    <div class="print-header">
+      <div>
+        <div class="print-org-name" id="print-org-name-text">RESTAURANT MANAGEMENT</div>
+        <div class="print-report-title" id="print-period-title">MONTHLY WAITER ATTENDANCE REGISTER</div>
+      </div>
+      <div class="print-meta-box">
+        <div><strong>REPORT GENERATED:</strong> <span id="print-date-generated"></span></div>
+        <div><strong>BRANCH / DEPT:</strong> Service Floor Operations</div>
+      </div>
+    </div>
+
+    <!-- Section 1: Absentee Summary with Specific Absent Dates -->
+    <div class="print-section-title">SECTION 1: STAFF ABSENTEE RECORD & SPECIFIC DATES OF ABSENCE</div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 12%;">STAFF ID</th>
+          <th style="width: 25%;">WAITER NAME</th>
+          <th style="width: 12%; text-align: center;">DAYS WORKED</th>
+          <th style="width: 12%; text-align: center;">DAYS ABSENT</th>
+          <th style="width: 39%;">DATES ABSENT IN THIS MONTH</th>
+        </tr>
+      </thead>
+      <tbody id="print-absentee-table-body">
+        <!-- Dynamic Print Absentee Rows -->
+      </tbody>
+    </table>
+
+    <!-- Section 2: Complete Attendance Matrix -->
+    <div class="print-section-title">SECTION 2: FULL MONTH ATTENDANCE MATRIX (P=Present, A=Absent, L=Late, O=Off)</div>
+    <div id="print-matrix-container">
+      <!-- Dynamic Print Full Matrix Table -->
+    </div>
+
+    <!-- Section 3: Official Verification & Sign-off -->
+    <div class="print-signoff-section">
+      <div class="signoff-box">
+        <div><strong>MANAGER / SUPERVISOR SIGN-OFF</strong></div>
+        <div class="signoff-line"></div>
+        <div style="margin-top: 6px;">Signature & Date</div>
+      </div>
+      <div class="signoff-box">
+        <div><strong>GENERAL MANAGER / AUDIT VERIFICATION</strong></div>
+        <div class="signoff-line"></div>
+        <div style="margin-top: 6px;">Signature & Date</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODALS
+       ======================================================== -->
+
+  <!-- Modal 1: Add/Edit Waiter -->
+  <div class="modal-overlay" id="modal-staff">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-staff-title">ADD NEW WAITER</span>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-staff-modal" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="form-staff">
+        <div class="modal-body">
+          <input type="hidden" id="staff-form-id">
+          <div class="form-group">
+            <label class="form-label" for="staff-input-name">Full Name *</label>
+            <input type="text" class="form-input" id="staff-input-name" required placeholder="e.g. John Doe">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="staff-input-code">Staff ID / Employee # *</label>
+            <input type="text" class="form-input" id="staff-input-code" required placeholder="e.g. W-101">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="staff-input-station">Assigned Station / Section</label>
+            <input type="text" class="form-input" id="staff-input-station" placeholder="e.g. Main Dining / Terrace / VIP">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="staff-input-shift">Assigned Shift & Schedule *</label>
+            <select class="select-control" id="staff-input-shift" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 8px;">
+              <option value="Morning">Morning Shift (07:00 - 15:00)</option>
+              <option value="Evening">Evening Shift (15:00 - 23:00)</option>
+              <option value="Night">Night Shift (23:00 - 07:00)</option>
+              <option value="Double">Double Shift (Full Day)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="staff-input-phone">Phone Number</label>
+            <input type="tel" class="form-input" id="staff-input-phone" placeholder="e.g. +1 (555) 019-2831">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary btn-modal-close" id="btn-cancel-staff-modal">Cancel</button>
+          <button type="submit" class="btn-primary" id="btn-save-staff">Save Staff Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Settings & Backup -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">SETTINGS & DATA BACKUP</span>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-settings-modal" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="settings-business-name">Business / Restaurant Name</label>
+          <input type="text" class="form-input" id="settings-business-name" placeholder="Executive Restaurant & Bar">
+        </div>
+        
+        <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
+          <label class="form-label">Data Management & Backup</label>
+          <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 10px;">
+            All attendance data is saved securely on this device. You can download an offline backup file anytime.
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button type="button" class="btn-secondary" id="btn-export-backup" style="width: 100%;">
+              Export Complete Backup (.JSON)
+            </button>
+            <button type="button" class="btn-secondary" id="btn-export-csv" style="width: 100%;">
+              Export Monthly Data (.CSV)
+            </button>
+            <label class="btn-secondary" style="width: 100%; text-align: center; cursor: pointer;">
+              Restore From Backup File
+              <input type="file" id="input-restore-backup" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
+          <label class="form-label">Sample Data Reset</label>
+          <button type="button" class="btn-danger" id="btn-reset-demo" style="width: 100%;">
+            Load Fresh Demo Roster & Records
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="btn-save-settings">Save & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
