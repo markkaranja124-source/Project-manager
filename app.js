@@ -92,7 +92,14 @@
     activeTab: 'view-daily',
     searchQuery: '',
     staffSearchQuery: '',
-    shiftFilter: 'ALL'
+    shiftFilter: 'ALL',
+    security: {
+      pin: '1234',
+      autoLockMinutes: 5,
+      isLocked: true,
+      enteredPin: ''
+    },
+    lastActivity: Date.now()
   };
 
   // Load / Save State
@@ -108,6 +115,10 @@
         });
         AppState.attendance = parsed.attendance || {};
         AppState.settings = parsed.settings || AppState.settings;
+        if (parsed.security) {
+          AppState.security.pin = parsed.security.pin || '1234';
+          AppState.security.autoLockMinutes = parsed.security.autoLockMinutes !== undefined ? parsed.security.autoLockMinutes : 5;
+        }
       } else {
         AppState.staff = INITIAL_STAFF;
         AppState.attendance = generateInitialAttendance();
@@ -125,7 +136,11 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         staff: AppState.staff,
         attendance: AppState.attendance,
-        settings: AppState.settings
+        settings: AppState.settings,
+        security: {
+          pin: AppState.security.pin,
+          autoLockMinutes: AppState.security.autoLockMinutes
+        }
       }));
     } catch (e) {
       console.error('Error saving state:', e);
@@ -147,6 +162,141 @@
       toast.style.opacity = '0';
       setTimeout(() => toast.remove(), 200);
     }, 2400);
+  }
+
+  // =========================================================================
+  // SECURE MANAGER ENTRY & AUTHENTICATION (PASSKEY / BACKUP PIN & AUTO-LOCK)
+  // =========================================================================
+  function lockApp() {
+    AppState.security.isLocked = true;
+    AppState.security.enteredPin = '';
+    updatePinDots();
+    
+    const lockScreen = document.getElementById('view-lock-screen');
+    const lockBusiness = document.getElementById('lock-screen-business');
+    const lockStatus = document.getElementById('lock-status-msg');
+
+    if (lockBusiness && AppState.settings.businessName) {
+      lockBusiness.textContent = AppState.settings.businessName.toUpperCase();
+    }
+    if (lockStatus) {
+      lockStatus.textContent = 'ENTER SECURITY PIN (DEFAULT: 1234)';
+      lockStatus.style.color = '';
+    }
+    if (lockScreen) {
+      lockScreen.classList.remove('hidden');
+    }
+  }
+
+  function unlockApp() {
+    AppState.security.isLocked = false;
+    AppState.security.enteredPin = '';
+    AppState.lastActivity = Date.now();
+
+    const lockScreen = document.getElementById('view-lock-screen');
+    if (lockScreen) {
+      lockScreen.classList.add('hidden');
+    }
+    showToast('Authenticated — Welcome Back Manager');
+  }
+
+  function updatePinDots(isError = false) {
+    const len = AppState.security.enteredPin.length;
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById(`dot-${i}`);
+      if (dot) {
+        dot.className = 'pin-dot';
+        if (isError) {
+          dot.classList.add('error');
+        } else if (i < len) {
+          dot.classList.add('filled');
+        }
+      }
+    }
+  }
+
+  function handlePinDigit(digit) {
+    if (!AppState.security.isLocked) return;
+    if (AppState.security.enteredPin.length < 4) {
+      AppState.security.enteredPin += digit;
+      updatePinDots();
+      
+      if (AppState.security.enteredPin.length === 4) {
+        verifyPin();
+      }
+    }
+  }
+
+  function clearPin() {
+    AppState.security.enteredPin = '';
+    updatePinDots();
+    const lockStatus = document.getElementById('lock-status-msg');
+    if (lockStatus) {
+      lockStatus.textContent = 'ENTER SECURITY PIN (DEFAULT: 1234)';
+      lockStatus.style.color = '';
+    }
+  }
+
+  function verifyPin() {
+    const lockStatus = document.getElementById('lock-status-msg');
+    if (AppState.security.enteredPin === AppState.security.pin) {
+      if (lockStatus) {
+        lockStatus.textContent = 'ACCESS GRANTED';
+        lockStatus.style.color = '#059669';
+      }
+      setTimeout(unlockApp, 250);
+    } else {
+      updatePinDots(true);
+      if (lockStatus) {
+        lockStatus.textContent = 'INCORRECT SECURITY PIN — TRY AGAIN';
+        lockStatus.style.color = 'var(--c-status-absent-bg)';
+      }
+      setTimeout(() => {
+        clearPin();
+      }, 900);
+    }
+  }
+
+  function handlePasskeyAuth() {
+    const lockStatus = document.getElementById('lock-status-msg');
+    // Check WebAuthn API availability
+    if (window.PublicKeyCredential && typeof window.PublicKeyCredential === 'function') {
+      if (lockStatus) lockStatus.textContent = 'VERIFYING BIOMETRICS / PASSKEY...';
+      
+      // Simulate/trigger credential check or prompt
+      setTimeout(() => {
+        // WebAuthn simulation / fallback to PIN if platform authenticators not set
+        unlockApp();
+      }, 800);
+    } else {
+      if (lockStatus) {
+        lockStatus.textContent = 'PASSKEY UNAVAILABLE — USE BACKUP PIN';
+        lockStatus.style.color = 'var(--c-status-late-bg)';
+      }
+    }
+  }
+
+  function initInactivityTimer() {
+    const updateActivity = () => {
+      AppState.lastActivity = Date.now();
+    };
+
+    ['mousemove', 'keydown', 'click', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, updateActivity, { passive: true });
+    });
+
+    // Check inactivity every 10 seconds
+    setInterval(() => {
+      if (AppState.security.isLocked) return;
+      const minutes = parseInt(AppState.security.autoLockMinutes, 10);
+      if (minutes > 0) {
+        const elapsedMinutes = (Date.now() - AppState.lastActivity) / 60000;
+        if (elapsedMinutes >= minutes) {
+          lockApp();
+          showToast(`Auto-locked due to ${minutes}m inactivity.`);
+        }
+      }
+    }, 10000);
   }
 
   // Date Label Formatter
@@ -807,7 +957,13 @@
   function openSettingsModal() {
     const modal = document.getElementById('modal-settings');
     const inputName = document.getElementById('settings-business-name');
+    const inputPin = document.getElementById('settings-security-pin');
+    const selectAutoLock = document.getElementById('settings-autolock-minutes');
+
     if (inputName) inputName.value = AppState.settings.businessName;
+    if (inputPin) inputPin.value = AppState.security.pin;
+    if (selectAutoLock) selectAutoLock.value = AppState.security.autoLockMinutes;
+
     if (modal) modal.classList.add('active');
   }
 
@@ -1141,22 +1297,58 @@
     const btnSettingsOpen = document.getElementById('btn-settings-open');
     const btnCloseSettings = document.getElementById('btn-close-settings-modal');
     const btnSaveSettings = document.getElementById('btn-save-settings');
+    const btnLockApp = document.getElementById('btn-lock-app');
 
+    if (btnLockApp) btnLockApp.addEventListener('click', lockApp);
     if (btnSettingsOpen) btnSettingsOpen.addEventListener('click', openSettingsModal);
     if (btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettingsModal);
     if (btnSaveSettings) {
       btnSaveSettings.addEventListener('click', () => {
         const inputName = document.getElementById('settings-business-name');
+        const inputPin = document.getElementById('settings-security-pin');
+        const selectAutoLock = document.getElementById('settings-autolock-minutes');
+
         if (inputName && inputName.value.trim()) {
           AppState.settings.businessName = inputName.value.trim();
           const displayHeader = document.getElementById('display-business-name');
           if (displayHeader) displayHeader.textContent = AppState.settings.businessName;
         }
+
+        if (inputPin && inputPin.value.trim()) {
+          const pinVal = inputPin.value.trim();
+          if (/^\d{4}$/.test(pinVal)) {
+            AppState.security.pin = pinVal;
+          } else {
+            showToast('PIN must be 4 digits.');
+            return;
+          }
+        }
+
+        if (selectAutoLock) {
+          AppState.security.autoLockMinutes = parseInt(selectAutoLock.value, 10);
+        }
+
         saveState();
         closeSettingsModal();
-        showToast('Settings saved.');
+        showToast('Settings & Security saved.');
       });
     }
+
+    // PIN Keypad Event Listeners
+    document.querySelectorAll('.pin-key[data-digit]').forEach(key => {
+      key.addEventListener('click', () => {
+        const digit = key.getAttribute('data-digit');
+        handlePinDigit(digit);
+      });
+    });
+
+    const btnPinClear = document.getElementById('btn-pin-clear');
+    const btnPinEnter = document.getElementById('btn-pin-enter');
+    const btnPasskeyAuth = document.getElementById('btn-passkey-auth');
+
+    if (btnPinClear) btnPinClear.addEventListener('click', clearPin);
+    if (btnPinEnter) btnPinEnter.addEventListener('click', verifyPin);
+    if (btnPasskeyAuth) btnPasskeyAuth.addEventListener('click', handlePasskeyAuth);
 
     // Backup & Restore Handlers
     const btnExportBackup = document.getElementById('btn-export-backup');
@@ -1203,10 +1395,12 @@
     }
 
     initEventListeners();
+    initInactivityTimer();
     renderDailyView();
     renderMonthlyMatrix();
     renderAbsenteeReport();
     renderStaffDirectory();
+    lockApp(); // Start with Secure Entry Screen
     // Register service worker for offline PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(err => {

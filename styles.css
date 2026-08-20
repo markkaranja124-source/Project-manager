@@ -525,6 +525,168 @@ body {
   border-color: var(--c-black);
 }
 
+/* ==========================================================================
+   SECURE ENTRY & AUTO-LOCK SCREEN
+   ========================================================================== */
+.view-lock-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--c-navy-dark);
+  color: var(--c-white);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.view-lock-screen.hidden {
+  display: none !important;
+}
+
+.lock-card {
+  width: 100%;
+  max-width: 320px;
+  background-color: var(--c-navy-primary);
+  border: 2px solid var(--c-black);
+  padding: 24px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lock-brand-icon {
+  width: 42px;
+  height: 42px;
+  background-color: var(--c-white);
+  color: var(--c-navy-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+  border: 1px solid var(--c-black);
+  margin-bottom: 12px;
+}
+
+.lock-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--c-white);
+}
+
+.lock-subtitle {
+  font-size: 11px;
+  color: var(--c-gray-mid);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  margin-bottom: 20px;
+}
+
+/* PIN Dots Display */
+.pin-display-wrapper {
+  margin-bottom: 20px;
+}
+
+.pin-dots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--c-gray-mid);
+  background-color: transparent;
+}
+
+.pin-dot.filled {
+  background-color: var(--c-white);
+  border-color: var(--c-white);
+}
+
+.pin-dot.error {
+  background-color: var(--c-status-absent-bg);
+  border-color: var(--c-status-absent-bg);
+}
+
+/* PIN Keypad Grid */
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.pin-key {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--c-white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  height: 48px;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pin-key:hover, .pin-key:active {
+  background-color: var(--c-white);
+  color: var(--c-navy-primary);
+}
+
+.pin-key.btn-action {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Passkey Auth Button */
+.passkey-btn {
+  width: 100%;
+  background-color: var(--c-white);
+  color: var(--c-navy-primary);
+  border: 1px solid var(--c-black);
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.passkey-btn:hover, .passkey-btn:active {
+  background-color: var(--c-navy-subtle);
+}
+
+.lock-status-msg {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 12px;
+  min-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+
 
 /* Touch Action Buttons Grid */
 .attendance-actions-grid {
