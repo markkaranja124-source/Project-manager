@@ -20,6 +20,11 @@
     { id: 'st_108', code: 'W-108', name: 'Maya Patel', station: 'Section C Floor', shift: 'Morning', phone: '+1 (555) 018-6677', active: true }
   ];
 
+  const INITIAL_REMINDERS = [
+    { id: 'rem_101', title: 'Review Morning Shift Turnout & Unmarked Waiters', dueTime: '10:00', priority: 'HIGH', completed: false, createdAt: new Date().toISOString() },
+    { id: 'rem_102', title: 'Audit End-of-Month Absentee Report Sheet', dueTime: '17:00', priority: 'MEDIUM', completed: false, createdAt: new Date().toISOString() }
+  ];
+
   // Helper to format Date to YYYY-MM-DD
   function formatDateKey(date) {
     const y = date.getFullYear();
@@ -99,7 +104,8 @@
       isLocked: true,
       enteredPin: ''
     },
-    lastActivity: Date.now()
+    lastActivity: Date.now(),
+    reminders: []
   };
 
   // Load / Save State
@@ -115,6 +121,7 @@
         });
         AppState.attendance = parsed.attendance || {};
         AppState.settings = parsed.settings || AppState.settings;
+        AppState.reminders = parsed.reminders || INITIAL_REMINDERS;
         if (parsed.security) {
           AppState.security.pin = parsed.security.pin || '1234';
           AppState.security.autoLockMinutes = parsed.security.autoLockMinutes !== undefined ? parsed.security.autoLockMinutes : 5;
@@ -122,6 +129,7 @@
       } else {
         AppState.staff = INITIAL_STAFF;
         AppState.attendance = generateInitialAttendance();
+        AppState.reminders = INITIAL_REMINDERS;
         saveState();
       }
     } catch (e) {
@@ -140,7 +148,8 @@
         security: {
           pin: AppState.security.pin,
           autoLockMinutes: AppState.security.autoLockMinutes
-        }
+        },
+        reminders: AppState.reminders
       }));
     } catch (e) {
       console.error('Error saving state:', e);
@@ -297,6 +306,137 @@
         }
       }
     }, 10000);
+  }
+
+  // =========================================================================
+  // MANAGER REMINDERS, TASKS & WEB NOTIFICATIONS
+  // =========================================================================
+  function renderReminders() {
+    const container = document.getElementById('reminders-list-container');
+    const badgeCount = document.getElementById('reminders-badge-count');
+    if (!container) return;
+
+    const pending = AppState.reminders.filter(r => !r.completed);
+    if (badgeCount) {
+      badgeCount.textContent = pending.length;
+      badgeCount.style.display = pending.length > 0 ? 'inline-block' : 'none';
+    }
+
+    container.innerHTML = '';
+
+    if (AppState.reminders.length === 0) {
+      container.innerHTML = `
+        <div style="background:#fff; border:1px solid var(--c-gray-border); padding:16px; text-align:center; color:var(--c-gray-dark); font-size:11px; font-weight:700; text-transform:uppercase;">
+          No active reminders or tasks.
+        </div>`;
+      return;
+    }
+
+    // Sort: Pending first, high priority first
+    const sorted = [...AppState.reminders].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      const priorityRank = { HIGH: 1, MEDIUM: 2, NORMAL: 3 };
+      return (priorityRank[a.priority] || 3) - (priorityRank[b.priority] || 3);
+    });
+
+    sorted.forEach(rem => {
+      const item = document.createElement('div');
+      item.className = `reminder-item ${rem.completed ? 'completed' : ''}`;
+
+      const priorityClass = rem.priority === 'HIGH' ? 'priority-high' : (rem.priority === 'MEDIUM' ? 'priority-medium' : 'priority-normal');
+
+      item.innerHTML = `
+        <div class="reminder-content">
+          <div class="reminder-title-row">
+            <span class="reminder-title">${escapeHtml(rem.title)}</span>
+            <span class="priority-tag ${priorityClass}">${escapeHtml(rem.priority)}</span>
+          </div>
+          <div class="reminder-meta">
+            ${rem.dueTime ? `Due Today at ${escapeHtml(rem.dueTime)}` : 'Anytime Today'}
+          </div>
+        </div>
+        <div class="reminder-actions">
+          <button type="button" class="btn-icon-small btn-toggle-rem" data-id="${rem.id}" title="${rem.completed ? 'Mark Pending' : 'Mark Completed'}">
+            ${rem.completed ? '✓' : '◯'}
+          </button>
+          <button type="button" class="btn-icon-small btn-delete-rem" data-id="${rem.id}" title="Delete Reminder">
+            ✕
+          </button>
+        </div>
+      `;
+
+      item.querySelector('.btn-toggle-rem').addEventListener('click', () => {
+        rem.completed = !rem.completed;
+        saveState();
+        renderReminders();
+        showToast(rem.completed ? 'Task marked complete.' : 'Task marked active.');
+      });
+
+      item.querySelector('.btn-delete-rem').addEventListener('click', () => {
+        AppState.reminders = AppState.reminders.filter(r => r.id !== rem.id);
+        saveState();
+        renderReminders();
+        showToast('Reminder removed.');
+      });
+
+      container.appendChild(item);
+    });
+  }
+
+  function openRemindersModal() {
+    renderReminders();
+    const modal = document.getElementById('modal-reminders');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeRemindersModal() {
+    const modal = document.getElementById('modal-reminders');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function triggerManagerNotification(title, body) {
+    showToast(`REMINDER: ${title}`);
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body,
+          icon: 'manifest.json'
+        });
+      } catch (e) {
+        console.log('Notification trigger error:', e);
+      }
+    }
+  }
+
+  function requestNotificationPermission() {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          showToast('Desktop Notifications Enabled!');
+          triggerManagerNotification('Executive Attendance System', 'Desktop notifications are active for manager alerts.');
+        } else {
+          showToast('Notification permission denied.');
+        }
+      });
+    } else {
+      showToast('Notifications not supported in browser.');
+    }
+  }
+
+  function checkAutomatedReminders() {
+    if (AppState.security.isLocked) return;
+
+    // Check for uncompleted HIGH priority reminders
+    const dueHigh = AppState.reminders.filter(r => !r.completed && r.priority === 'HIGH');
+    if (dueHigh.length > 0) {
+      const first = dueHigh[0];
+      // Only remind if not recently notified
+      if (!first.lastNotified || (Date.now() - first.lastNotified > 300000)) {
+        first.lastNotified = Date.now();
+        triggerManagerNotification('URGENT MANAGER REMINDER', first.title);
+      }
+    }
   }
 
   // Date Label Formatter
@@ -1350,6 +1490,44 @@
     if (btnPinEnter) btnPinEnter.addEventListener('click', verifyPin);
     if (btnPasskeyAuth) btnPasskeyAuth.addEventListener('click', handlePasskeyAuth);
 
+    // Reminders & Task Modal Triggers
+    const btnRemindersOpen = document.getElementById('btn-reminders-open');
+    const btnCloseReminders = document.getElementById('btn-close-reminders-modal');
+    const btnDismissReminders = document.getElementById('btn-dismiss-reminders');
+    const btnRequestNotif = document.getElementById('btn-request-web-notif');
+    const formReminder = document.getElementById('form-reminder');
+
+    if (btnRemindersOpen) btnRemindersOpen.addEventListener('click', openRemindersModal);
+    if (btnCloseReminders) btnCloseReminders.addEventListener('click', closeRemindersModal);
+    if (btnDismissReminders) btnDismissReminders.addEventListener('click', closeRemindersModal);
+    if (btnRequestNotif) btnRequestNotif.addEventListener('click', requestNotificationPermission);
+
+    if (formReminder) {
+      formReminder.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const inputTitle = document.getElementById('reminder-input-title');
+        const inputPriority = document.getElementById('reminder-input-priority');
+        const inputTime = document.getElementById('reminder-input-time');
+
+        if (inputTitle && inputTitle.value.trim()) {
+          const newRem = {
+            id: 'rem_' + Date.now(),
+            title: inputTitle.value.trim(),
+            priority: inputPriority ? inputPriority.value : 'MEDIUM',
+            dueTime: inputTime ? inputTime.value : '',
+            completed: false,
+            createdAt: new Date().toISOString()
+          };
+          AppState.reminders.push(newRem);
+          saveState();
+          renderReminders();
+          inputTitle.value = '';
+          if (inputTime) inputTime.value = '';
+          showToast('Reminder saved.');
+        }
+      });
+    }
+
     // Backup & Restore Handlers
     const btnExportBackup = document.getElementById('btn-export-backup');
     const btnExportCsv = document.getElementById('btn-export-csv');
@@ -1400,6 +1578,11 @@
     renderMonthlyMatrix();
     renderAbsenteeReport();
     renderStaffDirectory();
+    renderReminders();
+    
+    // Check automated reminders every 30s
+    setInterval(checkAutomatedReminders, 30000);
+
     lockApp(); // Start with Secure Entry Screen
     // Register service worker for offline PWA
     if ('serviceWorker' in navigator) {

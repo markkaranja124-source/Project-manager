@@ -525,6 +525,120 @@ body {
   border-color: var(--c-black);
 }
 
+/* Header Notification Badge */
+.header-badge-wrapper {
+  position: relative;
+}
+
+.header-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: var(--c-status-absent-bg);
+  color: var(--c-white);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border: 1px solid var(--c-black);
+  min-width: 16px;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Reminders & Manager Memos UI */
+.reminder-item {
+  background-color: var(--c-white);
+  border: 1px solid var(--c-gray-border);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reminder-item.completed {
+  opacity: 0.6;
+  background-color: var(--c-gray-light);
+}
+
+.reminder-item.completed .reminder-title {
+  text-decoration: line-through;
+}
+
+.reminder-content {
+  flex: 1;
+}
+
+.reminder-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reminder-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-black);
+}
+
+.priority-tag {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+
+.priority-high {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border-color: #FCA5A5;
+}
+
+.priority-medium {
+  background-color: #FEF3C7;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.priority-normal {
+  background-color: #E0F2FE;
+  color: #0369A1;
+  border-color: #BAE6FD;
+}
+
+.reminder-meta {
+  font-size: 10px;
+  color: var(--c-gray-dark);
+  margin-top: 4px;
+}
+
+.reminder-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-icon-small {
+  background: transparent;
+  border: 1px solid var(--c-gray-border);
+  color: var(--c-black);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-icon-small:hover {
+  background-color: var(--c-gray-surface);
+}
+
+
 /* ==========================================================================
    SECURE ENTRY & AUTO-LOCK SCREEN
    ========================================================================== */
