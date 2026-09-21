@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manager Login - Waiter Attendance Register</title>
+  <meta name="description" content="Secure Manager Portal Authentication">
+  <meta name="theme-color" content="#0A2540">
+  <link rel="stylesheet" href="styles.css">
+  <script src="/js/simplewebauthn-browser.js"></script>
+  <style>
+    /* Dedicated Professional Login Layout */
+    .login-wrapper {
+      width: 100%;
+      max-width: 440px;
+      margin: auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-card {
+      background: var(--c-white);
+      border: 2px solid var(--c-navy-primary);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      padding: 32px 28px;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 28px;
+      border-bottom: 2px solid var(--c-navy-subtle);
+      padding-bottom: 20px;
+    }
+
+    .login-brand-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--c-navy-primary);
+      color: var(--c-white);
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      border: 1px solid var(--c-navy-accent);
+    }
+
+    .login-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      color: var(--c-navy-primary);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--c-gray-dark);
+      text-transform: uppercase;
+    }
+
+    .login-feedback {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      margin-bottom: 20px;
+      display: none;
+      border-left: 4px solid;
+    }
+
+    .login-feedback.error {
+      display: block;
+      background: #FEE2E2;
+      border-color: #DC2626;
+      color: #991B1B;
+    }
+
+    .login-feedback.info {
+      display: block;
+      background: #EFF6FF;
+      border-color: var(--c-navy-primary);
+      color: var(--c-navy-primary);
+    }
+
+    .login-feedback.success {
+      display: block;
+      background: #DCFCE7;
+      border-color: #16A34A;
+      color: #166534;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--c-navy-primary);
+      margin-bottom: 6px;
+    }
+
+    .input-group {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--c-black);
+      background: var(--c-gray-light);
+      border: 1px solid var(--c-gray-border);
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .form-input:focus {
+      border-color: var(--c-navy-primary);
+      background: var(--c-white);
+      box-shadow: inset 0 0 0 1px var(--c-navy-primary);
+    }
+
+    .input-toggle-btn {
+      background: var(--c-gray-surface);
+      border: 1px solid var(--c-gray-border);
+      border-left: none;
+      padding: 0 14px;
+      cursor: pointer;
+      color: var(--c-gray-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .input-toggle-btn:hover {
+      background: var(--c-navy-subtle);
+      color: var(--c-navy-primary);
+    }
+
+    .field-error-msg {
+      font-size: 11px;
+      color: #DC2626;
+      font-weight: 700;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .btn-login {
+      width: 100%;
+      height: 46px;
+      background: var(--c-navy-primary);
+      color: var(--c-white);
+      border: 1px solid var(--c-navy-dark);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      transition: background 0.15s, transform 0.05s;
+    }
+
+    .btn-login:hover:not(:disabled) {
+      background: var(--c-navy-light);
+    }
+
+    .btn-login:active:not(:disabled) {
+      background: var(--c-navy-dark);
+      transform: scale(0.99);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .login-footer-info {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--c-gray-border);
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--c-gray-dark);
+      text-transform: uppercase;
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 6px;
+      color: var(--c-navy-accent);
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+    <div class="login-card">
+      
+      <!-- Card Header -->
+      <div class="login-header">
+        <div class="login-brand-icon">AR</div>
+        <h1 class="login-title">Executive Register</h1>
+        <p class="login-subtitle">Authorized Manager Access</p>
+      </div>
+
+      <!-- Feedback Alert Box -->
+      <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
+
+      <!-- Dual-Mode Authentication Switcher -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;">
+        <button type="button" id="tab-btn-password" style="padding: 10px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: var(--c-navy-primary); color: #fff; border: 1px solid var(--c-navy-primary); cursor: pointer;">
+          Login with Password
+        </button>
+        <button type="button" id="tab-btn-passkey" style="padding: 10px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: var(--c-gray-light); color: var(--c-navy-primary); border: 1px solid var(--c-gray-border); cursor: pointer;">
+          Passkey / Biometrics
+        </button>
+      </div>
+
+      <!-- Option 1: Password Form -->
+      <form id="form-manager-login" novalidate autocomplete="on">
+
+        <!-- Email Field -->
+        <div class="form-group">
+          <label class="form-label" for="manager-email">Manager Email Address</label>
+          <div class="input-group">
+            <input 
+              type="email" 
+              class="form-input" 
+              id="manager-email" 
+              name="email" 
+              required 
+              placeholder="manager@executive.com"
+              autocomplete="username"
+              spellcheck="false"
+            >
+          </div>
+          <div class="field-error-msg" id="email-error-msg">Please enter a valid email address.</div>
+        </div>
+
+        <!-- Password Field with Show/Hide -->
+        <div class="form-group">
+          <label class="form-label" for="manager-password">Manager Password</label>
+          <div class="input-group">
+            <input 
+              type="password" 
+              class="form-input" 
+              id="manager-password" 
+              name="password" 
+              required 
+              placeholder="••••••••••••"
+              autocomplete="current-password"
+            >
+            <button 
+              type="button" 
+              class="input-toggle-btn" 
+              id="btn-toggle-password" 
+              title="Show or hide password" 
+              aria-label="Show password"
+            >
+              <!-- Eye Open Icon (Default) -->
+              <svg id="icon-eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <!-- Eye Crossed Icon (Hidden initially) -->
+              <svg id="icon-eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="field-error-msg" id="password-error-msg">Password is required.</div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-login" id="btn-login-submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <rect x="3" y="11" width="18" height="11" rx="0" ry="0"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span id="btn-login-text">Sign In With Password</span>
+        </button>
+
+      </form>
+
+      <!-- Option 2: Passkey / Biometrics Section -->
+      <div id="section-passkey-login" style="display: none;">
+        <div style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 16px; text-align: center; margin-bottom: 16px;">
+          <!-- Biometric Icon Graphic -->
+          <div style="width: 44px; height: 44px; margin: 0 auto 10px; background: var(--c-navy-primary); color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+              <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 18a6 6 0 0 0 6-6"></path>
+            </svg>
+          </div>
+          <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
+            Hardware Biometric Authentication
+          </div>
+          <div style="font-size: 11px; color: var(--c-gray-dark); line-height: 1.4;">
+            Use your fingerprint, Face ID, Windows Hello, or device screen lock to sign in securely. Biometrics never leave your device.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="passkey-email">Manager Email (Optional if discoverable)</label>
+          <div class="input-group">
+            <input 
+              type="email" 
+              class="form-input" 
+              id="passkey-email" 
+              placeholder="manager@executive.com"
+              autocomplete="username webauthn"
+              spellcheck="false"
+            >
+          </div>
+        </div>
+
+        <button type="button" class="btn-login" id="btn-passkey-login" style="background: var(--c-navy-dark);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span id="btn-passkey-text">Sign In with Passkey / Biometrics</span>
+        </button>
+
+        <div id="passkey-unsupported-msg" style="display: none; margin-top: 12px; font-size: 11px; color: #991B1B; font-weight: 700; background: #FEE2E2; padding: 10px; border-left: 3px solid #DC2626;">
+          WebAuthn / Passkeys are not supported in this browser or context. Please use password login above.
+        </div>
+      </div>
+
+      <!-- Switch to Sign Up -->
+      <div style="margin-top: 18px; text-align: center; font-size: 12px; font-weight: 700; color: var(--c-gray-dark);">
+        Need a manager account? <a href="/signup.html" style="color: var(--c-navy-accent); font-weight: 800; text-decoration: none; border-bottom: 1px solid var(--c-navy-accent); margin-left: 4px;">Register here</a>
+      </div>
+
+      <!-- Security Notice Footer -->
+      <div class="login-footer-info">
+        <div class="security-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          Encrypted Authentication
+        </div>
+        <div>Strictly For Authorized Management Only</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const form = document.getElementById('form-manager-login');
+      const inputEmail = document.getElementById('manager-email');
+      const inputPassword = document.getElementById('manager-password');
+      const btnToggle = document.getElementById('btn-toggle-password');
+      const iconShow = document.getElementById('icon-eye-show');
+      const iconHide = document.getElementById('icon-eye-hide');
+      const feedback = document.getElementById('login-feedback');
+      const emailError = document.getElementById('email-error-msg');
+      const passwordError = document.getElementById('password-error-msg');
+      const btnSubmit = document.getElementById('btn-login-submit');
+      const btnText = document.getElementById('btn-login-text');
+
+      // Tab Switching between Password and Passkey
+      const tabBtnPassword = document.getElementById('tab-btn-password');
+      const tabBtnPasskey = document.getElementById('tab-btn-passkey');
+      const sectionPasskey = document.getElementById('section-passkey-login');
+      const passkeyEmail = document.getElementById('passkey-email');
+      const btnPasskeyLogin = document.getElementById('btn-passkey-login');
+      const btnPasskeyText = document.getElementById('btn-passkey-text');
+      const passkeyUnsupportedMsg = document.getElementById('passkey-unsupported-msg');
+
+      function setAuthMode(mode) {
+        clearFeedback();
+        if (mode === 'password') {
+          form.style.display = 'block';
+          sectionPasskey.style.display = 'none';
+          tabBtnPassword.style.background = 'var(--c-navy-primary)';
+          tabBtnPassword.style.color = '#fff';
+          tabBtnPassword.style.borderColor = 'var(--c-navy-primary)';
+          tabBtnPasskey.style.background = 'var(--c-gray-light)';
+          tabBtnPasskey.style.color = 'var(--c-navy-primary)';
+          tabBtnPasskey.style.borderColor = 'var(--c-gray-border)';
+        } else {
+          form.style.display = 'none';
+          sectionPasskey.style.display = 'block';
+          tabBtnPasskey.style.background = 'var(--c-navy-primary)';
+          tabBtnPasskey.style.color = '#fff';
+          tabBtnPasskey.style.borderColor = 'var(--c-navy-primary)';
+          tabBtnPassword.style.background = 'var(--c-gray-light)';
+          tabBtnPassword.style.color = 'var(--c-navy-primary)';
+          tabBtnPassword.style.borderColor = 'var(--c-gray-border)';
+
+          // Pre-fill email from password input if entered
+          if (inputEmail.value && !passkeyEmail.value) {
+            passkeyEmail.value = inputEmail.value;
+          }
+
+          // Check if browser supports WebAuthn
+          if (!window.SimpleWebAuthnBrowser || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
+            if (passkeyUnsupportedMsg) passkeyUnsupportedMsg.style.display = 'block';
+            if (btnPasskeyLogin) btnPasskeyLogin.disabled = true;
+          }
+        }
+      }
+
+      if (tabBtnPassword) tabBtnPassword.addEventListener('click', () => setAuthMode('password'));
+      if (tabBtnPasskey) tabBtnPasskey.addEventListener('click', () => setAuthMode('passkey'));
+
+      // Passkey / Biometrics Login Action
+      if (btnPasskeyLogin) {
+        btnPasskeyLogin.addEventListener('click', async function () {
+          clearFeedback();
+
+          if (!window.SimpleWebAuthnBrowser || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
+            showFeedback('Passkeys are not supported on this device/browser. Please use password login.', 'error');
+            return;
+          }
+
+          btnPasskeyLogin.disabled = true;
+          btnPasskeyText.textContent = 'AUTHENTICATING WITH DEVICE...';
+
+          try {
+            const email = (passkeyEmail.value || '').trim();
+
+            // 1. Get Authentication Challenge from Server
+            const optRes = await fetch('/api/auth/passkey/login-options', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+
+            const optData = await optRes.json();
+            if (!optRes.ok || !optData.success) {
+              showFeedback(optData.message || 'Could not initiate passkey authentication.', 'error');
+              return;
+            }
+
+            // 2. Trigger native device WebAuthn prompt (Fingerprint / Face / PIN)
+            let authResp;
+            try {
+              authResp = await SimpleWebAuthnBrowser.startAuthentication(optData.options);
+            } catch (err) {
+              console.warn('WebAuthn prompt error:', err);
+              if (err.name === 'NotAllowedError') {
+                showFeedback('Biometric prompt was cancelled or timed out.', 'info');
+              } else {
+                showFeedback('Device biometric authentication error: ' + (err.message || 'Verification failed'), 'error');
+              }
+              return;
+            }
+
+            // 3. Send cryptographic signature to server for verification
+            const verifyRes = await fetch('/api/auth/passkey/login-verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ response: authResp })
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.success) {
+              showFeedback('Biometric verification successful! Accessing dashboard...', 'success');
+              setTimeout(() => {
+                window.location.replace(verifyData.redirect || '/');
+              }, 500);
+            } else {
+              showFeedback(verifyData.message || 'Passkey authentication failed.', 'error');
+            }
+
+          } catch (err) {
+            console.error('Passkey login exception:', err);
+            showFeedback('Network error during passkey authentication.', 'error');
+          } finally {
+            btnPasskeyLogin.disabled = false;
+            btnPasskeyText.textContent = 'Sign In with Passkey / Biometrics';
+          }
+        });
+      }
+
+      // Check URL parameters for redirected reasons (e.g. ?expired=1 or ?loggedout=1 or ?registered=1)
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('registered') === '1') {
+        showFeedback('Manager account created successfully! Please sign in with your credentials.', 'success');
+      } else if (urlParams.get('unauthorized') === '1') {
+        showFeedback('Authentication required. Please sign in to access the manager dashboard.', 'info');
+      } else if (urlParams.get('loggedout') === '1') {
+        showFeedback('You have been logged out securely.', 'info');
+      }
+
+      // Show/Hide Password Toggle
+      btnToggle.addEventListener('click', function () {
+        const isPassword = inputPassword.type === 'password';
+        inputPassword.type = isPassword ? 'text' : 'password';
+        iconShow.style.display = isPassword ? 'none' : 'block';
+        iconHide.style.display = isPassword ? 'block' : 'none';
+        btnToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      });
+
+      // Feedback display helper
+      function showFeedback(message, type) {
+        feedback.className = 'login-feedback ' + type;
+        feedback.textContent = message;
+      }
+
+      function clearFeedback() {
+        feedback.className = 'login-feedback';
+        feedback.style.display = 'none';
+        feedback.textContent = '';
+      }
+
+      // Email Format Validation
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
+      // Realtime validation cleanup on input
+      inputEmail.addEventListener('input', () => {
+        emailError.style.display = 'none';
+        clearFeedback();
+      });
+
+      inputPassword.addEventListener('input', () => {
+        passwordError.style.display = 'none';
+        clearFeedback();
+      });
+
+      // Handle Submission
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        clearFeedback();
+        emailError.style.display = 'none';
+        passwordError.style.display = 'none';
+
+        const email = inputEmail.value.trim();
+        const password = inputPassword.value;
+
+        let hasError = false;
+
+        // Validation 1: Email empty or format
+        if (!email) {
+          emailError.textContent = 'Email address is required.';
+          emailError.style.display = 'block';
+          hasError = true;
+        } else if (!isValidEmail(email)) {
+          emailError.textContent = 'Please enter a valid email address (e.g. name@domain.com).';
+          emailError.style.display = 'block';
+          hasError = true;
+        }
+
+        // Validation 2: Password empty
+        if (!password) {
+          passwordError.textContent = 'Password is required.';
+          passwordError.style.display = 'block';
+          hasError = true;
+        }
+
+        if (hasError) return;
+
+        // UI Loading State
+        btnSubmit.disabled = true;
+        btnText.textContent = 'AUTHENTICATING...';
+
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            showFeedback('Access granted. Initializing manager dashboard...', 'success');
+            setTimeout(() => {
+              window.location.replace('/');
+            }, 600);
+          } else {
+            // Standard generic message (never reveals if email exists)
+            const errorMsg = data.message || 'Invalid email or password.';
+            showFeedback(errorMsg, 'error');
+            inputPassword.value = '';
+            inputPassword.focus();
+          }
+        } catch (err) {
+          showFeedback('Network error communicating with authentication service. Check server connection.', 'error');
+        } finally {
+          btnSubmit.disabled = false;
+          btnText.textContent = 'Sign In To Register';
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>

@@ -639,166 +639,7 @@ body {
 }
 
 
-/* ==========================================================================
-   SECURE ENTRY & AUTO-LOCK SCREEN
-   ========================================================================== */
-.view-lock-screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--c-navy-dark);
-  color: var(--c-white);
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  text-align: center;
-}
 
-.view-lock-screen.hidden {
-  display: none !important;
-}
-
-.lock-card {
-  width: 100%;
-  max-width: 320px;
-  background-color: var(--c-navy-primary);
-  border: 2px solid var(--c-black);
-  padding: 24px 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.lock-brand-icon {
-  width: 42px;
-  height: 42px;
-  background-color: var(--c-white);
-  color: var(--c-navy-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 18px;
-  border: 1px solid var(--c-black);
-  margin-bottom: 12px;
-}
-
-.lock-title {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--c-white);
-}
-
-.lock-subtitle {
-  font-size: 11px;
-  color: var(--c-gray-mid);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 4px;
-  margin-bottom: 20px;
-}
-
-/* PIN Dots Display */
-.pin-display-wrapper {
-  margin-bottom: 20px;
-}
-
-.pin-dots {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.pin-dot {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--c-gray-mid);
-  background-color: transparent;
-}
-
-.pin-dot.filled {
-  background-color: var(--c-white);
-  border-color: var(--c-white);
-}
-
-.pin-dot.error {
-  background-color: var(--c-status-absent-bg);
-  border-color: var(--c-status-absent-bg);
-}
-
-/* PIN Keypad Grid */
-.pin-keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.pin-key {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--c-white);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  height: 48px;
-  font-size: 18px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.pin-key:hover, .pin-key:active {
-  background-color: var(--c-white);
-  color: var(--c-navy-primary);
-}
-
-.pin-key.btn-action {
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  background-color: rgba(255, 255, 255, 0.04);
-}
-
-/* Passkey Auth Button */
-.passkey-btn {
-  width: 100%;
-  background-color: var(--c-white);
-  color: var(--c-navy-primary);
-  border: 1px solid var(--c-black);
-  padding: 10px 14px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.passkey-btn:hover, .passkey-btn:active {
-  background-color: var(--c-navy-subtle);
-}
-
-.lock-status-msg {
-  font-size: 11px;
-  font-weight: 700;
-  margin-top: 12px;
-  min-height: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
 
 
@@ -1225,7 +1066,7 @@ body {
   height: var(--nav-height);
   background-color: var(--c-navy-dark);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border-top: 2px solid var(--c-black);
   z-index: 100;
 }
@@ -1267,6 +1108,94 @@ body {
   stroke: var(--c-white);
 }
 
+/* Alarm & Modal Custom Indicators */
+.alarm-pulsing-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #FFFFFF;
+  display: inline-block;
+  animation: alarmPulse 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes alarmPulse {
+  0% { transform: scale(0.8); opacity: 0.4; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* Report History Item Rows */
+.report-row-item {
+  border-bottom: 1px solid var(--c-gray-border);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background-color: var(--c-white);
+}
+
+.report-row-item:nth-child(even) {
+  background-color: #FAFAFA;
+}
+
+.report-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+
+.report-badge.weekly {
+  background-color: #E0F2FE;
+  color: #0369A1;
+  border-color: #BAE6FD;
+}
+
+.report-badge.monthly {
+  background-color: #EDE9FE;
+  color: #5B21B6;
+  border-color: #DDD6FE;
+}
+
+.report-badge.status-sent {
+  background-color: #DCFCE7;
+  color: #15803D;
+  border-color: #86EFAC;
+}
+
+.report-badge.status-failed {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border-color: #FCA5A5;
+}
+
+.report-badge.status-none {
+  background-color: #F1F5F9;
+  color: #475569;
+  border-color: #CBD5E1;
+}
+
+/* Reminders List Rows in Modal */
+.reminder-item-row {
+  border: 1px solid var(--c-gray-border);
+  background: var(--c-white);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reminder-item-row.snoozed {
+  border-left: 3px solid #D97706;
+}
+
+.reminder-item-row.paused {
+  opacity: 0.6;
+}
+
 /* Toast Notifications (Sharp & High Contrast) */
 .toast-container {
   position: fixed;
@@ -1297,6 +1226,306 @@ body {
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   RESTAURANT FLOOR PLAN & STAFF ASSIGNMENT BLUEPRINT STYLES
+   ========================================================================== */
+
+@media (min-width: 960px) {
+  body.view-floorplan-active .app-container,
+  .app-container:has(#view-floorplan.active) {
+    max-width: 1280px;
+    transition: max-width 0.2s ease-in-out;
+  }
+}
+
+.floorplan-container {
+  display: flex;
+  flex-direction: column;
+  background: #F8FAFC;
+  width: 100%;
+}
+
+/* Floor Plan Top Controls Bar */
+.fp-header-bar {
+  background: var(--c-navy-primary);
+  color: var(--c-white);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 2px solid var(--c-navy-dark);
+}
+
+.fp-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fp-title-group svg {
+  color: #60A5FA;
+  flex-shrink: 0;
+}
+
+.fp-title-text {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.fp-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fp-control-box {
+  background: #FFFFFF;
+  color: var(--c-charcoal);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--c-gray-border);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.fp-control-box label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--c-gray-dark);
+  margin: 0;
+}
+
+.fp-control-box select,
+.fp-control-box input[type="date"] {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-navy-primary);
+  outline: none;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+/* Main Workspace: Blueprint + Sidebar */
+.fp-workspace {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #EEF2F6;
+}
+
+@media (min-width: 960px) {
+  .fp-workspace {
+    flex-direction: row;
+  }
+}
+
+.fp-blueprint-area {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fp-blueprint-card {
+  background: #FFFFFF;
+  border: 1px solid var(--c-gray-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 8px;
+  overflow: auto;
+  position: relative;
+}
+
+.fp-svg-canvas {
+  display: block;
+  width: 100%;
+  min-width: 780px;
+  height: auto;
+  user-select: none;
+}
+
+/* Interactive SVG Stations */
+.fp-station {
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.fp-station:hover {
+  filter: drop-shadow(0 4px 10px rgba(10, 37, 64, 0.35));
+}
+
+.fp-station.selected-station {
+  filter: drop-shadow(0 0 10px #2563EB) !important;
+}
+
+.fp-station.highlighted {
+  animation: stationGlow 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes stationGlow {
+  0% { filter: drop-shadow(0 0 2px #2563EB); }
+  100% { filter: drop-shadow(0 0 12px #2563EB) brightness(1.08); }
+}
+
+/* Sidebar Styling */
+.fp-sidebar {
+  width: 100%;
+  background: #FFFFFF;
+  border-top: 1px solid var(--c-gray-border);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 960px) {
+  .fp-sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    border-top: none;
+    border-left: 1px solid var(--c-gray-border);
+  }
+}
+
+.fp-sidebar-header {
+  background: var(--c-navy-primary);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+}
+
+.fp-employees-list {
+  padding: 8px 0;
+  max-height: 290px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+}
+
+.fp-emp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px;
+  border-bottom: 1px solid #F1F5F9;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.fp-emp-item:hover {
+  background-color: #F8FAFC;
+}
+
+.fp-emp-item.active-highlight {
+  background-color: #EFF6FF;
+  border-left: 3px solid #2563EB;
+}
+
+.fp-emp-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fp-emp-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50% !important;
+  flex-shrink: 0;
+}
+
+.fp-emp-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-charcoal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fp-emp-station-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 5px;
+  background: #E2E8F0;
+  color: #334155;
+}
+
+/* Legend Box */
+.fp-legend-box {
+  border-top: 1px solid var(--c-gray-border);
+  padding: 10px 14px;
+  background: #F8FAFC;
+}
+
+.fp-legend-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--c-navy-primary);
+  margin-bottom: 6px;
+}
+
+.fp-legend-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+
+.fp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--c-gray-dark);
+}
+
+.fp-status-indicator {
+  width: 9px;
+  height: 9px;
+  border-radius: 50% !important;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.fp-status-present { background-color: #10B981; }
+.fp-status-absent { background-color: #EF4444; }
+.fp-status-late { background-color: #F59E0B; }
+.fp-status-off { background-color: #94A3B8; }
+.fp-status-unassigned { background-color: #CBD5E1; border: 1px dashed #64748B; }
+
+.fp-sidebar-actions {
+  padding: 12px 14px;
+  border-top: 1px solid var(--c-gray-border);
+  background: #FFFFFF;
+}
+
+/* Quick Tooltip / Zoom controls */
+.fp-zoom-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  background: #F1F5F9;
+  border: 1px solid var(--c-gray-border);
+  font-size: 10px;
+  color: var(--c-gray-dark);
 }
 
 /* ==========================================================================

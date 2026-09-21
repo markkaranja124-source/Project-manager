@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
+  <script src="/js/simplewebauthn-browser.js"></script>
 </head>
 <body>
 
@@ -22,7 +23,7 @@
         <div class="brand-icon-box">AR</div>
         <div class="brand-titles">
           <span class="brand-title" id="display-business-name">Executive Register</span>
-          <span class="brand-subtitle">Waiter Attendance System</span>
+          <span class="brand-subtitle" id="manager-session-indicator">Manager: Authenticated</span>
         </div>
       </div>
       <div class="header-actions">
@@ -36,13 +37,6 @@
           </button>
           <span class="header-badge" id="reminders-badge-count">2</span>
         </div>
-        <button type="button" class="icon-btn" id="btn-lock-app" title="Lock Application" aria-label="Lock App">
-          <!-- Lock Padlock Vector Icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-            <rect x="3" y="11" width="18" height="11" rx="0" ry="0"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-        </button>
         <button type="button" class="icon-btn" id="btn-print-quick" title="Print Register" aria-label="Print Register">
           <!-- Printer Vector Icon -->
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
@@ -63,6 +57,14 @@
             <line x1="1" y1="14" x2="7" y2="14"></line>
             <line x1="9" y1="8" x2="15" y2="8"></line>
             <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" id="btn-logout-header" title="Logout Manager Session" aria-label="Logout" style="color: #F87171;">
+          <!-- Logout Exit Vector Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
         </button>
       </div>
@@ -287,6 +289,300 @@
 
       </section>
 
+      <!-- ========================================================
+           VIEW 5: ATTENDANCE REPORTS & WHATSAPP DISPATCH
+           ======================================================== -->
+      <section class="view-section" id="view-reports">
+        
+        <!-- Header Banner -->
+        <div class="section-box" style="margin-bottom: 12px; border-left: 4px solid var(--c-navy-primary);">
+          <div style="padding: 12px 14px;">
+            <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); letter-spacing: 0.5px;">
+              Official Attendance Reports & Dispatch
+            </div>
+            <div style="font-size: 11px; color: var(--c-gray-dark); margin-top: 2px;">
+              Automated Weekly (Mon–Sun) & Monthly PDF Registers with WhatsApp Delivery
+            </div>
+          </div>
+        </div>
+
+        <!-- On-Demand Generation Cards -->
+        <div class="section-box">
+          <div class="section-box-header">
+            <span class="section-title">On-Demand Report Generation</span>
+          </div>
+          <div class="section-box-body">
+            
+            <!-- Weekly Card -->
+            <div style="border: 1px solid var(--c-gray-border); padding: 12px; margin-bottom: 10px; background: var(--c-gray-light);">
+              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
+                Weekly Attendance Report (Monday – Sunday)
+              </div>
+              <div style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px;">
+                Calculates complete weekly metrics, individual waiter turnout %, and exact absent dates.
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select class="select-control" id="select-weekly-period" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+                  <option value="current">Current Week (Mon - Today)</option>
+                  <option value="previous">Previous Week (Full Mon - Sun)</option>
+                </select>
+                <button type="button" class="btn-primary" id="btn-generate-weekly-ondemand" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
+                  Generate Weekly PDF
+                </button>
+              </div>
+            </div>
+
+            <!-- Monthly Card -->
+            <div style="border: 1px solid var(--c-gray-border); padding: 12px; background: var(--c-gray-light);">
+              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
+                Monthly Attendance Register (Full Calendar Month)
+              </div>
+              <div style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px;">
+                Audits all calendar days (28, 29, 30, 31), day-by-day matrices, absences, and sign-offs.
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
+                <select class="select-control" id="select-report-month" style="padding: 6px 8px; font-size: 11px;">
+                  <option value="0">January</option>
+                  <option value="1">February</option>
+                  <option value="2">March</option>
+                  <option value="3">April</option>
+                  <option value="4">May</option>
+                  <option value="5">June</option>
+                  <option value="6">July</option>
+                  <option value="7">August</option>
+                  <option value="8">September</option>
+                  <option value="9">October</option>
+                  <option value="10">November</option>
+                  <option value="11">December</option>
+                </select>
+                <select class="select-control" id="select-report-year" style="padding: 6px 8px; font-size: 11px;">
+                  <option value="2025">2025</option>
+                  <option value="2026" selected>2026</option>
+                  <option value="2027">2027</option>
+                </select>
+                <button type="button" class="btn-primary" id="btn-generate-monthly-ondemand" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
+                  Generate Monthly PDF
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Automatic Schedule & WhatsApp Dispatch Settings -->
+        <div class="section-box">
+          <div class="section-box-header" style="cursor: pointer;" id="toggle-report-settings-header">
+            <span class="section-title">Automatic Schedules & WhatsApp Dispatch</span>
+            <span style="font-size: 10px; font-weight: 700;">CONFIG & CREDENTIALS</span>
+          </div>
+          <div class="section-box-body" id="report-settings-body">
+            <form id="form-report-settings">
+              
+              <!-- Weekly Schedule -->
+              <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--c-gray-border);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <label class="form-label" style="margin-bottom: 0;">Weekly Auto-Generation</label>
+                  <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                    <input type="checkbox" id="setting-weekly-enabled"> Active
+                  </label>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div>
+                    <label class="form-label" for="setting-weekly-day" style="font-size: 9px;">Trigger Day</label>
+                    <select class="select-control" id="setting-weekly-day" style="width: 100%; padding: 6px; font-size: 11px;">
+                      <option value="0">Sunday (End of Week)</option>
+                      <option value="1">Monday (Start of Week)</option>
+                      <option value="5">Friday</option>
+                      <option value="6">Saturday</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label" for="setting-weekly-time" style="font-size: 9px;">Trigger Time</label>
+                    <input type="time" class="form-input" id="setting-weekly-time" value="18:00" style="padding: 5px; font-size: 11px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Monthly Schedule -->
+              <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--c-gray-border);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <label class="form-label" style="margin-bottom: 0;">Monthly Auto-Generation</label>
+                  <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                    <input type="checkbox" id="setting-monthly-enabled"> Active
+                  </label>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div>
+                    <label class="form-label" for="setting-monthly-day" style="font-size: 9px;">Day of Month</label>
+                    <select class="select-control" id="setting-monthly-day" style="width: 100%; padding: 6px; font-size: 11px;">
+                      <option value="1">1st of Month (Prior Month Report)</option>
+                      <option value="28">28th of Month</option>
+                      <option value="30">30th of Month</option>
+                      <option value="31">Last Day of Month</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label" for="setting-monthly-time" style="font-size: 9px;">Trigger Time</label>
+                    <input type="time" class="form-input" id="setting-monthly-time" value="09:00" style="padding: 5px; font-size: 11px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- WhatsApp API Credentials -->
+              <div style="margin-bottom: 12px;">
+                <label class="form-label">Official WhatsApp Dispatch Delivery</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                  <div>
+                    <label class="form-label" for="setting-whatsapp-provider" style="font-size: 9px;">Provider</label>
+                    <select class="select-control" id="setting-whatsapp-provider" style="width: 100%; padding: 6px; font-size: 11px;">
+                      <option value="disabled">Disabled (Local PDF Only)</option>
+                      <option value="twilio">Twilio WhatsApp API</option>
+                      <option value="meta">Meta WhatsApp Cloud API</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label" for="setting-whatsapp-phone" style="font-size: 9px;">Manager Recipient Phone</label>
+                    <input type="tel" class="form-input" id="setting-whatsapp-phone" placeholder="e.g. +254712345678" style="padding: 5px; font-size: 11px;">
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                  <label class="form-label" for="setting-whatsapp-sid" style="font-size: 9px;">Twilio Account SID / Meta Bearer Token</label>
+                  <input type="password" class="form-input" id="setting-whatsapp-sid" placeholder="Account SID or Access Token" style="padding: 5px; font-size: 11px;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                  <div>
+                    <label class="form-label" for="setting-whatsapp-token" style="font-size: 9px;">Auth Token / Phone ID</label>
+                    <input type="password" class="form-input" id="setting-whatsapp-token" placeholder="Twilio Auth Token or Meta Phone ID" style="padding: 5px; font-size: 11px;">
+                  </div>
+                  <div>
+                    <label class="form-label" for="setting-whatsapp-from" style="font-size: 9px;">Sender WhatsApp Number</label>
+                    <input type="text" class="form-input" id="setting-whatsapp-from" placeholder="e.g. +14155238886" style="padding: 5px; font-size: 11px;">
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">Save Schedule & WhatsApp Configuration</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Generated Report Archive -->
+        <div class="section-box">
+          <div class="section-box-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="section-title">Generated PDF Report Archive</span>
+            <button type="button" class="btn-small btn-secondary" id="btn-refresh-reports" style="color: #fff; border-color: rgba(255,255,255,0.4);">
+              Refresh List
+            </button>
+          </div>
+          <div class="section-box-body" style="padding: 0;">
+            <div id="reports-history-container">
+              <!-- Dynamic Report History Rows -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 6: RESTAURANT FLOOR PLAN & STAFF ASSIGNMENT BLUEPRINT
+           ======================================================== -->
+      <section class="view-section" id="view-floorplan">
+        
+        <div class="floorplan-container">
+          <!-- Top Control Header Matching Blueprint Reference -->
+          <div class="fp-header-bar">
+            <div class="fp-title-group">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <rect x="3" y="4" width="18" height="18" rx="0"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span class="fp-title-text">Restaurant Floor Plan – Staff Assignment</span>
+            </div>
+
+            <div class="fp-controls-group">
+              <div class="fp-control-box">
+                <label for="fp-date-selector">Date</label>
+                <input type="date" id="fp-date-selector" aria-label="Floor Plan Date">
+              </div>
+
+              <div class="fp-control-box">
+                <label for="fp-shift-selector">Shift</label>
+                <select id="fp-shift-selector" aria-label="Floor Plan Shift">
+                  <option value="Morning">Morning (8:00 AM - 4:00 PM)</option>
+                  <option value="Evening">Evening (4:00 PM - 12:00 AM)</option>
+                  <option value="Night">Night (12:00 AM - 8:00 AM)</option>
+                  <option value="Double">Double Shift (Full Day)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Blueprint Workspace -->
+          <div class="fp-workspace">
+            <!-- Left: Interactive Vector Blueprint Canvas -->
+            <div class="fp-blueprint-area">
+              <div class="fp-zoom-strip">
+                <span>Click any table or booth to assign or change waiter</span>
+                <span id="fp-summary-stats">16 Stations Active</span>
+              </div>
+              
+              <div class="fp-blueprint-card" id="floorplan-blueprint-card">
+                <div id="fp-svg-container"></div>
+              </div>
+            </div>
+
+            <!-- Right: Employees & Status Legend Sidebar -->
+            <aside class="fp-sidebar" id="floorplan-sidebar">
+              <div class="fp-sidebar-header">Employees</div>
+              <ul class="fp-employees-list" id="fp-employees-list">
+                <!-- Dynamically populated employees -->
+              </ul>
+
+              <div class="fp-legend-box">
+                <div class="fp-legend-title">Legend</div>
+                <div class="fp-legend-items">
+                  <div class="fp-legend-item">
+                    <span class="fp-status-indicator fp-status-present"></span>
+                    <span>Present</span>
+                  </div>
+                  <div class="fp-legend-item">
+                    <span class="fp-status-indicator fp-status-absent"></span>
+                    <span>Absent</span>
+                  </div>
+                  <div class="fp-legend-item">
+                    <span class="fp-status-indicator fp-status-late"></span>
+                    <span>Late</span>
+                  </div>
+                  <div class="fp-legend-item">
+                    <span class="fp-status-indicator fp-status-off"></span>
+                    <span>Off / Leave</span>
+                  </div>
+                  <div class="fp-legend-item" style="grid-column: span 2;">
+                    <span class="fp-status-indicator fp-status-unassigned"></span>
+                    <span>Unassigned</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fp-sidebar-actions">
+                <button type="button" class="btn-primary" id="btn-open-manage-assignments" style="width: 100%; font-size: 11px; padding: 8px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  Manage Assignments
+                </button>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+      </section>
+
     </main>
 
     <!-- Bottom Navigation Bar (Phone Touch Bar) -->
@@ -300,6 +596,17 @@
           <polyline points="9 16 11 18 15 14"></polyline>
         </svg>
         <span class="nav-tab-label">Daily</span>
+      </button>
+
+      <button type="button" class="nav-tab" data-target="view-floorplan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <rect x="3" y="3" width="18" height="18"></rect>
+          <path d="M3 9h18"></path>
+          <path d="M9 21V9"></path>
+          <path d="M15 21v-6"></path>
+          <path d="M15 15h6"></path>
+        </svg>
+        <span class="nav-tab-label">Floor Plan</span>
       </button>
 
       <button type="button" class="nav-tab" data-target="view-monthly">
@@ -332,54 +639,21 @@
         </svg>
         <span class="nav-tab-label">Staff</span>
       </button>
+
+      <button type="button" class="nav-tab" data-target="view-reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span class="nav-tab-label">Reports</span>
+      </button>
     </nav>
 
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toast-container"></div>
-
-    <!-- ========================================================
-         VIEW 0: SECURE MANAGER ENTRY & AUTO-LOCK SCREEN
-         ======================================================== -->
-    <div class="view-lock-screen" id="view-lock-screen">
-      <div class="lock-card">
-        <div class="lock-brand-icon">AR</div>
-        <div class="lock-title" id="lock-screen-business">EXECUTIVE REGISTER</div>
-        <div class="lock-subtitle">Manager Authentication Gate</div>
-
-        <div class="pin-display-wrapper">
-          <div class="pin-dots">
-            <div class="pin-dot" id="dot-0"></div>
-            <div class="pin-dot" id="dot-1"></div>
-            <div class="pin-dot" id="dot-2"></div>
-            <div class="pin-dot" id="dot-3"></div>
-          </div>
-        </div>
-
-        <div class="pin-keypad">
-          <button type="button" class="pin-key" data-digit="1">1</button>
-          <button type="button" class="pin-key" data-digit="2">2</button>
-          <button type="button" class="pin-key" data-digit="3">3</button>
-          <button type="button" class="pin-key" data-digit="4">4</button>
-          <button type="button" class="pin-key" data-digit="5">5</button>
-          <button type="button" class="pin-key" data-digit="6">6</button>
-          <button type="button" class="pin-key" data-digit="7">7</button>
-          <button type="button" class="pin-key" data-digit="8">8</button>
-          <button type="button" class="pin-key" data-digit="9">9</button>
-          <button type="button" class="pin-key btn-action btn-clear" id="btn-pin-clear">CLEAR</button>
-          <button type="button" class="pin-key" data-digit="0">0</button>
-          <button type="button" class="pin-key btn-action" id="btn-pin-enter">OK</button>
-        </div>
-
-        <button type="button" class="passkey-btn" id="btn-passkey-auth">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
-            <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 4.12a14.07 14.07 0 01-3.679 2.88m-1.2-12.8A7 7 0 1119 11c0 1.5-.2 2.9-.5 4.3"></path>
-          </svg>
-          Sign In With Passkey / Biometrics
-        </button>
-
-        <div class="lock-status-msg" id="lock-status-msg">Enter Security PIN (Default: 1234)</div>
-      </div>
-    </div>
 
   </div> <!-- End .app-container -->
 
@@ -458,6 +732,7 @@
       <form id="form-staff">
         <div class="modal-body">
           <input type="hidden" id="staff-form-id">
+          <div id="staff-form-error" style="display: none; background: #FEE2E2; border-left: 3px solid #DC2626; color: #991B1B; padding: 8px 10px; font-size: 11px; margin-bottom: 12px; font-weight: 600;"></div>
           <div class="form-group">
             <label class="form-label" for="staff-input-name">Full Name *</label>
             <input type="text" class="form-input" id="staff-input-name" required placeholder="e.g. John Doe">
@@ -510,24 +785,44 @@
           <input type="text" class="form-input" id="settings-business-name" placeholder="Executive Restaurant & Bar">
         </div>
         
+
+
+        <!-- Manager Security & Passkeys / Biometrics Section -->
         <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
-          <label class="form-label">Manager Security & Auto-Lock</label>
-          <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 10px;">
-            Set your Security PIN and inactivity auto-lock duration.
-          </p>
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label class="form-label" for="settings-security-pin">Security Backup PIN (4 Digits)</label>
-            <input type="password" class="form-input" id="settings-security-pin" maxlength="4" placeholder="1234" pattern="[0-9]{4}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">Security / Login Methods (Passkeys)</label>
+            <span style="font-size: 9px; font-weight: 800; background: #DCFCE7; color: #166534; padding: 2px 6px; border: 1px solid #86EFAC;">FIDO2 / WEBAUTHN</span>
           </div>
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label class="form-label" for="settings-autolock-minutes">Inactivity Auto-Lock Timeout</label>
-            <select class="select-control" id="settings-autolock-minutes" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 8px;">
-              <option value="1">1 Minute</option>
-              <option value="5" selected>5 Minutes</option>
-              <option value="15">15 Minutes</option>
-              <option value="30">30 Minutes</option>
-              <option value="0">Disabled (Manual Lock Only)</option>
-            </select>
+          <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 10px;">
+            Log in instantly using your phone or computer's fingerprint, Face ID, or screen lock.
+          </p>
+
+          <!-- Register Device Card -->
+          <div style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 10px; margin-bottom: 12px;">
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 6px;">
+              Register This Device as a Passkey
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" class="form-input" id="input-passkey-device-name" placeholder="e.g. Manager Phone, Office Laptop" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+              <button type="button" class="btn-primary" id="btn-register-passkey" style="padding: 6px 12px; font-size: 11px; white-space: nowrap;">
+                + Set Up Passkey
+              </button>
+            </div>
+          </div>
+
+          <!-- Registered Passkeys List -->
+          <div>
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 6px;">
+              Registered Passkeys
+            </div>
+            <div id="passkeys-list-container">
+              <!-- Dynamically rendered passkeys -->
+            </div>
+          </div>
+
+          <!-- Privacy Security Notice -->
+          <div style="margin-top: 10px; font-size: 9px; color: var(--c-gray-dark); line-height: 1.3; background: #F8FAFC; padding: 6px 8px; border-left: 2px solid var(--c-navy-primary);">
+            <strong>Strict Biometric Privacy:</strong> Your actual biometrics (fingerprint/face geometry) remain strictly on your device and are never sent or stored in MySQL.
           </div>
         </div>
 
@@ -563,11 +858,11 @@
     </div>
   </div>
 
-  <!-- Modal 3: Manager Reminders & Tasks to Remember -->
+  <!-- Modal 3: Manager Reminders & Alarm Scheduling -->
   <div class="modal-overlay" id="modal-reminders">
-    <div class="modal-content">
+    <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header">
-        <span class="modal-title">MANAGER REMINDERS & TASKS</span>
+        <span class="modal-title">MANAGER REMINDERS & ALARMS</span>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-reminders-modal" aria-label="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -575,31 +870,74 @@
           </svg>
         </button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="overflow-y: auto; flex: 1;">
+        
         <form id="form-reminder" style="margin-bottom: 16px; background: var(--c-gray-light); padding: 12px; border: 1px solid var(--c-gray-border);">
-          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: var(--c-navy-primary);">Add New Task To Remember</div>
-          <div class="form-group" style="margin-bottom: 8px;">
-            <input type="text" class="form-input" id="reminder-input-title" required placeholder="e.g. Audit Friday Evening Shift Roster...">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: var(--c-navy-primary);">
+            Create Reminder / Set Alarm
           </div>
+          
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label class="form-label" for="reminder-input-title" style="font-size: 9px;">Reminder Title *</label>
+            <input type="text" class="form-input" id="reminder-input-title" required placeholder="e.g. Audit Friday Evening Shift Turnout" style="padding: 6px 8px; font-size: 12px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label class="form-label" for="reminder-input-desc" style="font-size: 9px;">Description / Notes</label>
+            <input type="text" class="form-input" id="reminder-input-desc" placeholder="e.g. Check floor stations, sign-offs, and absentee ledger" style="padding: 6px 8px; font-size: 12px;">
+          </div>
+
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div>
-              <label class="form-label" for="reminder-input-priority" style="font-size: 9px;">Priority</label>
-              <select class="select-control" id="reminder-input-priority" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 6px; font-size: 11px;">
-                <option value="HIGH">HIGH PRIORITY</option>
-                <option value="MEDIUM" selected>MEDIUM PRIORITY</option>
-                <option value="NORMAL">NORMAL PRIORITY</option>
-              </select>
+              <label class="form-label" for="reminder-input-date" style="font-size: 9px;">Date *</label>
+              <input type="date" class="form-input" id="reminder-input-date" required style="padding: 5px; font-size: 11px;">
             </div>
             <div>
-              <label class="form-label" for="reminder-input-time" style="font-size: 9px;">Due Time (Today)</label>
-              <input type="time" class="form-input" id="reminder-input-time" style="padding: 5px; font-size: 11px;">
+              <label class="form-label" for="reminder-input-time" style="font-size: 9px;">Time *</label>
+              <input type="time" class="form-input" id="reminder-input-time" required style="padding: 5px; font-size: 11px;">
             </div>
           </div>
-          <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">+ Save Reminder</button>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div>
+              <label class="form-label" for="reminder-input-repeat" style="font-size: 9px;">Repeat Option</label>
+              <select class="select-control" id="reminder-input-repeat" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
+                <option value="none">One-time Only</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly (Specific Day)</option>
+                <option value="monthly">Monthly (Specific Date)</option>
+              </select>
+            </div>
+            <div id="repeat-day-wrapper" style="display: none;">
+              <label class="form-label" for="reminder-input-repeat-day" id="repeat-day-label" style="font-size: 9px;">Repeat On</label>
+              <select class="select-control" id="reminder-input-repeat-day" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
+                <!-- Dynamically populated for weekly (days) or monthly (dates 1-31) -->
+              </select>
+            </div>
+            <div id="notification-type-wrapper">
+              <label class="form-label" for="reminder-input-notif-type" style="font-size: 9px;">Notification Type</label>
+              <select class="select-control" id="reminder-input-notif-type" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
+                <option value="both" selected>Sound Alarm & Desktop</option>
+                <option value="sound">Sound Alarm Only</option>
+                <option value="desktop">Desktop Notification Only</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="checkbox" id="reminder-input-active" checked> Active Reminder
+            </label>
+            <button type="button" class="btn-secondary" id="btn-test-sound" style="padding: 3px 8px; font-size: 9px;">
+              Test Alarm Sound
+            </button>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">+ Save Reminder & Schedule</button>
         </form>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Active Manager Tasks</span>
+          <span style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Scheduled Reminders</span>
           <button type="button" class="btn-secondary" id="btn-request-web-notif" style="padding: 4px 8px; font-size: 9px;">
             Enable Desktop Alerts
           </button>
@@ -608,9 +946,120 @@
         <div id="reminders-list-container">
           <!-- Dynamic Reminder Items Rendered Here -->
         </div>
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-secondary btn-modal-close" id="btn-dismiss-reminders">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Active Alarm / Due Reminder Overlay -->
+  <div class="modal-overlay" id="alarm-modal-overlay" style="z-index: 9999;">
+    <div class="modal-content" style="border: 3px solid #991B1B; box-shadow: 0 0 40px rgba(153, 27, 27, 0.6);">
+      <div class="modal-header" style="background-color: #991B1B; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="alarm-pulsing-dot"></span>
+          <span class="modal-title" style="letter-spacing: 1px;">URGENT MANAGER REMINDER DUE</span>
+        </div>
+        <span id="alarm-due-time" style="font-size: 11px; font-weight: 800; background: rgba(0,0,0,0.3); padding: 2px 6px;">12:00</span>
+      </div>
+      <div class="modal-body" style="padding: 20px 16px; background-color: #FFF;">
+        <input type="hidden" id="active-alarm-id" value="">
+        <div id="alarm-display-title" style="font-size: 16px; font-weight: 800; color: #061527; margin-bottom: 6px; text-transform: uppercase;">
+          Reminder Title
+        </div>
+        <div id="alarm-display-desc" style="font-size: 12px; color: #475569; margin-bottom: 16px; line-height: 1.4;">
+          Reminder notes and details
+        </div>
+        <div style="font-size: 10px; font-weight: 700; color: #991B1B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+          Alarm is sounding. Choose an action below:
+        </div>
+        
+        <!-- Snooze Options -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
+          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="5" style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
+            Snooze 5 Min
+          </button>
+          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="10" style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
+            Snooze 10 Min
+          </button>
+          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="30" style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
+            Snooze 30 Min
+          </button>
+        </div>
+
+        <!-- Dismiss Button -->
+        <button type="button" class="btn-danger" id="btn-dismiss-alarm-modal" style="width: 100%; padding: 10px; font-size: 12px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
+          DISMISS REMINDER
+        </button>
+  <!-- Modal 5: Quick Table Assignment -->
+  <div class="modal-overlay" id="modal-table-assign">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-table-assign-title">ASSIGN WAITER TO TABLE</span>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-table-assign" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="assign-modal-station-id" value="">
+        <div style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 10px 12px; margin-bottom: 14px;">
+          <div style="font-size: 14px; font-weight: 800; color: var(--c-navy-primary);" id="assign-modal-station-name">Table 1</div>
+          <div style="font-size: 11px; color: var(--c-gray-dark);" id="assign-modal-section-info">Main Dining · Capacity 4</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="select-assign-staff">Assign Waiter from Roster</label>
+          <select class="select-control" id="select-assign-staff" style="width: 100%; padding: 8px; font-size: 12px; border: 1px solid var(--c-gray-border);">
+            <!-- Populated with active staff -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-assign-notes">Shift Notes / Table Status (Optional)</label>
+          <input type="text" class="form-input" id="input-assign-notes" placeholder="e.g. VIP Reservation at 19:30">
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn-danger" id="btn-unassign-table" style="font-size: 11px; padding: 7px 12px;">Clear Assignment</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-secondary" id="btn-cancel-table-assign">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-save-table-assign">Save Assignment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Bulk Manage Floor Plan Assignments -->
+  <div class="modal-overlay" id="modal-bulk-assignments">
+    <div class="modal-content" style="max-width: 660px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <span class="modal-title">MANAGE ALL STATION ASSIGNMENTS</span>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-bulk-assign" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 14px;">
+        <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 12px;">
+          Quickly configure which waiter is responsible for each dining booth, table, and section for this shift.
+        </p>
+        <div id="bulk-assign-table-container">
+          <!-- Dynamically populated 16 stations list with dropdowns -->
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn-secondary" id="btn-auto-assign-roster" style="font-size: 11px;">Auto-Fill from Roster</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-secondary" id="btn-cancel-bulk-assign">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-save-bulk-assign">Save All Assignments</button>
+        </div>
       </div>
     </div>
   </div>
