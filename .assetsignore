@@ -1,0 +1,17 @@
+# Security: Never serve backend server files, database schemas, or secrets as static assets
+.env
+.env.*
+server.js
+database.sql
+scripts/
+services/
+reports/
+node_modules/
+package.json
+package-lock.json
+wrangler.jsonc
+worker.js
+*.log
+.git/
+.gitignore
+.assetsignore

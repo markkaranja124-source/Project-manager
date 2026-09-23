@@ -182,6 +182,11 @@ function setNoCacheHeaders(res) {
 
 // Serve SimpleWebAuthn Browser bundle statically
 app.get('/js/simplewebauthn-browser.js', (req, res) => {
+  const localBundle = path.join(__dirname, 'js', 'simplewebauthn-browser.js');
+  if (fs.existsSync(localBundle)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    return res.sendFile(localBundle);
+  }
   const bundlePath = path.join(__dirname, 'node_modules', '@simplewebauthn', 'browser', 'dist', 'bundle', 'index.umd.min.js');
   if (fs.existsSync(bundlePath)) {
     res.setHeader('Content-Type', 'application/javascript');
