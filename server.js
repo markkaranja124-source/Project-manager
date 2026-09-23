@@ -1904,7 +1904,14 @@ app.get(['/', '/index.html'], (req, res) => {
 
 // Serve Public Static Assets (CSS, client JS, manifest, Service Worker)
 app.use(express.static(path.join(__dirname), {
-  index: false // Prevent serving index.html automatically without requireAuth check
+  index: false, // Prevent serving index.html automatically without requireAuth check
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html') || filePath.endsWith('.json')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
 }));
 
 // Fallback 404 handler
