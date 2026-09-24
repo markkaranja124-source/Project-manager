@@ -64,12 +64,18 @@ async function initDatabase() {
         \`name\` VARCHAR(128) NOT NULL,
         \`email\` VARCHAR(191) NOT NULL,
         \`password_hash\` VARCHAR(255) NOT NULL,
+        \`avatar\` MEDIUMTEXT NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         UNIQUE KEY \`idx_manager_email\` (\`email\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure avatar column exists on existing managers tables
+    try {
+      await dbPool.execute('ALTER TABLE `managers` ADD COLUMN `avatar` MEDIUMTEXT NULL;');
+    } catch (ignore) {}
 
     // Ensure manager_passkeys table exists (WebAuthn credentials)
     await dbPool.execute(`
@@ -250,7 +256,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // 2. Query database using Prepared Statements
     const [rows] = await dbPool.execute(
-      'SELECT id, name, email, password_hash FROM `managers` WHERE email = ? LIMIT 1',
+      'SELECT id, name, email, password_hash, avatar FROM `managers` WHERE email = ? LIMIT 1',
       [cleanEmail]
     );
 
@@ -286,6 +292,7 @@ app.post('/api/auth/login', async (req, res) => {
         id: manager.id,
         name: manager.name,
         email: manager.email,
+        avatar: manager.avatar || null,
         loginTime: Date.now()
       };
 
@@ -295,7 +302,8 @@ app.post('/api/auth/login', async (req, res) => {
         manager: {
           id: manager.id,
           name: manager.name,
-          email: manager.email
+          email: manager.email,
+          avatar: manager.avatar || null
         }
       });
     });
@@ -320,7 +328,8 @@ app.get('/api/auth/me', (req, res) => {
       manager: {
         id: req.session.manager.id,
         name: req.session.manager.name,
-        email: req.session.manager.email
+        email: req.session.manager.email,
+        avatar: req.session.manager.avatar || null
       }
     });
   }
@@ -1269,6 +1278,22 @@ app.get('/api/state', requireAuth, async (req, res) => {
       }
     });
 
+    let currentManager = req.session.manager || null;
+    if (currentManager && currentManager.id) {
+      try {
+        const [mRows] = await dbPool.execute('SELECT id, name, email, avatar FROM `managers` WHERE id = ? LIMIT 1', [currentManager.id]);
+        if (mRows.length > 0) {
+          currentManager = {
+            ...currentManager,
+            name: mRows[0].name,
+            email: mRows[0].email,
+            avatar: mRows[0].avatar || null
+          };
+          req.session.manager = currentManager;
+        }
+      } catch (e) {}
+    }
+
     return res.json({
       success: true,
       state: {
@@ -1278,11 +1303,43 @@ app.get('/api/state', requireAuth, async (req, res) => {
         settings,
         security
       },
-      manager: req.session.manager
+      manager: currentManager
     });
   } catch (err) {
     console.error('[API] /api/state error:', err.message);
     return res.status(500).json({ success: false, error: 'Database read error' });
+  }
+});
+
+/**
+ * POST /api/manager/avatar
+ * Uploads or removes custom manager profile avatar picture
+ */
+app.post('/api/manager/avatar', requireAuth, async (req, res) => {
+  try {
+    const { avatar } = req.body;
+    const managerId = req.session.manager.id;
+
+    if (avatar && typeof avatar === 'string' && avatar.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'Avatar image too large (Max 5MB).' });
+    }
+
+    const cleanAvatar = avatar && typeof avatar === 'string' && avatar.trim().length > 0 ? avatar.trim() : null;
+
+    await dbPool.execute('UPDATE `managers` SET `avatar` = ? WHERE `id` = ?', [cleanAvatar, managerId]);
+
+    if (req.session.manager) {
+      req.session.manager.avatar = cleanAvatar;
+    }
+
+    return res.json({
+      success: true,
+      message: cleanAvatar ? 'Profile picture updated successfully.' : 'Profile picture removed.',
+      avatar: cleanAvatar
+    });
+  } catch (err) {
+    console.error('[API] /api/manager/avatar error:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to update manager profile picture.' });
   }
 });
 

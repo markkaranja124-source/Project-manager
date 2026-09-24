@@ -12,6 +12,7 @@ package-lock.json
 wrangler.jsonc
 worker.js
 *.log
+cloudflared.exe
 .git/
 .gitignore
 .assetsignore

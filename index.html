@@ -20,9 +20,13 @@
     <!-- Top Executive Header -->
     <header class="app-header">
       <div class="header-brand">
-        <div class="brand-icon-box">AR</div>
+        <div class="brand-icon-box" id="manager-brand-avatar" title="Manager Photo / Initials (Click to change)" role="button" tabindex="0" aria-label="Manager Profile Photo">
+          <span id="manager-initials-text">AR</span>
+          <img id="manager-avatar-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+          <input type="file" id="manager-avatar-file-input" accept="image/*" style="display: none;">
+        </div>
         <div class="brand-titles">
-          <span class="brand-title" id="display-business-name">Executive Register</span>
+          <span class="brand-title" id="display-business-name">Daily Attendance Register</span>
           <span class="brand-subtitle" id="manager-session-indicator">Manager: Authenticated</span>
         </div>
       </div>
@@ -121,16 +125,33 @@
           </div>
         </div>
 
+        <!-- Live Shift Sync & Auto-Save Status Strip -->
+        <div class="sync-status-strip" id="sync-status-strip">
+          <div class="sync-status-left">
+            <span class="sync-dot-live" id="sync-dot-live"></span>
+            <span class="sync-status-text" id="sync-status-text">All changes auto-saved to database</span>
+          </div>
+          <span class="sync-status-time" id="sync-status-time">Synced</span>
+        </div>
+
         <!-- Quick Batch Actions Toolbar -->
         <div class="toolbar-strip">
-          <button type="button" class="btn-primary" id="btn-mark-all-present">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+          <button type="button" class="btn-primary" id="btn-mark-all-present" title="Mark all active staff as present">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             Mark All Present
           </button>
-          <button type="button" class="btn-secondary" id="btn-add-waiter-quick">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+          <button type="button" class="btn-save-records" id="btn-save-daily-records" title="Save and commit today's shift records to database">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span id="btn-save-daily-text">Save Shift</span>
+          </button>
+          <button type="button" class="btn-secondary" id="btn-add-waiter-quick" title="Register new waitstaff">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
@@ -784,10 +805,37 @@
           <label class="form-label" for="settings-business-name">Business / Restaurant Name</label>
           <input type="text" class="form-input" id="settings-business-name" placeholder="Executive Restaurant & Bar">
         </div>
-        
 
+        <!-- Manager Profile Photo & Avatar Section -->
+        <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">Manager Profile Photo & Avatar</label>
+            <span style="font-size: 9px; font-weight: 800; background: #E0F2FE; color: #0369A1; padding: 2px 6px; border: 1px solid #BAE6FD;">CUSTOM PHOTO</span>
+          </div>
+          <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 10px;">
+            Personalize your header icon with your profile photo or your automatic 2-letter initials.
+          </p>
 
-        <!-- Manager Security & Passkeys / Biometrics Section -->
+          <div style="display: flex; align-items: center; gap: 14px; background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 12px;">
+            <div id="settings-avatar-preview-box" style="width: 52px; height: 52px; background: #FFFFFF; border: 1.5px solid var(--c-navy-primary); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: var(--c-navy-primary); overflow: hidden; flex-shrink: 0; position: relative;">
+              <span id="settings-avatar-preview-initials">AR</span>
+              <img id="settings-avatar-preview-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div id="settings-manager-name" style="font-size: 13px; font-weight: 800; color: var(--c-navy-primary); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Executive Manager</div>
+              <div id="settings-manager-email" style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">manager@executive.com</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn-primary" id="btn-upload-avatar-settings" style="padding: 5px 10px; font-size: 10px; text-transform: uppercase;">
+                  Upload Photo
+                </button>
+                <button type="button" class="btn-secondary" id="btn-remove-avatar" style="padding: 5px 10px; font-size: 10px; text-transform: uppercase; display: none;">
+                  Use Initials
+                </button>
+              </div>
+            </div>
+          </div>
+          <input type="file" id="settings-avatar-file-input" accept="image/*" style="display: none;">
+        </div>
         <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-label" style="margin-bottom: 0;">Security / Login Methods (Passkeys)</label>

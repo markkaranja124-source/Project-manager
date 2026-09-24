@@ -6,6 +6,9 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "vars": {
+    "BACKEND_URL": "https://buffer-christina-theaters-abilities.trycloudflare.com"
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": ".",

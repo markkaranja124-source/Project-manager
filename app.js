@@ -7,6 +7,118 @@
   'use strict';
 
   const STORAGE_KEY = 'waiter_attendance_register_v1';
+  const AVATAR_KEY = 'executive_manager_avatar_v1';
+  const MANAGER_INFO_KEY = 'executive_manager_info_v1';
+
+  // Helper to extract 2-letter uppercase initials from manager name or email
+  function getManagerInitials(name, email) {
+    if (name && typeof name === 'string' && name.trim()) {
+      const parts = name.trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts.length === 1 && parts[0].length >= 2) {
+        return parts[0].substring(0, 2).toUpperCase();
+      } else if (parts.length === 1) {
+        return parts[0][0].toUpperCase();
+      }
+    }
+    if (email && typeof email === 'string' && email.trim()) {
+      const localPart = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
+      if (localPart.length >= 2) {
+        return localPart.substring(0, 2).toUpperCase();
+      } else if (localPart.length === 1) {
+        return localPart.toUpperCase();
+      }
+    }
+    return 'AR';
+  }
+
+  // Update header and modal avatar display
+  function updateManagerAvatarUI(avatarUrl, initials) {
+    const initialsSpan = document.getElementById('manager-initials-text');
+    const avatarImg = document.getElementById('manager-avatar-img');
+    const modalAvatarImg = document.getElementById('settings-avatar-preview-img');
+    const modalAvatarInitials = document.getElementById('settings-avatar-preview-initials');
+    const btnRemoveAvatar = document.getElementById('btn-remove-avatar');
+
+    const cleanInitials = initials || 'AR';
+    if (initialsSpan) initialsSpan.textContent = cleanInitials;
+    if (modalAvatarInitials) modalAvatarInitials.textContent = cleanInitials;
+
+    if (avatarUrl) {
+      if (avatarImg) {
+        avatarImg.src = avatarUrl;
+        avatarImg.style.display = 'block';
+      }
+      if (initialsSpan) initialsSpan.style.display = 'none';
+
+      if (modalAvatarImg) {
+        modalAvatarImg.src = avatarUrl;
+        modalAvatarImg.style.display = 'block';
+      }
+      if (modalAvatarInitials) modalAvatarInitials.style.display = 'none';
+      if (btnRemoveAvatar) btnRemoveAvatar.style.display = 'inline-block';
+    } else {
+      if (avatarImg) {
+        avatarImg.src = '';
+        avatarImg.style.display = 'none';
+      }
+      if (initialsSpan) initialsSpan.style.display = 'inline';
+
+      if (modalAvatarImg) {
+        modalAvatarImg.src = '';
+        modalAvatarImg.style.display = 'none';
+      }
+      if (modalAvatarInitials) modalAvatarInitials.style.display = 'inline';
+      if (btnRemoveAvatar) btnRemoveAvatar.style.display = 'none';
+    }
+  }
+
+  // Dynamic Contextual Section Titles based on where the manager is on the app
+  const SECTION_TITLES = {
+    'view-daily': {
+      title: 'Daily Attendance Register',
+      context: 'Daily Shift Turnout'
+    },
+    'view-floorplan': {
+      title: 'Floor Plan & Station Assignments',
+      context: 'Table Layout & Stations'
+    },
+    'view-monthly': {
+      title: 'Monthly Attendance Matrix',
+      context: '31-Day Attendance Ledger'
+    },
+    'view-absentee': {
+      title: 'Absentee & Audit Report',
+      context: 'Absence Rate Analysis'
+    },
+    'view-staff': {
+      title: 'Waitstaff Directory & Roster',
+      context: 'Active Staff Records'
+    },
+    'view-reports': {
+      title: 'Attendance Reports & Dispatch',
+      context: 'PDF & WhatsApp Archive'
+    }
+  };
+
+  function updateHeaderForActiveTab(targetId) {
+    const titleEl = document.getElementById('display-business-name');
+    if (!titleEl) return;
+
+    const id = targetId || AppState.activeTab || 'view-daily';
+    const sectionInfo = SECTION_TITLES[id] || { title: 'Attendance Register' };
+
+    if (titleEl.textContent === sectionInfo.title) return;
+
+    titleEl.style.opacity = '0';
+    titleEl.style.transform = 'translateY(-2px)';
+    setTimeout(() => {
+      titleEl.textContent = sectionInfo.title;
+      titleEl.style.opacity = '1';
+      titleEl.style.transform = 'translateY(0)';
+    }, 100);
+  }
 
   // Initial Sample Data for Instant Ready-to-Use Experience
   const INITIAL_STAFF = [
@@ -106,6 +218,13 @@
     },
     lastActivity: Date.now(),
     reminders: [],
+    manager: {
+      id: '',
+      name: 'Executive Manager',
+      email: 'manager@executive.com',
+      initials: 'AR',
+      avatar: null
+    },
     floorPlanDate: new Date().toISOString().split('T')[0],
     floorPlanShift: 'Morning',
     floorPlanData: { stations: [], employees: [] },
@@ -137,6 +256,24 @@
         AppState.reminders = INITIAL_REMINDERS;
         saveState();
       }
+
+      // Restore cached manager profile & avatar
+      try {
+        const rawMgr = localStorage.getItem(MANAGER_INFO_KEY);
+        if (rawMgr) {
+          AppState.manager = Object.assign(AppState.manager, JSON.parse(rawMgr));
+        }
+        const cachedAvatar = localStorage.getItem(AVATAR_KEY);
+        if (cachedAvatar) {
+          AppState.manager.avatar = cachedAvatar;
+        }
+        updateManagerAvatarUI(AppState.manager.avatar, AppState.manager.initials);
+
+        const managerIndicator = document.getElementById('manager-session-indicator');
+        if (managerIndicator && AppState.manager.email) {
+          managerIndicator.textContent = `Manager: ${AppState.manager.email}`;
+        }
+      } catch (err) {}
     } catch (e) {
       console.error('Error loading state from cache:', e);
       AppState.staff = INITIAL_STAFF;
@@ -166,16 +303,45 @@
           }
           if (data.state.settings) {
             AppState.settings = Object.assign(AppState.settings, data.state.settings);
-            const displayHeader = document.getElementById('display-business-name');
-            if (displayHeader && AppState.settings.businessName) {
-              displayHeader.textContent = AppState.settings.businessName;
-            }
+            updateHeaderForActiveTab(AppState.activeTab || 'view-daily');
           }
 
-          // Update header manager indicator
-          const managerIndicator = document.getElementById('manager-session-indicator');
-          if (managerIndicator) {
-            managerIndicator.textContent = data.manager ? `Manager: ${data.manager.email}` : 'Manager: Authenticated';
+          // Update header manager indicator and avatar
+          if (data.manager) {
+            const initials = getManagerInitials(data.manager.name, data.manager.email);
+            const avatar = data.manager.avatar || localStorage.getItem(AVATAR_KEY) || null;
+            AppState.manager = {
+              id: data.manager.id || '',
+              name: data.manager.name || 'Executive Manager',
+              email: data.manager.email || 'manager@executive.com',
+              initials: initials,
+              avatar: avatar
+            };
+
+            localStorage.setItem(MANAGER_INFO_KEY, JSON.stringify({
+              id: AppState.manager.id,
+              name: AppState.manager.name,
+              email: AppState.manager.email,
+              initials: AppState.manager.initials
+            }));
+
+            if (avatar) {
+              localStorage.setItem(AVATAR_KEY, avatar);
+            } else {
+              localStorage.removeItem(AVATAR_KEY);
+            }
+
+            updateManagerAvatarUI(AppState.manager.avatar, AppState.manager.initials);
+
+            const managerIndicator = document.getElementById('manager-session-indicator');
+            if (managerIndicator) {
+              managerIndicator.textContent = `Manager: ${data.manager.email}`;
+            }
+
+            const nameEl = document.getElementById('settings-manager-name');
+            const emailEl = document.getElementById('settings-manager-email');
+            if (nameEl) nameEl.textContent = AppState.manager.name;
+            if (emailEl) emailEl.textContent = AppState.manager.email;
           }
 
           // Persist to local cache and re-render views
@@ -198,6 +364,90 @@
     }
   }
 
+  function updateSyncStatusUI(status, customTime = null) {
+    const dot = document.getElementById('sync-dot-live');
+    const text = document.getElementById('sync-status-text');
+    const time = document.getElementById('sync-status-time');
+    if (!dot || !text) return;
+
+    if (status === 'syncing') {
+      dot.className = 'sync-dot-live syncing';
+      text.textContent = 'Saving to database...';
+      if (time) time.textContent = 'Syncing';
+    } else if (status === 'saved') {
+      dot.className = 'sync-dot-live';
+      text.textContent = 'All changes saved to database';
+      if (time) {
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        time.textContent = customTime || `${hh}:${mm}:${ss}`;
+      }
+    } else if (status === 'error') {
+      dot.className = 'sync-dot-live error';
+      text.textContent = 'Saved locally (Offline mode)';
+      if (time) time.textContent = 'Cached';
+    }
+  }
+
+  async function forceSaveDailyRecords() {
+    const btnSave = document.getElementById('btn-save-daily-records');
+    const btnText = document.getElementById('btn-save-daily-text');
+    const dateKey = formatDateKey(AppState.currentDate);
+
+    if (btnSave) btnSave.disabled = true;
+    if (btnText) btnText.textContent = 'Saving...';
+    updateSyncStatusUI('syncing');
+
+    try {
+      // 1. Immediate local cache write
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        staff: AppState.staff,
+        attendance: AppState.attendance,
+        settings: AppState.settings,
+        security: {
+          pin: AppState.security.pin,
+          autoLockMinutes: AppState.security.autoLockMinutes
+        },
+        reminders: AppState.reminders
+      }));
+
+      // 2. Direct immediate backend flush
+      clearTimeout(syncTimeout);
+      const res = await fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staff: AppState.staff,
+          attendance: AppState.attendance,
+          settings: AppState.settings,
+          reminders: AppState.reminders
+        })
+      });
+
+      if (res.status === 401) {
+        window.location.replace('/login.html?unauthorized=1');
+        return;
+      }
+
+      if (res.ok) {
+        updateSyncStatusUI('saved');
+        showToast(`Shift records for ${dateKey} saved to database`);
+      } else {
+        updateSyncStatusUI('error');
+        showToast('Saved locally. Database sync failed.');
+      }
+    } catch (err) {
+      console.warn('[SAVE] Direct save fallback:', err);
+      updateSyncStatusUI('error');
+      showToast('Saved locally. Offline mode.');
+    } finally {
+      if (btnSave) btnSave.disabled = false;
+      if (btnText) btnText.textContent = 'Save Shift';
+    }
+  }
+
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -210,6 +460,8 @@
         },
         reminders: AppState.reminders
       }));
+
+      updateSyncStatusUI('syncing');
 
       // Asynchronous, debounced persistence to MySQL backend
       clearTimeout(syncTimeout);
@@ -226,9 +478,16 @@
         }).then(res => {
           if (res.status === 401) {
             window.location.replace('/login.html?unauthorized=1');
+            return;
+          }
+          if (res.ok) {
+            updateSyncStatusUI('saved');
+          } else {
+            updateSyncStatusUI('error');
           }
         }).catch(err => {
           console.warn('[SYNC] Could not reach backend:', err);
+          updateSyncStatusUI('error');
         });
       }, 400);
 
@@ -1375,6 +1634,13 @@
     if (inputPin) inputPin.value = AppState.security.pin;
     if (selectAutoLock) selectAutoLock.value = AppState.security.autoLockMinutes;
 
+    const nameEl = document.getElementById('settings-manager-name');
+    const emailEl = document.getElementById('settings-manager-email');
+    if (nameEl && AppState.manager.name) nameEl.textContent = AppState.manager.name;
+    if (emailEl && AppState.manager.email) emailEl.textContent = AppState.manager.email;
+
+    updateManagerAvatarUI(AppState.manager.avatar, AppState.manager.initials);
+
     if (modal) modal.classList.add('active');
     loadPasskeys();
   }
@@ -2467,6 +2733,7 @@
         if (targetSection) targetSection.classList.add('active');
 
         AppState.activeTab = targetId;
+        updateHeaderForActiveTab(targetId);
 
         if (targetId === 'view-daily') renderDailyView();
         else if (targetId === 'view-monthly') renderMonthlyMatrix();
@@ -2517,6 +2784,12 @@
     const btnMarkAll = document.getElementById('btn-mark-all-present');
     if (btnMarkAll) {
       btnMarkAll.addEventListener('click', markAllPresent);
+    }
+
+    // Manual Save Daily Shift Records Button
+    const btnSaveDaily = document.getElementById('btn-save-daily-records');
+    if (btnSaveDaily) {
+      btnSaveDaily.addEventListener('click', forceSaveDailyRecords);
     }
 
     // Search Daily Filter
@@ -2723,6 +2996,131 @@
       });
     }
 
+    // =========================================================================
+    // MANAGER AVATAR / PROFILE PHOTO UPLOAD LOGIC
+    // =========================================================================
+    function processAndUploadAvatar(file) {
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file (PNG, JPG, WebP).');
+        return;
+      }
+
+      if (file.size > 8 * 1024 * 1024) {
+        showToast('Image file too large (Max 8MB).');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          try {
+            const canvas = document.createElement('canvas');
+            const targetSize = 256;
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            const ctx = canvas.getContext('2d');
+
+            // Center square crop
+            const minDim = Math.min(img.width, img.height);
+            const sx = (img.width - minDim) / 2;
+            const sy = (img.height - minDim) / 2;
+
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+            // Update state & UI immediately
+            AppState.manager.avatar = dataUrl;
+            localStorage.setItem(AVATAR_KEY, dataUrl);
+            updateManagerAvatarUI(dataUrl, AppState.manager.initials);
+            showToast('Manager profile picture updated!');
+
+            // Sync to MySQL backend
+            fetch('/api/manager/avatar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ avatar: dataUrl })
+            })
+            .then(res => res.json())
+            .then(d => {
+              if (d && !d.success) console.warn('[AVATAR]', d.message);
+            })
+            .catch(err => {
+              console.warn('[AVATAR] Could not sync to server:', err);
+            });
+          } catch (err) {
+            console.error('Error processing image:', err);
+            showToast('Error processing profile photo.');
+          }
+        };
+        img.onerror = function () {
+          showToast('Failed to load selected image.');
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = function () {
+        showToast('Failed to read image file.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeManagerAvatar() {
+      AppState.manager.avatar = null;
+      localStorage.removeItem(AVATAR_KEY);
+      updateManagerAvatarUI(null, AppState.manager.initials);
+      showToast('Photo removed. Displaying initials.');
+
+      fetch('/api/manager/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: null })
+      }).catch(() => {});
+    }
+
+    // Header brand avatar click trigger
+    const brandAvatarBox = document.getElementById('manager-brand-avatar');
+    const headerFileInput = document.getElementById('manager-avatar-file-input');
+    const btnUploadSettings = document.getElementById('btn-upload-avatar-settings');
+    const settingsFileInput = document.getElementById('settings-avatar-file-input');
+    const btnRemoveAvatar = document.getElementById('btn-remove-avatar');
+
+    if (brandAvatarBox && headerFileInput) {
+      brandAvatarBox.addEventListener('click', () => {
+        headerFileInput.click();
+      });
+      brandAvatarBox.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          headerFileInput.click();
+        }
+      });
+      headerFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          processAndUploadAvatar(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+    }
+
+    if (btnUploadSettings && settingsFileInput) {
+      btnUploadSettings.addEventListener('click', () => {
+        settingsFileInput.click();
+      });
+      settingsFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          processAndUploadAvatar(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+    }
+
+    if (btnRemoveAvatar) {
+      btnRemoveAvatar.addEventListener('click', removeManagerAvatar);
+    }
+
     // Settings Modal Triggers
     const btnSettingsOpen = document.getElementById('btn-settings-open');
     const btnCloseSettings = document.getElementById('btn-close-settings-modal');
@@ -2751,8 +3149,6 @@
 
         if (inputName && inputName.value.trim()) {
           AppState.settings.businessName = inputName.value.trim();
-          const displayHeader = document.getElementById('display-business-name');
-          if (displayHeader) displayHeader.textContent = AppState.settings.businessName;
         }
 
         saveState();
@@ -3027,11 +3423,7 @@
   // App Startup
   function init() {
     loadState();
-
-    const displayHeader = document.getElementById('display-business-name');
-    if (displayHeader && AppState.settings.businessName) {
-      displayHeader.textContent = AppState.settings.businessName;
-    }
+    updateHeaderForActiveTab(AppState.activeTab || 'view-daily');
 
     initEventListeners();
     initFloorPlan();
