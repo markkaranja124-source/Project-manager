@@ -300,21 +300,21 @@ body {
   border-color: var(--c-white);
 }
 
-/* Executive Manager Session Dropdown Card */
+/* Executive Manager Session Dropdown Card - Clean Crisp White Theme */
 .manager-profile-dropdown {
   position: absolute;
   top: calc(var(--header-height) + 6px);
   left: 12px;
   width: 320px;
   max-width: calc(100vw - 24px);
-  background: #0D1527;
-  border: 1.5px solid #1E2E52;
-  border-radius: 6px !important;
-  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.75), 0 0 15px rgba(37, 99, 235, 0.15);
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
   z-index: 1000;
   animation: mpDropdownSlide 0.2s ease forwards;
-  backdrop-filter: blur(12px);
-  color: #FFFFFF;
+  color: #0F172A !important;
+  overflow: hidden;
 }
 
 @keyframes mpDropdownSlide {
@@ -333,22 +333,22 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #111C35 0%, #0B1324 100%);
-  border-bottom: 1px solid #1E2E52;
+  background: #F8FAFC !important;
+  border-bottom: 1px solid #E2E8F0 !important;
 }
 
 .mp-dropdown-avatar {
-  width: 42px;
-  height: 42px;
-  background: #0A2540;
-  border: 1.5px solid #F59E0B;
-  border-radius: 6px !important;
+  width: 44px;
+  height: 44px;
+  background: #0B132B !important;
+  border: 2px solid #F59E0B !important;
+  border-radius: 8px !important;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 800;
-  color: #F59E0B;
+  color: #F59E0B !important;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -361,19 +361,19 @@ body {
 .mp-dropdown-name {
   font-size: 13.5px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: #0F172A !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .mp-dropdown-email {
-  font-size: 10px;
-  color: #94A3B8;
+  font-size: 11px;
+  color: #64748B !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .mp-dropdown-role {
@@ -383,32 +383,33 @@ body {
 }
 
 .badge-role {
-  background: #F59E0B;
-  color: #0F172A;
-  font-size: 8px;
+  background: #FEF3C7 !important;
+  color: #92400E !important;
+  border: 1px solid #FDE68A !important;
+  font-size: 8.5px;
   font-weight: 800;
   text-transform: uppercase;
-  padding: 1px 5px;
-  border-radius: 2px !important;
+  padding: 2px 6px;
+  border-radius: 3px !important;
 }
 
 .badge-auth {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34D399;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  font-size: 8px;
+  background: #DCFCE7 !important;
+  color: #166534 !important;
+  border: 1px solid #86EFAC !important;
+  font-size: 8.5px;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 1px 4px;
-  border-radius: 2px !important;
+  padding: 2px 5px;
+  border-radius: 3px !important;
 }
 
 .mp-dropdown-telemetry {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid #1E2E52;
+  padding: 8px 14px;
+  background: #F1F5F9 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
   gap: 6px;
 }
 
@@ -419,14 +420,15 @@ body {
 
 .mp-tel-label {
   font-size: 8px;
-  color: #64748B;
+  color: #64748B !important;
   text-transform: uppercase;
   font-weight: 800;
+  letter-spacing: 0.5px;
 }
 
 .mp-tel-val {
-  font-size: 9.5px;
-  color: #E2E8F0;
+  font-size: 10px;
+  color: #0F172A !important;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -434,31 +436,33 @@ body {
 }
 
 .mp-dropdown-menu {
-  padding: 4px 0;
+  padding: 6px 0;
+  background: #FFFFFF !important;
 }
 
 .mp-menu-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 14px;
-  background: transparent;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #FFFFFF !important;
   border: none;
-  color: #CBD5E1;
+  color: #334155 !important;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: var(--font-family);
 }
 
-.mp-menu-item:hover {
-  background: rgba(37, 99, 235, 0.15);
-  color: #FFFFFF;
+.mp-menu-item:hover,
+.mp-menu-item:active {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
 }
 
 .mp-menu-item svg {
-  color: #F59E0B;
+  color: #D97706 !important;
   flex-shrink: 0;
 }
 
@@ -468,30 +472,39 @@ body {
 }
 
 .mp-menu-title {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.2;
+  color: #0F172A !important;
+  line-height: 1.25;
 }
 
 .mp-menu-desc {
-  font-size: 8.5px;
-  color: #64748B;
-  margin-top: 1px;
+  font-size: 9.5px;
+  color: #64748B !important;
+  margin-top: 2px;
 }
 
 .mp-menu-divider {
   height: 1px;
-  background: #1E2E52;
-  margin: 4px 0;
+  background: #E2E8F0 !important;
+  margin: 6px 0;
 }
 
-.mp-menu-logout:hover {
-  background: rgba(239, 68, 68, 0.15) !important;
-  color: #FCA5A5 !important;
+.mp-menu-logout {
+  color: #DC2626 !important;
+}
+
+.mp-menu-logout .mp-menu-title {
+  color: #DC2626 !important;
 }
 
 .mp-menu-logout svg {
-  color: #EF4444 !important;
+  color: #DC2626 !important;
+}
+
+.mp-menu-logout:hover,
+.mp-menu-logout:active {
+  background: #FEF2F2 !important;
 }
 
 /* Enterprise Workstation Footer */
