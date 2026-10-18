@@ -73,43 +73,20 @@
       align-items: center;
     }
 
-    /* Top Executive Crest & Brand Header */
+    /* Top Brand Header */
     .brand-crest-header {
       text-align: center;
       margin-bottom: 24px;
     }
 
-    .crest-icon-badge {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 14px;
-      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-      border: 1.5px solid rgba(245, 158, 11, 0.4);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(245, 158, 11, 0.15);
-      position: relative;
-    }
-
-    .crest-icon-badge::after {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      border-radius: 17px;
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), transparent 60%);
-      z-index: -1;
-    }
-
     .brand-corporate-title {
       font-family: var(--font-display);
-      font-size: 19px;
-      font-weight: 900;
-      letter-spacing: 2px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
       color: #FFFFFF;
-      text-transform: uppercase;
-      margin-bottom: 4px;
+      text-transform: none;
+      margin: 0;
       text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
 
@@ -587,25 +564,9 @@
 
   <div class="login-container">
     
-    <!-- Top Executive Brand Crest & Monogram -->
+    <!-- Top Brand Header -->
     <header class="brand-crest-header">
-      <div class="crest-icon-badge">
-        <!-- Official Executive Crest Emblem -->
-        <svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Outer Shield Contour -->
-          <path d="M18 3L4 9V17C4 25.5 10 32.5 18 35C26 32.5 32 25.5 32 17V9L18 3Z" stroke="#F59E0B" stroke-width="1.8" fill="rgba(245, 158, 11, 0.05)"/>
-          <!-- Inner Monogram ER -->
-          <path d="M11 12H17.5M11 18H16.5M11 24H17.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-          <path d="M11 12V24" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-          <path d="M20 12H23.5C25.5 12 26.5 13.5 26.5 15.5C26.5 17.5 25.5 19 23.5 19H20V12Z" stroke="#F59E0B" stroke-width="2"/>
-          <path d="M23 19L27 24" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <h1 class="brand-corporate-title">Executive Restaurant</h1>
-      <div class="brand-corporate-subtitle">
-        <span>Operations & Attendance Management</span>
-        <span class="badge-branch">Main Hub</span>
-      </div>
+      <h1 class="brand-corporate-title">Login Manager</h1>
     </header>
 
     <!-- Main Formal Authentication Card -->
@@ -800,7 +761,7 @@
           256-Bit SSL/TLS
         </div>
         <div class="signup-link-wrap">
-          New Manager? <a href="/signup.html">Register Account</a>
+          New Manager? <a href="/signup.html">Create your account</a>
         </div>
       </div>
 

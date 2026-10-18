@@ -3,104 +3,189 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Manager Sign Up - Waiter Attendance Register</title>
-  <meta name="description" content="Create Executive Manager Account">
-  <meta name="theme-color" content="#0A2540">
-  <link rel="stylesheet" href="styles.css?v=2.1">
+  <title>Create your account · Ribhouse Restaurant</title>
+  <meta name="description" content="Create Executive Manager Account · Ribhouse Restaurant">
+  <meta name="theme-color" content="#0B132B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ribhouse">
+  <meta name="application-name" content="Ribhouse">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Modern Executive Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
-    /* Dedicated Professional Sign-up Layout */
-    .auth-wrapper {
+    :root {
+      --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --color-gold: #F59E0B;
+      --color-gold-hover: #D97706;
+      --color-navy-darkest: #070B14;
+      --color-navy-deep: #0D1527;
+      --color-navy-surface: #111C35;
+      --color-navy-border: #1E2E52;
+      --color-navy-accent: #2563EB;
+      --color-text-main: #0F172A;
+      --color-text-muted: #64748B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--color-navy-darkest);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 10% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 90% 70%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+      color: #0F172A;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-container {
       width: 100%;
       max-width: 460px;
       margin: auto;
-      padding: 24px 16px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      min-height: 100vh;
+      align-items: center;
     }
 
-    .auth-card {
-      background: var(--c-white);
-      border: 2px solid var(--c-navy-primary);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-      padding: 32px 28px;
-    }
-
-    .auth-header {
+    /* Top Brand Header */
+    .brand-crest-header {
       text-align: center;
       margin-bottom: 24px;
-      border-bottom: 2px solid var(--c-navy-subtle);
-      padding-bottom: 18px;
     }
 
-    .auth-brand-icon {
-      width: 48px;
-      height: 48px;
-      background: var(--c-navy-primary);
-      color: var(--c-white);
-      font-weight: 900;
-      font-size: 20px;
-      letter-spacing: 1px;
+    .brand-corporate-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #FFFFFF;
+      text-transform: none;
+      margin: 0;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    /* Main Formal Authentication Card */
+    .login-card {
+      width: 100%;
+      background: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      padding: 32px 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Top Accent Line */
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2563EB 0%, #3B82F6 40%, #F59E0B 80%, #D97706 100%);
+    }
+
+    .card-top-row {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px;
-      border: 1px solid var(--c-navy-accent);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #E2E8F0;
     }
 
-    .auth-title {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 1.2px;
-      color: var(--c-navy-primary);
+    .card-heading-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
-      margin-bottom: 4px;
     }
 
-    .auth-subtitle {
-      font-size: 11px;
+    .telemetry-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9.5px;
       font-weight: 700;
-      letter-spacing: 0.8px;
-      color: var(--c-gray-dark);
+      color: #059669;
+      background: #ECFDF5;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid #A7F3D0;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10B981;
     }
 
     .auth-feedback {
-      padding: 10px 14px;
+      padding: 11px 14px;
       font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      margin-bottom: 20px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      margin-bottom: 18px;
+      border-radius: 8px;
       display: none;
       border-left: 4px solid;
     }
 
     .auth-feedback.error {
       display: block;
-      background: #FEE2E2;
-      border-color: #DC2626;
+      background: #FEF2F2;
+      border-color: #EF4444;
       color: #991B1B;
     }
 
     .auth-feedback.success {
       display: block;
-      background: #DCFCE7;
-      border-color: #16A34A;
-      color: #166534;
+      background: #ECFDF5;
+      border-color: #10B981;
+      color: #065F46;
     }
 
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .form-label {
       display: block;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-      color: var(--c-navy-primary);
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: #1E293B;
       margin-bottom: 6px;
     }
 
@@ -116,132 +201,172 @@
       padding: 10px 14px;
       font-size: 14px;
       font-family: inherit;
-      color: var(--c-black);
-      background: var(--c-gray-light);
-      border: 1px solid var(--c-gray-border);
+      color: #0F172A;
+      background: #F8FAFC;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 8px;
       outline: none;
-      transition: border-color 0.15s ease, background 0.15s ease;
+      transition: all 0.15s ease;
     }
 
     .form-input:focus {
-      border-color: var(--c-navy-primary);
-      background: var(--c-white);
-      box-shadow: inset 0 0 0 1px var(--c-navy-primary);
+      background: #FFFFFF;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .input-group .form-input:has(+ .input-toggle-btn) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
     }
 
     .input-toggle-btn {
-      background: var(--c-gray-surface);
-      border: 1px solid var(--c-gray-border);
+      background: #F1F5F9;
+      border: 1.5px solid #CBD5E1;
       border-left: none;
+      border-top-right-radius: 8px;
+      border-bottom-right-radius: 8px;
       padding: 0 14px;
       cursor: pointer;
-      color: var(--c-gray-dark);
+      color: #64748B;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s, color 0.15s;
+      transition: all 0.15s;
     }
 
     .input-toggle-btn:hover {
-      background: var(--c-navy-subtle);
-      color: var(--c-navy-primary);
+      background: #E2E8F0;
+      color: #1E293B;
     }
 
     .field-error-msg {
-      font-size: 11px;
+      font-size: 11.5px;
       color: #DC2626;
-      font-weight: 700;
-      margin-top: 4px;
+      font-weight: 600;
+      margin-top: 5px;
       display: none;
     }
 
     .btn-submit-auth {
       width: 100%;
-      height: 46px;
-      background: var(--c-navy-primary);
-      color: var(--c-white);
-      border: 1px solid var(--c-navy-dark);
+      height: 48px;
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-display);
       font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.5px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      margin-top: 14px;
-      transition: background 0.15s, transform 0.05s;
+      gap: 9px;
+      margin-top: 22px;
+      box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.4);
+      transition: all 0.15s ease;
     }
 
     .btn-submit-auth:hover:not(:disabled) {
-      background: var(--c-navy-light);
+      background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.5);
     }
 
     .btn-submit-auth:active:not(:disabled) {
-      background: var(--c-navy-dark);
-      transform: scale(0.99);
+      transform: translateY(0);
     }
 
     .btn-submit-auth:disabled {
       opacity: 0.65;
       cursor: not-allowed;
+      transform: none;
     }
 
-    .auth-switch-link {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--c-gray-dark);
-    }
-
-    .auth-switch-link a {
-      color: var(--c-navy-accent);
-      text-decoration: none;
-      font-weight: 800;
-      border-bottom: 1px solid var(--c-navy-accent);
-      padding-bottom: 1px;
-      margin-left: 4px;
-    }
-
-    .auth-switch-link a:hover {
-      color: var(--c-navy-primary);
-      border-color: var(--c-navy-primary);
-    }
-
-    .auth-footer-info {
+    .login-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px solid var(--c-gray-border);
-      text-align: center;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: var(--c-gray-dark);
-      text-transform: uppercase;
+      padding-top: 18px;
+      border-top: 1px solid #E2E8F0;
+      font-size: 11.5px;
     }
 
-    .security-badge {
+    .security-stamp {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      margin-bottom: 6px;
-      color: var(--c-navy-accent);
-      font-size: 10px;
+      color: #64748B;
+      font-weight: 600;
+    }
+
+    .signup-link-wrap {
+      color: #64748B;
+      font-weight: 500;
+    }
+
+    .signup-link-wrap a {
+      color: #2563EB;
+      font-weight: 800;
+      text-decoration: none;
+      margin-left: 4px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    .signup-link-wrap a:hover {
+      border-bottom-color: #2563EB;
+    }
+
+    .corporate-legal-footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 10.5px;
+      color: #64748B;
+      line-height: 1.6;
+    }
+
+    .legal-links {
+      margin-top: 8px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      color: #475569;
+    }
+
+    .legal-links a {
+      color: #94A3B8;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .legal-links a:hover {
+      color: #FFFFFF;
     }
   </style>
 </head>
 <body>
 
-  <div class="auth-wrapper">
-    <div class="auth-card">
+  <div class="login-container">
+    
+    <!-- Top Brand Header -->
+    <header class="brand-crest-header">
+      <h1 class="brand-corporate-title">Create your account</h1>
+    </header>
+
+    <!-- Main Formal Authentication Card -->
+    <main class="login-card" role="main">
       
-      <!-- Card Header -->
-      <div class="auth-header">
-        <div class="auth-brand-icon">AR</div>
-        <h1 class="auth-title">Executive Register</h1>
-        <p class="auth-subtitle">Manager Account Registration</p>
+      <!-- Top Card Status Header -->
+      <div class="card-top-row">
+        <h2 class="card-heading-title">Manager Registration</h2>
+        <div class="telemetry-pill">
+          <span class="pulse-dot"></span>
+          <span>Encrypted Setup</span>
+        </div>
       </div>
 
       <!-- Feedback Alert Box -->
@@ -305,11 +430,11 @@
               title="Show or hide password" 
               aria-label="Show password"
             >
-              <svg id="icon-eye-show-pwd" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <svg id="icon-eye-show-pwd" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <svg id="icon-eye-hide-pwd" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" style="display: none;">
+              <svg id="icon-eye-hide-pwd" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
@@ -338,11 +463,11 @@
               title="Show or hide confirm password" 
               aria-label="Show confirm password"
             >
-              <svg id="icon-eye-show-cpwd" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <svg id="icon-eye-show-cpwd" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <svg id="icon-eye-hide-cpwd" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" style="display: none;">
+              <svg id="icon-eye-hide-cpwd" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
@@ -353,34 +478,47 @@
 
         <!-- Submit Button -->
         <button type="submit" class="btn-submit-auth" id="btn-signup-submit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="8.5" cy="7" r="4"></circle>
             <line x1="20" y1="8" x2="20" y2="14"></line>
             <line x1="23" y1="11" x2="17" y2="11"></line>
           </svg>
-          <span id="btn-signup-text">Register Manager Account</span>
+          <span id="btn-signup-text">Create your account</span>
         </button>
 
       </form>
 
-      <!-- Switch to Sign In -->
-      <div class="auth-switch-link">
-        Already registered? <a href="/login.html">Sign in here</a>
-      </div>
-
-      <!-- Security Notice Footer -->
-      <div class="auth-footer-info">
-        <div class="security-badge">
+      <!-- Card Bottom Auxiliary Info -->
+      <div class="login-card-footer">
+        <div class="security-stamp">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
-          Bcrypt Encrypted Credential Storage
+          256-Bit SSL/TLS
         </div>
-        <div>Strictly For Authorized Management Only</div>
+        <div class="signup-link-wrap">
+          Already registered? <a href="/login.html">Sign in here</a>
+        </div>
       </div>
 
-    </div>
+    </main>
+
+    <!-- Formal Legal Corporate Footer -->
+    <footer class="corporate-legal-footer">
+      <div>&copy; 2026 Executive Restaurant &amp; Hospitality Operations Ltd. All Rights Reserved.</div>
+      <div>Strictly For Authorized Management &amp; Operational Supervisory Staff Only</div>
+      <div class="legal-links">
+        <a href="#privacy">Privacy Policy</a>
+        <span>&bull;</span>
+        <a href="#terms">Terms of Access</a>
+        <span>&bull;</span>
+        <a href="#support">IT Helpdesk</a>
+        <span>&bull;</span>
+        <span>Version 3.2 Enterprise</span>
+      </div>
+    </footer>
+
   </div>
 
   <script>
@@ -524,7 +662,7 @@
           showFeedback('Network error communicating with registration service.', 'error');
         } finally {
           btnSubmit.disabled = false;
-          btnText.textContent = 'Register Manager Account';
+          btnText.textContent = 'Create your account';
         }
       });
 
