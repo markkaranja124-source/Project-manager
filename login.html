@@ -3,173 +3,403 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Manager Login - Waiter Attendance Register</title>
-  <meta name="description" content="Secure Manager Portal Authentication">
-  <meta name="theme-color" content="#0A2540">
-  <link rel="stylesheet" href="styles.css?v=2.1">
+  <title>Executive Portal · Manager Authentication</title>
+  <meta name="description" content="Secure Enterprise Manager Portal · Executive Restaurant & Hospitality Group">
+  <meta name="theme-color" content="#090D16">
+  
+  <!-- Modern Executive Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css?v=2.4">
   <script src="/js/simplewebauthn-browser.js"></script>
+
   <style>
-    /* Dedicated Professional Login Layout */
-    .login-wrapper {
-      width: 100%;
-      max-width: 440px;
-      margin: auto;
-      padding: 24px 16px;
+    :root {
+      --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --color-gold: #F59E0B;
+      --color-gold-hover: #D97706;
+      --color-navy-darkest: #070B14;
+      --color-navy-deep: #0D1527;
+      --color-navy-surface: #111C35;
+      --color-navy-border: #1E2E52;
+      --color-navy-accent: #2563EB;
+      --color-text-main: #0F172A;
+      --color-text-muted: #64748B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--color-navy-darkest);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 10% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 90% 70%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+      color: #0F172A;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      padding: 32px 16px;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .login-card {
-      background: var(--c-white);
-      border: 2px solid var(--c-navy-primary);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-      padding: 32px 28px;
+    .login-container {
+      width: 100%;
+      max-width: 460px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .login-header {
+    /* Top Executive Crest & Brand Header */
+    .brand-crest-header {
       text-align: center;
-      margin-bottom: 28px;
-      border-bottom: 2px solid var(--c-navy-subtle);
-      padding-bottom: 20px;
+      margin-bottom: 24px;
     }
 
-    .login-brand-icon {
-      width: 48px;
-      height: 48px;
-      background: var(--c-navy-primary);
-      color: var(--c-white);
-      font-weight: 900;
-      font-size: 20px;
-      letter-spacing: 1px;
+    .crest-icon-badge {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 12px;
-      border: 1px solid var(--c-navy-accent);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(245, 158, 11, 0.15);
+      position: relative;
     }
 
-    .login-title {
-      font-size: 18px;
+    .crest-icon-badge::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), transparent 60%);
+      z-index: -1;
+    }
+
+    .brand-corporate-title {
+      font-family: var(--font-display);
+      font-size: 19px;
       font-weight: 900;
-      letter-spacing: 1.2px;
-      color: var(--c-navy-primary);
+      letter-spacing: 2px;
+      color: #FFFFFF;
       text-transform: uppercase;
       margin-bottom: 4px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
 
-    .login-subtitle {
+    .brand-corporate-subtitle {
+      font-family: var(--font-body);
       font-size: 11px;
       font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #94A3B8;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .brand-corporate-subtitle .badge-branch {
+      background: rgba(245, 158, 11, 0.15);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 800;
       letter-spacing: 0.8px;
-      color: var(--c-gray-dark);
+    }
+
+    /* Main Formal Login Card */
+    .login-card {
+      width: 100%;
+      background: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      padding: 32px 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Top Accent Line */
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2563EB 0%, #3B82F6 40%, #F59E0B 80%, #D97706 100%);
+    }
+
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .card-heading-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
     }
 
-    .login-feedback {
-      padding: 10px 14px;
-      font-size: 12px;
+    .telemetry-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9.5px;
       font-weight: 700;
-      letter-spacing: 0.3px;
-      margin-bottom: 20px;
+      color: #059669;
+      background: #ECFDF5;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid #A7F3D0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10B981;
+    }
+
+    /* Dual Mode Switcher Tabs */
+    .auth-mode-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: #F1F5F9;
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 22px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .auth-tab-btn {
+      font-family: var(--font-display);
+      padding: 9px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      color: #64748B;
+      background: transparent;
+    }
+
+    .auth-tab-btn.active {
+      background: #FFFFFF;
+      color: #0F172A;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      font-weight: 800;
+    }
+
+    /* Feedback Alert Banner */
+    .login-feedback {
+      padding: 11px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+      border-radius: 6px;
+      margin-bottom: 18px;
       display: none;
       border-left: 4px solid;
     }
 
     .login-feedback.error {
-      display: block;
-      background: #FEE2E2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #FEF2F2;
       border-color: #DC2626;
       color: #991B1B;
     }
 
     .login-feedback.info {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       background: #EFF6FF;
-      border-color: var(--c-navy-primary);
-      color: var(--c-navy-primary);
+      border-color: #2563EB;
+      color: #1E40AF;
     }
 
     .login-feedback.success {
-      display: block;
-      background: #DCFCE7;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #F0FDF4;
       border-color: #16A34A;
       color: #166534;
     }
 
+    /* Form Fields */
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
-    .form-label {
-      display: block;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-      color: var(--c-navy-primary);
+    .form-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 6px;
     }
 
-    .input-group {
+    .form-label {
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #1E293B;
+    }
+
+    .form-label-link {
+      font-size: 11px;
+      font-weight: 700;
+      color: #2563EB;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .form-label-link:hover {
+      text-decoration: underline;
+    }
+
+    .input-wrapper {
       position: relative;
       display: flex;
-      align-items: stretch;
+      align-items: center;
+    }
+
+    .input-icon-left {
+      position: absolute;
+      left: 12px;
+      color: #94A3B8;
+      pointer-events: none;
     }
 
     .form-input {
       width: 100%;
       height: 44px;
-      padding: 10px 14px;
-      font-size: 14px;
-      font-family: inherit;
-      color: var(--c-black);
-      background: var(--c-gray-light);
-      border: 1px solid var(--c-gray-border);
+      padding: 0 40px 0 38px;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #0F172A;
+      background: #F8FAFC;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 7px;
       outline: none;
-      transition: border-color 0.15s ease, background 0.15s ease;
+      transition: all 0.15s ease;
     }
 
     .form-input:focus {
-      border-color: var(--c-navy-primary);
-      background: var(--c-white);
-      box-shadow: inset 0 0 0 1px var(--c-navy-primary);
+      background: #FFFFFF;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
 
     .input-toggle-btn {
-      background: var(--c-gray-surface);
-      border: 1px solid var(--c-gray-border);
-      border-left: none;
-      padding: 0 14px;
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      background: transparent;
+      border: none;
+      color: #64748B;
       cursor: pointer;
-      color: var(--c-gray-dark);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s, color 0.15s;
+      border-radius: 0 7px 7px 0;
     }
 
     .input-toggle-btn:hover {
-      background: var(--c-navy-subtle);
-      color: var(--c-navy-primary);
+      color: #0F172A;
     }
 
     .field-error-msg {
       font-size: 11px;
       color: #DC2626;
       font-weight: 700;
-      margin-top: 4px;
+      margin-top: 5px;
       display: none;
     }
 
+    /* Remember Me & Auxiliary Options */
+    .remember-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+
+    .remember-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #475569;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remember-label input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: #2563EB;
+      cursor: pointer;
+    }
+
+    /* Executive Submit Button */
     .btn-login {
       width: 100%;
       height: 46px;
-      background: var(--c-navy-primary);
-      color: var(--c-white);
-      border: 1px solid var(--c-navy-dark);
-      font-size: 13px;
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      color: #FFFFFF;
+      border: 1px solid #0F172A;
+      border-radius: 7px;
+      font-family: var(--font-display);
+      font-size: 12.5px;
       font-weight: 900;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -178,17 +408,20 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin-top: 10px;
-      transition: background 0.15s, transform 0.05s;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+      transition: all 0.15s ease;
     }
 
     .btn-login:hover:not(:disabled) {
-      background: var(--c-navy-light);
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      border-color: #1D4ED8;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
     }
 
     .btn-login:active:not(:disabled) {
-      background: var(--c-navy-dark);
-      transform: scale(0.99);
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     .btn-login:disabled {
@@ -196,60 +429,226 @@
       cursor: not-allowed;
     }
 
-    .login-footer-info {
-      margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px solid var(--c-gray-border);
-      text-align: center;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: var(--c-gray-dark);
-      text-transform: uppercase;
+    /* Spinner */
+    .login-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
     }
 
-    .security-badge {
-      display: inline-flex;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Hardware Passkey Box */
+    .passkey-promo-box {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .passkey-promo-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 10px;
+      background: #EFF6FF;
+      color: #2563EB;
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .passkey-promo-title {
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .passkey-promo-desc {
+      font-size: 11px;
+      color: #64748B;
+      line-height: 1.45;
+    }
+
+    /* Footer Security Block */
+    .login-card-footer {
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid #F1F5F9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748B;
+    }
+
+    .security-stamp {
+      display: flex;
       align-items: center;
       gap: 5px;
-      margin-bottom: 6px;
-      color: var(--c-navy-accent);
-      font-size: 10px;
+      color: #059669;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 9.5px;
+      letter-spacing: 0.5px;
+    }
+
+    .signup-link-wrap {
+      font-weight: 600;
+    }
+
+    .signup-link-wrap a {
+      color: #2563EB;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .signup-link-wrap a:hover {
+      text-decoration: underline;
+    }
+
+    /* Corporate Legal Bottom Footer */
+    .corporate-legal-footer {
+      margin-top: 28px;
+      text-align: center;
+      color: #64748B;
+      font-size: 10.5px;
+      line-height: 1.6;
+    }
+
+    .legal-links {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .legal-links a {
+      color: #94A3B8;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .legal-links a:hover {
+      color: #CBD5E1;
+      text-decoration: underline;
+    }
+
+    /* Modal Help Dialog */
+    .recovery-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+
+    .recovery-modal-overlay.active {
+      display: flex;
+    }
+
+    .recovery-modal-card {
+      background: #FFFFFF;
+      border-radius: 12px;
+      max-width: 420px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
   </style>
 </head>
 <body>
 
-  <div class="login-wrapper">
-    <div class="login-card">
+  <div class="login-container">
+    
+    <!-- Top Executive Brand Crest & Monogram -->
+    <header class="brand-crest-header">
+      <div class="crest-icon-badge">
+        <!-- Official Executive Crest Emblem -->
+        <svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer Shield Contour -->
+          <path d="M18 3L4 9V17C4 25.5 10 32.5 18 35C26 32.5 32 25.5 32 17V9L18 3Z" stroke="#F59E0B" stroke-width="1.8" fill="rgba(245, 158, 11, 0.05)"/>
+          <!-- Inner Monogram ER -->
+          <path d="M11 12H17.5M11 18H16.5M11 24H17.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+          <path d="M11 12V24" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+          <path d="M20 12H23.5C25.5 12 26.5 13.5 26.5 15.5C26.5 17.5 25.5 19 23.5 19H20V12Z" stroke="#F59E0B" stroke-width="2"/>
+          <path d="M23 19L27 24" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 class="brand-corporate-title">Executive Restaurant</h1>
+      <div class="brand-corporate-subtitle">
+        <span>Operations & Attendance Management</span>
+        <span class="badge-branch">Main Hub</span>
+      </div>
+    </header>
+
+    <!-- Main Formal Authentication Card -->
+    <main class="login-card" role="main">
       
-      <!-- Card Header -->
-      <div class="login-header">
-        <div class="login-brand-icon">AR</div>
-        <h1 class="login-title">Executive Register</h1>
-        <p class="login-subtitle">Authorized Manager Access</p>
+      <!-- Top Card Status Header -->
+      <div class="card-top-row">
+        <h2 class="card-heading-title">Manager Access</h2>
+        <div class="telemetry-pill">
+          <span class="pulse-dot"></span>
+          <span>System Online</span>
+        </div>
       </div>
 
       <!-- Feedback Alert Box -->
       <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
 
-      <!-- Dual-Mode Authentication Switcher -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;">
-        <button type="button" id="tab-btn-password" style="padding: 10px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: var(--c-navy-primary); color: #fff; border: 1px solid var(--c-navy-primary); cursor: pointer;">
-          Login with Password
+      <!-- Dual Mode Switcher (Password vs Hardware Passkey) -->
+      <div class="auth-mode-switcher">
+        <button type="button" class="auth-tab-btn active" id="tab-btn-password">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Password
         </button>
-        <button type="button" id="tab-btn-passkey" style="padding: 10px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: var(--c-gray-light); color: var(--c-navy-primary); border: 1px solid var(--c-gray-border); cursor: pointer;">
-          Passkey / Biometrics
+        <button type="button" class="auth-tab-btn" id="tab-btn-passkey">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 18a6 6 0 0 0 6-6"></path>
+          </svg>
+          Biometrics
         </button>
       </div>
 
-      <!-- Option 1: Password Form -->
+      <!-- Mode 1: Standard Password Form -->
       <form id="form-manager-login" novalidate autocomplete="on">
-
+        
         <!-- Email Field -->
         <div class="form-group">
-          <label class="form-label" for="manager-email">Manager Email Address</label>
-          <div class="input-group">
+          <div class="form-label-row">
+            <label class="form-label" for="manager-email">Manager Work Email</label>
+          </div>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </span>
             <input 
               type="email" 
               class="form-input" 
@@ -261,13 +660,22 @@
               spellcheck="false"
             >
           </div>
-          <div class="field-error-msg" id="email-error-msg">Please enter a valid email address.</div>
+          <div class="field-error-msg" id="email-error-msg">Please enter a valid work email address.</div>
         </div>
 
-        <!-- Password Field with Show/Hide -->
+        <!-- Password Field -->
         <div class="form-group">
-          <label class="form-label" for="manager-password">Manager Password</label>
-          <div class="input-group">
+          <div class="form-label-row">
+            <label class="form-label" for="manager-password">Manager Password</label>
+            <span class="form-label-link" id="btn-forgot-password-modal">Forgot password?</span>
+          </div>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
             <input 
               type="password" 
               class="form-input" 
@@ -284,13 +692,11 @@
               title="Show or hide password" 
               aria-label="Show password"
             >
-              <!-- Eye Open Icon (Default) -->
-              <svg id="icon-eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+              <svg id="icon-eye-show" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <!-- Eye Crossed Icon (Hidden initially) -->
-              <svg id="icon-eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" style="display: none;">
+              <svg id="icon-eye-hide" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
@@ -299,10 +705,19 @@
           <div class="field-error-msg" id="password-error-msg">Password is required.</div>
         </div>
 
-        <!-- Submit Button -->
+        <!-- Remember Me Checkbox -->
+        <div class="remember-row">
+          <label class="remember-label">
+            <input type="checkbox" id="check-remember-me" checked>
+            <span>Keep this workstation signed in</span>
+          </label>
+        </div>
+
+        <!-- Submit Button with Spinner -->
         <button type="submit" class="btn-login" id="btn-login-submit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
-            <rect x="3" y="11" width="18" height="11" rx="0" ry="0"></rect>
+          <span class="login-spinner" id="btn-login-spinner"></span>
+          <svg id="btn-login-lock-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
           <span id="btn-login-text">Sign In With Password</span>
@@ -310,28 +725,31 @@
 
       </form>
 
-      <!-- Option 2: Passkey / Biometrics Section -->
+      <!-- Mode 2: Passkey / Hardware Biometrics Section -->
       <div id="section-passkey-login" style="display: none;">
-        <div style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 16px; text-align: center; margin-bottom: 16px;">
-          <!-- Biometric Icon Graphic -->
-          <div style="width: 44px; height: 44px; margin: 0 auto 10px; background: var(--c-navy-primary); color: #fff; display: flex; align-items: center; justify-content: center;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+        <div class="passkey-promo-box">
+          <div class="passkey-promo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path>
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M12 18a6 6 0 0 0 6-6"></path>
             </svg>
           </div>
-          <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
-            Hardware Biometric Authentication
-          </div>
-          <div style="font-size: 11px; color: var(--c-gray-dark); line-height: 1.4;">
-            Use your fingerprint, Face ID, Windows Hello, or device screen lock to sign in securely. Biometrics never leave your device.
+          <div class="passkey-promo-title">FIDO2 / WebAuthn Biometrics</div>
+          <div class="passkey-promo-desc">
+            Sign in instantaneously using Windows Hello, Apple Face ID/Touch ID, or your device security key.
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="passkey-email">Manager Email (Optional if discoverable)</label>
-          <div class="input-group">
+          <label class="form-label" for="passkey-email">Manager Email (Optional if pre-registered)</label>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </span>
             <input 
               type="email" 
               class="form-input" 
@@ -343,35 +761,72 @@
           </div>
         </div>
 
-        <button type="button" class="btn-login" id="btn-passkey-login" style="background: var(--c-navy-dark);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+        <button type="button" class="btn-login" id="btn-passkey-login" style="background: linear-gradient(135deg, #1E3A8A 0%, #172554 100%);">
+          <span class="login-spinner" id="btn-passkey-spinner"></span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path>
             <circle cx="12" cy="12" r="3"></circle>
           </svg>
-          <span id="btn-passkey-text">Sign In with Passkey / Biometrics</span>
+          <span id="btn-passkey-text">Authenticate With Biometrics</span>
         </button>
 
-        <div id="passkey-unsupported-msg" style="display: none; margin-top: 12px; font-size: 11px; color: #991B1B; font-weight: 700; background: #FEE2E2; padding: 10px; border-left: 3px solid #DC2626;">
-          WebAuthn / Passkeys are not supported in this browser or context. Please use password login above.
+        <div id="passkey-unsupported-msg" style="display: none; margin-top: 12px; font-size: 11px; color: #991B1B; font-weight: 700; background: #FEE2E2; padding: 10px; border-left: 3px solid #DC2626; border-radius: 4px;">
+          Hardware Passkeys are not supported on this device/browser context. Please use standard password sign in.
         </div>
       </div>
 
-      <!-- Switch to Sign Up -->
-      <div style="margin-top: 18px; text-align: center; font-size: 12px; font-weight: 700; color: var(--c-gray-dark);">
-        Need a manager account? <a href="/signup.html" style="color: var(--c-navy-accent); font-weight: 800; text-decoration: none; border-bottom: 1px solid var(--c-navy-accent); margin-left: 4px;">Register here</a>
-      </div>
-
-      <!-- Security Notice Footer -->
-      <div class="login-footer-info">
-        <div class="security-badge">
+      <!-- Card Bottom Auxiliary Info -->
+      <div class="login-card-footer">
+        <div class="security-stamp">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
-          Encrypted Authentication
+          256-Bit SSL/TLS
         </div>
-        <div>Strictly For Authorized Management Only</div>
+        <div class="signup-link-wrap">
+          New Manager? <a href="/signup.html">Register Account</a>
+        </div>
       </div>
 
+    </main>
+
+    <!-- Formal Legal Corporate Footer -->
+    <footer class="corporate-legal-footer">
+      <div>&copy; 2026 Executive Restaurant &amp; Hospitality Operations Ltd. All Rights Reserved.</div>
+      <div>Strictly For Authorized Management &amp; Operational Supervisory Staff Only</div>
+      <div class="legal-links">
+        <a href="#privacy" id="link-privacy">Privacy Policy</a>
+        <span>&bull;</span>
+        <a href="#terms" id="link-terms">Terms of Access</a>
+        <span>&bull;</span>
+        <a href="#support" id="link-support">IT Helpdesk</a>
+        <span>&bull;</span>
+        <span>Version 3.2 Enterprise</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Interactive Password Recovery / IT Support Modal -->
+  <div class="recovery-modal-overlay" id="modal-password-recovery">
+    <div class="recovery-modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #E2E8F0;">
+        <h3 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: #0F172A; text-transform: uppercase;">
+          Manager Password Recovery
+        </h3>
+        <button type="button" id="btn-close-recovery" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+      <div style="font-size: 12px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
+        To maintain corporate audit compliance, manager passwords can be reset via the system administrator or through your registered corporate email.
+      </div>
+      <div style="background: #F8FAFC; border: 1px solid #CBD5E1; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 11.5px;">
+        <div style="font-weight: 800; color: #1E293B; margin-bottom: 4px;">Default Test Credentials:</div>
+        <div>Email: <strong style="color: #2563EB;">manager@executive.com</strong></div>
+        <div>Password: <strong style="color: #2563EB;">Manager123!</strong></div>
+      </div>
+      <button type="button" class="btn-login" id="btn-dismiss-recovery" style="height: 38px; font-size: 11px;">
+        Return to Login
+      </button>
     </div>
   </div>
 
@@ -390,6 +845,24 @@
       const passwordError = document.getElementById('password-error-msg');
       const btnSubmit = document.getElementById('btn-login-submit');
       const btnText = document.getElementById('btn-login-text');
+      const spinner = document.getElementById('btn-login-spinner');
+      const lockIcon = document.getElementById('btn-login-lock-icon');
+
+      // Password recovery modal controls
+      const btnForgot = document.getElementById('btn-forgot-password-modal');
+      const modalRecovery = document.getElementById('modal-password-recovery');
+      const btnCloseRecovery = document.getElementById('btn-close-recovery');
+      const btnDismissRecovery = document.getElementById('btn-dismiss-recovery');
+
+      if (btnForgot && modalRecovery) {
+        btnForgot.addEventListener('click', () => modalRecovery.classList.add('active'));
+      }
+      if (btnCloseRecovery) {
+        btnCloseRecovery.addEventListener('click', () => modalRecovery.classList.remove('active'));
+      }
+      if (btnDismissRecovery) {
+        btnDismissRecovery.addEventListener('click', () => modalRecovery.classList.remove('active'));
+      }
 
       // Tab Switching between Password and Passkey
       const tabBtnPassword = document.getElementById('tab-btn-password');
@@ -398,6 +871,7 @@
       const passkeyEmail = document.getElementById('passkey-email');
       const btnPasskeyLogin = document.getElementById('btn-passkey-login');
       const btnPasskeyText = document.getElementById('btn-passkey-text');
+      const passkeySpinner = document.getElementById('btn-passkey-spinner');
       const passkeyUnsupportedMsg = document.getElementById('passkey-unsupported-msg');
 
       function setAuthMode(mode) {
@@ -405,28 +879,18 @@
         if (mode === 'password') {
           form.style.display = 'block';
           sectionPasskey.style.display = 'none';
-          tabBtnPassword.style.background = 'var(--c-navy-primary)';
-          tabBtnPassword.style.color = '#fff';
-          tabBtnPassword.style.borderColor = 'var(--c-navy-primary)';
-          tabBtnPasskey.style.background = 'var(--c-gray-light)';
-          tabBtnPasskey.style.color = 'var(--c-navy-primary)';
-          tabBtnPasskey.style.borderColor = 'var(--c-gray-border)';
+          tabBtnPassword.classList.add('active');
+          tabBtnPasskey.classList.remove('active');
         } else {
           form.style.display = 'none';
           sectionPasskey.style.display = 'block';
-          tabBtnPasskey.style.background = 'var(--c-navy-primary)';
-          tabBtnPasskey.style.color = '#fff';
-          tabBtnPasskey.style.borderColor = 'var(--c-navy-primary)';
-          tabBtnPassword.style.background = 'var(--c-gray-light)';
-          tabBtnPassword.style.color = 'var(--c-navy-primary)';
-          tabBtnPassword.style.borderColor = 'var(--c-gray-border)';
+          tabBtnPasskey.classList.add('active');
+          tabBtnPassword.classList.remove('active');
 
-          // Pre-fill email from password input if entered
           if (inputEmail.value && !passkeyEmail.value) {
             passkeyEmail.value = inputEmail.value;
           }
 
-          // Check if browser supports WebAuthn
           if (!window.SimpleWebAuthnBrowser || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
             if (passkeyUnsupportedMsg) passkeyUnsupportedMsg.style.display = 'block';
             if (btnPasskeyLogin) btnPasskeyLogin.disabled = true;
@@ -437,77 +901,75 @@
       if (tabBtnPassword) tabBtnPassword.addEventListener('click', () => setAuthMode('password'));
       if (tabBtnPasskey) tabBtnPasskey.addEventListener('click', () => setAuthMode('passkey'));
 
-      // Passkey / Biometrics Login Action
+      // Passkey Login Action
       if (btnPasskeyLogin) {
         btnPasskeyLogin.addEventListener('click', async function () {
           clearFeedback();
 
           if (!window.SimpleWebAuthnBrowser || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
-            showFeedback('Passkeys are not supported on this device/browser. Please use password login.', 'error');
+            showFeedback('Passkeys are not supported on this device/browser. Please use standard password sign in.', 'error');
             return;
           }
 
           btnPasskeyLogin.disabled = true;
-          btnPasskeyText.textContent = 'AUTHENTICATING WITH DEVICE...';
+          if (passkeySpinner) passkeySpinner.style.display = 'inline-block';
+          btnPasskeyText.textContent = 'Communicating with Authenticator...';
 
           try {
-            const email = (passkeyEmail.value || '').trim();
-
-            // 1. Get Authentication Challenge from Server
-            const optRes = await fetch('/api/auth/passkey/login-options', {
+            const email = (passkeyEmail && passkeyEmail.value) ? passkeyEmail.value.trim() : '';
+            const optsRes = await fetch('/api/auth/passkey/login-options', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email })
             });
 
-            const optData = await optRes.json();
-            if (!optRes.ok || !optData.success) {
-              showFeedback(optData.message || 'Could not initiate passkey authentication.', 'error');
+            const optsData = await optsRes.json();
+            if (!optsRes.ok || !optsData.success) {
+              showFeedback(optsData.message || 'Could not initiate passkey authentication.', 'error');
               return;
             }
 
-            // 2. Trigger native device WebAuthn prompt (Fingerprint / Face / PIN)
-            let authResp;
+            let asseResp;
             try {
-              authResp = await SimpleWebAuthnBrowser.startAuthentication(optData.options);
-            } catch (err) {
-              console.warn('WebAuthn prompt error:', err);
-              if (err.name === 'NotAllowedError') {
-                showFeedback('Biometric prompt was cancelled or timed out.', 'info');
+              asseResp = await SimpleWebAuthnBrowser.startAuthentication(optsData.options);
+            } catch (authErr) {
+              if (authErr.name === 'NotAllowedError') {
+                showFeedback('Biometric authentication cancelled by user.', 'error');
               } else {
-                showFeedback('Device biometric authentication error: ' + (err.message || 'Verification failed'), 'error');
+                showFeedback('Hardware passkey verification failed: ' + authErr.message, 'error');
               }
               return;
             }
 
-            // 3. Send cryptographic signature to server for verification
+            btnPasskeyText.textContent = 'Verifying Signature...';
+
             const verifyRes = await fetch('/api/auth/passkey/login-verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ response: authResp })
+              body: JSON.stringify(asseResp)
             });
 
             const verifyData = await verifyRes.json();
             if (verifyRes.ok && verifyData.success) {
-              showFeedback('Biometric verification successful! Accessing dashboard...', 'success');
+              showFeedback('Biometrics verified! Launching Executive Dashboard...', 'success');
               setTimeout(() => {
-                window.location.replace(verifyData.redirect || '/');
+                window.location.replace('/');
               }, 500);
             } else {
-              showFeedback(verifyData.message || 'Passkey authentication failed.', 'error');
+              showFeedback(verifyData.message || 'Passkey verification failed.', 'error');
             }
-
           } catch (err) {
             console.error('Passkey login exception:', err);
             showFeedback('Network error during passkey authentication.', 'error');
           } finally {
             btnPasskeyLogin.disabled = false;
-            btnPasskeyText.textContent = 'Sign In with Passkey / Biometrics';
+            if (passkeySpinner) passkeySpinner.style.display = 'none';
+            btnPasskeyText.textContent = 'Authenticate With Biometrics';
           }
         });
       }
 
-      // Check URL parameters for redirected reasons (e.g. ?expired=1 or ?loggedout=1 or ?registered=1)
+      // Check URL parameters for redirected reasons
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('registered') === '1') {
         showFeedback('Manager account created successfully! Please sign in with your credentials.', 'success');
@@ -566,18 +1028,16 @@
 
         let hasError = false;
 
-        // Validation 1: Email empty or format
         if (!email) {
-          emailError.textContent = 'Email address is required.';
+          emailError.textContent = 'Work email address is required.';
           emailError.style.display = 'block';
           hasError = true;
         } else if (!isValidEmail(email)) {
-          emailError.textContent = 'Please enter a valid email address (e.g. name@domain.com).';
+          emailError.textContent = 'Please enter a valid email address (e.g. name@executive.com).';
           emailError.style.display = 'block';
           hasError = true;
         }
 
-        // Validation 2: Password empty
         if (!password) {
           passwordError.textContent = 'Password is required.';
           passwordError.style.display = 'block';
@@ -586,8 +1046,10 @@
 
         if (hasError) return;
 
-        // UI Loading State
+        // UI Loading State with animation
         btnSubmit.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (lockIcon) lockIcon.style.display = 'none';
         btnText.textContent = 'AUTHENTICATING...';
 
         try {
@@ -602,13 +1064,12 @@
           const data = await response.json();
 
           if (response.ok && data.success) {
-            showFeedback('Access granted. Initializing manager dashboard...', 'success');
+            showFeedback('Access granted. Initializing manager console...', 'success');
             setTimeout(() => {
               window.location.replace('/');
-            }, 600);
+            }, 500);
           } else {
-            // Standard generic message (never reveals if email exists)
-            const errorMsg = data.message || 'Invalid email or password.';
+            const errorMsg = data.message || 'Invalid email or password credentials.';
             showFeedback(errorMsg, 'error');
             inputPassword.value = '';
             inputPassword.focus();
@@ -617,7 +1078,9 @@
           showFeedback('Network error communicating with authentication service. Check server connection.', 'error');
         } finally {
           btnSubmit.disabled = false;
-          btnText.textContent = 'Sign In To Register';
+          if (spinner) spinner.style.display = 'none';
+          if (lockIcon) lockIcon.style.display = 'inline-block';
+          btnText.textContent = 'Sign In With Password';
         }
       });
 

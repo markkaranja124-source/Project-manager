@@ -236,7 +236,48 @@ function sendViaMeta({ to, body }) {
   });
 }
 
+/**
+ * Send Direct Text Message via WhatsApp API (Twilio / Meta)
+ * @param {Object} params
+ * @param {string} params.recipientPhone - Target WhatsApp phone number
+ * @param {string} params.messageText - Plaintext / formatted WhatsApp message body
+ */
+async function sendDirectWhatsAppMessage({ recipientPhone, messageText }) {
+  const targetPhone = cleanPhoneNumber(recipientPhone || process.env.MANAGER_WHATSAPP_NUMBER);
+  const provider = (process.env.WHATSAPP_PROVIDER || 'TWILIO').toUpperCase();
+  const isEnabled = process.env.WHATSAPP_ENABLED === 'true';
+
+  if (!isEnabled || !targetPhone) {
+    const reason = !isEnabled
+      ? 'WhatsApp delivery is disabled in configuration.'
+      : 'Recipient WhatsApp phone number is not specified.';
+    return { success: false, status: 'DISABLED', error: reason };
+  }
+
+  try {
+    if (provider === 'TWILIO') {
+      const res = await sendViaTwilio({
+        to: targetPhone,
+        body: messageText
+      });
+      return res;
+    } else if (provider === 'META') {
+      const res = await sendViaMeta({
+        to: targetPhone,
+        body: messageText
+      });
+      return res;
+    } else {
+      return { success: false, error: `Unsupported WhatsApp provider: ${provider}` };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = {
   sendReportNotification,
+  sendDirectWhatsAppMessage,
   cleanPhoneNumber
 };
+

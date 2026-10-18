@@ -9,7 +9,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css?v=2.1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=2.5">
   <script src="/js/simplewebauthn-browser.js"></script>
 </head>
 <body>
@@ -20,17 +23,40 @@
     <!-- Top Executive Header -->
     <header class="app-header">
       <div class="header-brand">
-        <div class="brand-icon-box" id="manager-brand-avatar" title="Manager Photo / Initials (Click to change)" role="button" tabindex="0" aria-label="Manager Profile Photo">
+        <!-- Corporate Gold & Navy Crest Emblem -->
+        <div class="brand-crest-mini" title="Executive Hospitality Group Crest">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#0F172A" stroke="#F59E0B" stroke-width="1.5"/>
+            <path d="M8 10h8M8 14h5" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <!-- Manager Photo / Initials Box -->
+        <div class="brand-icon-box" id="manager-brand-avatar" title="Manager Photo / Initials (Click for menu)" role="button" tabindex="0" aria-label="Manager Profile Photo">
           <span id="manager-initials-text">AR</span>
           <img id="manager-avatar-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
           <input type="file" id="manager-avatar-file-input" accept="image/*" style="display: none;">
         </div>
+
         <div class="brand-titles">
           <span class="brand-title" id="display-business-name">Daily Attendance Register</span>
-          <span class="brand-subtitle" id="manager-session-indicator">Manager: Authenticated</span>
+          <!-- Interactive Manager Session Pill -->
+          <button type="button" class="manager-session-pill" id="btn-manager-session-menu" title="Click to view Manager Profile, Shift Handover & Security">
+            <span class="manager-session-dot"></span>
+            <span id="manager-session-indicator">Duty Manager: Mark</span>
+            <span class="manager-role-tag">General Manager</span>
+            <svg class="pill-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
         </div>
       </div>
+
       <div class="header-actions">
+        <!-- Live Real-Time Telemetry Badge -->
+        <div class="header-telemetry-badge" title="Enterprise Database Synchronized & 256-Bit SSL/TLS Encrypted">
+          <span class="telemetry-live-dot"></span>
+          <span>SSL · Live</span>
+        </div>
+
         <div class="header-badge-wrapper">
           <button type="button" class="icon-btn" id="btn-reminders-open" title="Manager Reminders & Tasks" aria-label="Reminders">
             <!-- Bell Vector Icon -->
@@ -41,7 +67,7 @@
           </button>
           <span class="header-badge" id="reminders-badge-count">2</span>
         </div>
-        <button type="button" class="icon-btn" id="btn-print-quick" title="Print Register" aria-label="Print Register">
+        <button type="button" class="icon-btn" id="btn-print-quick" title="Print Official Register Sheet" aria-label="Print Register">
           <!-- Printer Vector Icon -->
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
             <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -73,6 +99,83 @@
         </button>
       </div>
     </header>
+
+    <!-- Executive Manager Session Dropdown -->
+    <div class="manager-profile-dropdown" id="manager-profile-dropdown" style="display: none;">
+      <div class="mp-dropdown-header">
+        <div class="mp-dropdown-avatar" id="mp-dropdown-avatar-circle">
+          <span id="mp-dropdown-initials">AR</span>
+          <img id="mp-dropdown-avatar-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="mp-dropdown-user-info">
+          <div class="mp-dropdown-name" id="mp-dropdown-name">Mark Kamau</div>
+          <div class="mp-dropdown-email" id="mp-dropdown-email">manager@executive.com</div>
+          <div class="mp-dropdown-role">
+            <span class="badge-role">Duty General Manager</span>
+            <span class="badge-auth">PIN & Biometric</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mp-dropdown-telemetry">
+        <div class="mp-telemetry-item">
+          <span class="mp-tel-label">Workstation</span>
+          <span class="mp-tel-val">TERMINAL-MGR-01</span>
+        </div>
+        <div class="mp-telemetry-item">
+          <span class="mp-tel-label">Active Shift</span>
+          <span class="mp-tel-val" id="mp-tel-shift">Morning Shift</span>
+        </div>
+        <div class="mp-telemetry-item">
+          <span class="mp-tel-label">Security</span>
+          <span class="mp-tel-val" style="color: #10B981;">TLS 1.3 · 256-Bit</span>
+        </div>
+      </div>
+
+      <div class="mp-dropdown-menu">
+        <button type="button" class="mp-menu-item" id="btn-dropdown-handover">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <div class="mp-menu-text">
+            <span class="mp-menu-title">Shift Handover & Certification</span>
+            <span class="mp-menu-desc">Generate official signed duty audit</span>
+          </div>
+        </button>
+
+        <button type="button" class="mp-menu-item" id="btn-dropdown-print">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <div class="mp-menu-text">
+            <span class="mp-menu-title">Print Official Roster Sheet</span>
+            <span class="mp-menu-desc">Physical paper ledger with sign-off blocks</span>
+          </div>
+        </button>
+
+        <button type="button" class="mp-menu-item" id="btn-dropdown-passkeys">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <div class="mp-menu-text">
+            <span class="mp-menu-title">Biometric Passkey Setup</span>
+            <span class="mp-menu-desc">Register Touch ID / Windows Hello</span>
+          </div>
+        </button>
+
+        <button type="button" class="mp-menu-item" id="btn-dropdown-settings">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+          <div class="mp-menu-text">
+            <span class="mp-menu-title">System Settings & Backups</span>
+            <span class="mp-menu-desc">Database exports & configurations</span>
+          </div>
+        </button>
+
+        <div class="mp-menu-divider"></div>
+
+        <button type="button" class="mp-menu-item mp-menu-logout" id="btn-dropdown-logout">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <div class="mp-menu-text">
+            <span class="mp-menu-title">Lock Workstation & Sign Out</span>
+            <span class="mp-menu-desc">Terminate active session token</span>
+          </div>
+        </button>
+      </div>
+    </div>
 
     <!-- Scrollable Main View Area -->
     <main class="app-main">
@@ -237,17 +340,23 @@
 
 
       <!-- ========================================================
-           VIEW 3: END-OF-MONTH ABSENTEE REPORT
+           VIEW 3: WAITER ATTENDANCE SUMMARY & ABSENTEE AUDIT
            ======================================================== -->
       <section class="view-section" id="view-absentee">
         
-        <div class="section-box">
-          <div class="section-box-header">
-            <span class="section-title">End-of-Month Absenteeism Audit</span>
+        <div class="section-box" style="margin-bottom: 12px;">
+          <div class="section-box-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span class="section-title">Waiter Attendance Summary & Roster Audit</span>
+            <span id="summary-active-period-label" style="font-size: 11px; font-weight: 700; color: var(--c-navy-primary);"></span>
           </div>
           <div class="section-box-body">
-            <div class="filter-bar" style="margin-bottom: 8px; padding: 0; border: none;">
-              <select class="select-control" id="select-month-absentee" aria-label="Select Report Month">
+            <!-- Filter Bar: Period, Scope & Shift -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+              <select class="select-control" id="select-summary-scope" style="max-width: 130px; font-weight: 700;" aria-label="Summary Scope">
+                <option value="MONTH" selected>Monthly View</option>
+                <option value="WEEK">Current Week</option>
+              </select>
+              <select class="select-control" id="select-month-absentee" style="flex: 1;" aria-label="Select Report Month">
                 <option value="0">January</option>
                 <option value="1">February</option>
                 <option value="2">March</option>
@@ -261,20 +370,58 @@
                 <option value="10">November</option>
                 <option value="11">December</option>
               </select>
-              <select class="select-control" id="select-year-absentee" aria-label="Select Report Year" style="max-width: 100px;">
+              <select class="select-control" id="select-year-absentee" style="max-width: 90px;" aria-label="Select Report Year">
                 <option value="2025">2025</option>
                 <option value="2026" selected>2026</option>
                 <option value="2027">2027</option>
               </select>
+              <select class="select-control" id="select-summary-shift-filter" style="max-width: 120px;" aria-label="Filter Shift">
+                <option value="ALL">All Shifts</option>
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+                <option value="Night">Night</option>
+                <option value="Double">Double</option>
+              </select>
             </div>
-            <button type="button" class="btn-primary" id="btn-print-absentee-report" style="width: 100%;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-              </svg>
-              Print End-of-Month Register Sheet
-            </button>
+
+            <!-- Download Action Buttons -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+              <button type="button" class="btn-save-records" id="btn-download-attendance-csv" style="padding: 9px 14px; font-size: 11px; font-weight: 800;" title="Download Excel-compatible CSV summary sheet">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download CSV / Excel</span>
+              </button>
+              <button type="button" class="btn-primary" id="btn-print-absentee-report" style="padding: 9px 14px; font-size: 11px;" title="Print official attendance audit sheet">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                <span>Print / PDF Sheet</span>
+              </button>
+            </div>
+
+            <!-- Roster Attendance Summary Table Container -->
+            <div class="matrix-scroll-wrapper" id="attendance-summary-table-container" style="max-height: 440px; overflow: auto; border: 1px solid var(--c-gray-border); margin-bottom: 10px;">
+              <!-- Dynamically populated attendance summary table -->
+            </div>
+
+            <p style="font-size: 10px; color: var(--c-gray-dark); margin: 0; text-transform: uppercase; font-weight: 700;">
+              Legend: 
+              <span style="color: #065F46;">[P] Present</span> | 
+              <span style="color: #991B1B;">[A] Absent</span> | 
+              <span style="color: #92400E;">[L] Late</span> | 
+              <span style="color: #475569;">[O] Off</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="section-box" style="margin-bottom: 8px;">
+          <div class="section-box-header">
+            <span class="section-title">Individual Absence Logs & Reason Remarks</span>
           </div>
         </div>
 
@@ -290,13 +437,43 @@
            ======================================================== -->
       <section class="view-section" id="view-staff">
         
-        <div class="toolbar-strip">
+        <div class="toolbar-strip" style="flex-wrap: wrap; gap: 8px;">
           <button type="button" class="btn-primary" id="btn-add-staff-modal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
             Add New Waiter
+          </button>
+          <button type="button" class="btn-secondary" id="btn-view-week-attendance" title="View Weekly Attendance Register">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            View Week's Attendance
+          </button>
+          <button type="button" class="btn-secondary" id="btn-view-month-attendance" title="View Monthly Attendance Register">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+              <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path>
+            </svg>
+            View Monthly Attendance
+          </button>
+          <button type="button" class="btn-secondary" id="btn-view-summary-table" title="View Full Waiter Attendance Summary Sheet & Downloads">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            Summary List & Downloads
           </button>
         </div>
 
@@ -539,6 +716,13 @@
                   <option value="Double">Double Shift (Full Day)</option>
                 </select>
               </div>
+
+              <button type="button" class="fp-btn-whatsapp" id="btn-open-wa-floorplan" title="Send Floor Plan to Supervisor via WhatsApp">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                <span>Send to Supervisor (WhatsApp)</span>
+              </button>
             </div>
           </div>
 
@@ -547,8 +731,25 @@
             <!-- Left: Interactive Vector Blueprint Canvas -->
             <div class="fp-blueprint-area">
               <div class="fp-zoom-strip">
-                <span>Click any table or booth to assign or change waiter</span>
-                <span id="fp-summary-stats">16 Stations Active</span>
+                <div class="fp-strip-left">
+                  <span class="fp-hint-text">Click any table or station to assign waiter</span>
+                  <div class="fp-section-filters" id="fp-section-filters">
+                    <button type="button" class="fp-filter-btn active" data-filter="all">All</button>
+                    <button type="button" class="fp-filter-btn" data-filter="left">Left Dining (18)</button>
+                    <button type="button" class="fp-filter-btn" data-filter="right">Right Dining (18)</button>
+                    <button type="button" class="fp-filter-btn" data-filter="upper">Upper Tier (10)</button>
+                    <button type="button" class="fp-filter-btn" data-filter="stations">Stations (15)</button>
+                  </div>
+                </div>
+                <div class="fp-strip-right">
+                  <div class="fp-zoom-controls">
+                    <button type="button" class="fp-zoom-btn" id="fp-zoom-out" title="Zoom Out" aria-label="Zoom Out">−</button>
+                    <span id="fp-zoom-level">100%</span>
+                    <button type="button" class="fp-zoom-btn" id="fp-zoom-in" title="Zoom In" aria-label="Zoom In">+</button>
+                    <button type="button" class="fp-zoom-btn" id="fp-zoom-reset" title="Fit to View">Fit</button>
+                  </div>
+                  <span id="fp-summary-stats">0 / 61 Assigned</span>
+                </div>
               </div>
               
               <div class="fp-blueprint-card" id="floorplan-blueprint-card">
@@ -559,6 +760,9 @@
             <!-- Right: Employees & Status Legend Sidebar -->
             <aside class="fp-sidebar" id="floorplan-sidebar">
               <div class="fp-sidebar-header">Employees</div>
+              <div class="fp-sidebar-search">
+                <input type="text" id="fp-staff-search" placeholder="Filter staff by name or code..." aria-label="Search employees">
+              </div>
               <ul class="fp-employees-list" id="fp-employees-list">
                 <!-- Dynamically populated employees -->
               </ul>
@@ -606,6 +810,17 @@
 
     </main>
 
+    <!-- Enterprise Workstation Footer -->
+    <footer class="app-enterprise-footer">
+      <div class="aef-left">
+        <span class="aef-brand">Executive Hospitality Group &bull; Operations Command v3.2</span>
+        <span class="aef-sub">Workstation: POS-MGR-01 &bull; Shift Security: 256-Bit SSL/TLS</span>
+      </div>
+      <div class="aef-right">
+        <span class="aef-badge"><span class="aef-dot"></span> Cluster Online</span>
+      </div>
+    </footer>
+
     <!-- Bottom Navigation Bar (Phone Touch Bar) -->
     <nav class="bottom-nav" id="bottom-nav">
       <button type="button" class="nav-tab active" data-target="view-daily">
@@ -648,7 +863,7 @@
           <line x1="9" y1="15" x2="15" y2="15"></line>
           <line x1="9" y1="11" x2="15" y2="11"></line>
         </svg>
-        <span class="nav-tab-label">Absentee</span>
+        <span class="nav-tab-label">Summary</span>
       </button>
 
       <button type="button" class="nav-tab" data-target="view-staff">
@@ -685,13 +900,21 @@
        ======================================================== -->
   <div class="print-sheet-container" id="print-sheet-container">
     <div class="print-header">
-      <div>
-        <div class="print-org-name" id="print-org-name-text">RESTAURANT MANAGEMENT</div>
-        <div class="print-report-title" id="print-period-title">MONTHLY WAITER ATTENDANCE REGISTER</div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 44px; height: 44px; border: 1.5px solid #0A2540; background: #0A2540; color: #F59E0B; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; letter-spacing: 1px;">
+          ER
+        </div>
+        <div>
+          <div class="print-org-name" id="print-org-name-text">EXECUTIVE RESTAURANT & HOSPITALITY GROUP</div>
+          <div class="print-report-title" id="print-period-title">OFFICIAL DUTY ROSTER & ATTENDANCE REGISTER</div>
+          <div style="font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px;">DOCUMENT CONTROL ID: ER-REG-2026 &bull; CLASSIFICATION: CORPORATE INTERNAL</div>
+        </div>
       </div>
       <div class="print-meta-box">
         <div><strong>REPORT GENERATED:</strong> <span id="print-date-generated"></span></div>
-        <div><strong>BRANCH / DEPT:</strong> Service Floor Operations</div>
+        <div><strong>DUTY MANAGER:</strong> <span id="print-manager-on-duty">Duty Manager</span></div>
+        <div><strong>BRANCH / DEPT:</strong> Food & Beverage &bull; Floor Service</div>
+        <div><strong>WORKSTATION ID:</strong> TERMINAL-01 &bull; ISO-9001 COMPLIANT</div>
       </div>
     </div>
 
@@ -721,15 +944,27 @@
     <!-- Section 3: Official Verification & Sign-off -->
     <div class="print-signoff-section">
       <div class="signoff-box">
-        <div><strong>MANAGER / SUPERVISOR SIGN-OFF</strong></div>
+        <div><strong>DUTY MANAGER SIGN-OFF</strong></div>
+        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">I hereby verify that staff attendance and station allocations are verified.</div>
         <div class="signoff-line"></div>
-        <div style="margin-top: 6px;">Signature & Date</div>
+        <div style="margin-top: 6px; display: flex; justify-content: space-between;">
+          <span>Signature: __________________________</span>
+          <span>Date: ________________</span>
+        </div>
       </div>
       <div class="signoff-box">
-        <div><strong>GENERAL MANAGER / AUDIT VERIFICATION</strong></div>
+        <div><strong>GENERAL SUPERVISOR / AUDIT VERIFICATION</strong></div>
+        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">Corporate administrative verification and payroll audit.</div>
         <div class="signoff-line"></div>
-        <div style="margin-top: 6px;">Signature & Date</div>
+        <div style="margin-top: 6px; display: flex; justify-content: space-between;">
+          <span>Signature: __________________________</span>
+          <span>Date: ________________</span>
+        </div>
       </div>
+    </div>
+    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #64748B; border-top: 1px solid #CCCCCC; padding-top: 8px;">
+      <span>Executive Hospitality Systems v3.2 &bull; Confidential Official Register</span>
+      <span>Page 1 of 1 &bull; Certified Authentic Roster Record</span>
     </div>
   </div>
 
@@ -1041,42 +1276,96 @@
         <button type="button" class="btn-danger" id="btn-dismiss-alarm-modal" style="width: 100%; padding: 10px; font-size: 12px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
           DISMISS REMINDER
         </button>
-  <!-- Modal 5: Quick Table Assignment -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Quick Table & Row Assignment -->
   <div class="modal-overlay" id="modal-table-assign">
-    <div class="modal-content" style="max-width: 420px;">
-      <div class="modal-header">
-        <span class="modal-title" id="modal-table-assign-title">ASSIGN WAITER TO TABLE</span>
-        <button type="button" class="icon-btn btn-modal-close" id="btn-close-table-assign" aria-label="Close">
+    <div class="modal-content" style="max-width: 480px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: var(--c-navy-primary); color: #FFFFFF;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span class="modal-title" id="modal-table-assign-title" style="color: #FFFFFF;">ASSIGN WAITER TO SECTION</span>
+        </div>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-table-assign" aria-label="Close" style="color: #FFFFFF;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
-      <div class="modal-body">
+
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 14px;">
         <input type="hidden" id="assign-modal-station-id" value="">
-        <div style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 10px 12px; margin-bottom: 14px;">
-          <div style="font-size: 14px; font-weight: 800; color: var(--c-navy-primary);" id="assign-modal-station-name">Table 1</div>
-          <div style="font-size: 11px; color: var(--c-gray-dark);" id="assign-modal-section-info">Main Dining · Capacity 4</div>
+
+        <!-- Detected Row / Section Banner -->
+        <div class="assign-section-banner" id="assign-section-banner" style="background: #F0F9FF; border: 1.5px solid #0284C7; border-radius: 4px; padding: 10px 12px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #0369A1; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
+                ⚡ Automatic Row / Zone Detection
+              </span>
+              <div style="font-size: 14px; font-weight: 900; color: #0C4A6E;" id="assign-modal-station-name">Table 1</div>
+            </div>
+            <span id="assign-badge-count" style="background: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">6 Tables</span>
+          </div>
+          <div style="font-size: 11.5px; color: #0369A1; margin-top: 4px; font-weight: 600;" id="assign-modal-section-info">
+            Left Dining · Line 1 (Tables 1, 4, 7, 10, 13, 16)
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="select-assign-staff">Assign Waiter from Roster</label>
-          <select class="select-control" id="select-assign-staff" style="width: 100%; padding: 8px; font-size: 12px; border: 1px solid var(--c-gray-border);">
+        <!-- Scope Toggle: Row vs Single Table -->
+        <div class="form-group" id="assign-scope-wrapper" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-size: 11px; font-weight: 800; margin-bottom: 6px;">Assignment Scope</label>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary assign-scope-btn active" id="btn-scope-row" style="flex: 1; font-size: 11.5px; font-weight: 800; padding: 8px; border: 1.5px solid #0284C7; background: #F0F9FF; color: #0369A1;">
+              👥 Entire Row / Section (<span id="scope-row-count">6</span> Tables)
+            </button>
+            <button type="button" class="btn-secondary assign-scope-btn" id="btn-scope-single" style="flex: 1; font-size: 11.5px; font-weight: 700; padding: 8px;">
+              🪑 Only <span id="scope-single-name">Table 1</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Waiter Card Grid (1-Click Assignment) -->
+        <div class="form-group" style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-size: 11px; font-weight: 800; margin: 0;">Click Any Waiter to Assign Instantly</label>
+            <span style="font-size: 10px; color: #0284C7; font-weight: 700;">⚡ 1-Click Assignment</span>
+          </div>
+          
+          <div id="assign-waiter-cards-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; padding-right: 2px;">
+            <!-- Dynamically populated waiter cards -->
+          </div>
+
+          <!-- Native Select Fallback (Hidden for test compatibility) -->
+          <select class="select-control" id="select-assign-staff" style="display: none;">
             <!-- Populated with active staff -->
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="input-assign-notes">Shift Notes / Table Status (Optional)</label>
-          <input type="text" class="form-input" id="input-assign-notes" placeholder="e.g. VIP Reservation at 19:30">
+        <!-- Optional Notes -->
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="input-assign-notes" style="font-size: 10px; color: var(--c-gray-dark);">Shift Notes / Reservation (Optional)</label>
+          <input type="text" class="form-input" id="input-assign-notes" placeholder="e.g. VIP Reservation at 19:30" style="font-size: 11px; padding: 6px 10px;">
         </div>
       </div>
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-        <button type="button" class="btn-danger" id="btn-unassign-table" style="font-size: 11px; padding: 7px 12px;">Clear Assignment</button>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
+        <button type="button" class="btn-danger" id="btn-unassign-table" style="font-size: 11px; padding: 7px 12px; font-weight: 700;">
+          🗑️ Clear / Unassign
+        </button>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn-secondary" id="btn-cancel-table-assign">Cancel</button>
-          <button type="button" class="btn-primary" id="btn-save-table-assign">Save Assignment</button>
+          <button type="button" class="btn-primary" id="btn-save-table-assign" style="font-size: 11px; padding: 7px 14px; font-weight: 800;">
+            Save Assignment
+          </button>
         </div>
       </div>
     </div>
@@ -1112,6 +1401,311 @@
     </div>
   </div>
 
-  <script src="app.js?v=2.1"></script>
+  <!-- Modal: Send Floor Plan to Supervisor via WhatsApp -->
+  <div class="modal-overlay" id="modal-whatsapp-floorplan">
+    <div class="modal-content" style="max-width: 540px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: #075E54; color: #FFFFFF;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          <span class="modal-title" style="color: #FFFFFF;">SEND FLOOR PLAN TO SUPERVISOR (WHATSAPP)</span>
+        </div>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-wa-floorplan" aria-label="Close" style="color: #FFFFFF;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 14px;">
+        <!-- Quick Day Selector Buttons -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button type="button" class="btn-secondary" id="btn-wa-select-tomorrow" style="flex: 1; font-weight: 800; font-size: 11px; padding: 8px; border: 1.5px solid #25D366; background: #F0FDF4; color: #166534;">
+            📅 Tomorrow (Following Day)
+          </button>
+          <button type="button" class="btn-secondary" id="btn-wa-select-today" style="flex: 1; font-weight: 700; font-size: 11px; padding: 8px;">
+            Today's Plan
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="wa-floorplan-date">Roster Date</label>
+            <input type="date" class="form-input" id="wa-floorplan-date">
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="wa-floorplan-shift">Shift</label>
+            <select class="select-control" id="wa-floorplan-shift">
+              <option value="Morning">Morning (8:00 AM - 4:00 PM)</option>
+              <option value="Evening">Evening (4:00 PM - 12:00 AM)</option>
+              <option value="Night">Night (12:00 AM - 8:00 AM)</option>
+              <option value="Double">Double Shift (Full Day)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="wa-supervisor-phone">Supervisor WhatsApp Phone Number</label>
+          <input type="tel" class="form-input" id="wa-supervisor-phone" placeholder="e.g. +254712345678 or 0712345678" style="font-weight: 700;">
+          <span style="font-size: 10px; color: var(--c-gray-dark); margin-top: 2px; display: block;">Saved automatically for next time. Standard or international (+254...) format accepted.</span>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label class="form-label" style="margin: 0;" for="wa-floorplan-preview">Message Preview (Formatted for WhatsApp)</label>
+            <button type="button" class="btn-small btn-secondary" id="btn-wa-copy-text" style="font-size: 10px; padding: 3px 8px;">
+              📋 Copy Text
+            </button>
+          </div>
+          <textarea class="form-input" id="wa-floorplan-preview" rows="11" style="font-family: monospace; font-size: 11px; line-height: 1.4; background: #F8FAFC; resize: vertical;" readonly></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
+        <button type="button" class="btn-secondary" id="btn-cancel-wa-floorplan">Cancel</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-secondary" id="btn-send-wa-api" style="font-size: 11px;">
+            🚀 Send via API
+          </button>
+          <a href="#" target="_blank" class="btn-primary" id="btn-open-wa-direct" style="background: #25D366; border-color: #128C7E; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Open in WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Weekly Attendance Register -->
+  <div class="modal-overlay" id="modal-week-attendance">
+    <div class="modal-content" style="max-width: 760px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span class="modal-title" id="week-modal-title">WEEKLY ATTENDANCE REGISTER</span>
+        </div>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-week-attendance-modal" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 14px;">
+        <!-- Week Navigation Strip -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--c-navy-primary); color: #fff; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--c-black);">
+          <button type="button" class="date-nav-btn" id="btn-prev-week" style="padding: 5px 10px; font-size: 11px;">
+            &larr; Prev Week
+          </button>
+          <div style="text-align: center;">
+            <div id="week-range-label" style="font-size: 13px; font-weight: 800; letter-spacing: 0.5px;">Week</div>
+            <div style="font-size: 9px; color: var(--c-gray-mid); text-transform: uppercase;">Monday &ndash; Sunday Shift Summary</div>
+          </div>
+          <button type="button" class="date-nav-btn" id="btn-next-week" style="padding: 5px 10px; font-size: 11px;">
+            Next Week &rarr;
+          </button>
+        </div>
+
+        <!-- Filter bar in modal -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+          <select id="select-week-staff-filter" class="select-control" style="flex: 1; font-size: 11px; padding: 6px 8px;" aria-label="Filter Employee">
+            <option value="ALL">ALL EMPLOYEES (FULL ROSTER)</option>
+          </select>
+          <button type="button" class="btn-small btn-secondary" id="btn-today-week" style="white-space: nowrap; font-size: 10px; font-weight: 800; padding: 6px 10px;">
+            Current Week
+          </button>
+        </div>
+
+        <!-- Live Shift Metrics for the Week -->
+        <div class="metrics-strip" style="margin-bottom: 12px;" id="week-modal-metrics">
+          <div class="metric-card present">
+            <div class="metric-label">Present</div>
+            <div class="metric-value" id="stat-week-present">0</div>
+          </div>
+          <div class="metric-card absent">
+            <div class="metric-label">Absent</div>
+            <div class="metric-value" id="stat-week-absent">0</div>
+          </div>
+          <div class="metric-card late">
+            <div class="metric-label">Late/Off</div>
+            <div class="metric-value" id="stat-week-other">0</div>
+          </div>
+          <div class="metric-card rate">
+            <div class="metric-label">Turnout</div>
+            <div class="metric-value" id="stat-week-rate">0%</div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="matrix-scroll-wrapper" id="week-attendance-table-container" style="max-height: 420px; overflow: auto; border: 1px solid var(--c-gray-border);">
+          <!-- Dynamically populated weekly matrix table -->
+        </div>
+
+        <p style="font-size: 10px; color: var(--c-gray-dark); margin-top: 8px; text-transform: uppercase; font-weight: 700;">
+          Legend: 
+          <span style="color: var(--c-navy-primary);">[P] Present</span> | 
+          <span style="color: var(--c-status-absent-bg);">[A] Absent</span> | 
+          <span style="color: var(--c-status-late-bg);">[L] Late</span> | 
+          <span style="color: var(--c-status-off-bg);">[O] Off</span>
+        </p>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--c-gray-light); border-top: 1px solid var(--c-gray-border);">
+        <button type="button" class="btn-secondary" id="btn-jump-to-monthly" style="font-size: 11px; padding: 8px 12px;">
+          🗓️ Open Full Monthly Register
+        </button>
+        <button type="button" class="btn-primary" id="btn-print-week-modal" style="font-size: 11px; padding: 8px 14px;">
+          Print Week Register
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 8: Official Shift Handover & Duty Certification -->
+  <div class="modal-overlay" id="modal-shift-handover">
+    <div class="modal-content" style="max-width: 680px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #0A2540 0%, #061527 100%); border-bottom: 2px solid #F59E0B; padding: 14px 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.5"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"></path></svg>
+          </div>
+          <div>
+            <span class="modal-title" style="font-size: 13.5px; font-weight: 800; letter-spacing: 0.8px; color: #FFFFFF; text-transform: uppercase;">OFFICIAL SHIFT HANDOVER & ATTENDANCE CERTIFICATION</span>
+            <div style="font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 0.5px;">EXECUTIVE RESTAURANT & HOSPITALITY GROUP &bull; DOCUMENT REF: <span id="cert-doc-ref">ER-CERT-2026-X89</span></div>
+          </div>
+        </div>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-shift-handover" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 16px;">
+        <!-- Roster Audit Metadata Strip -->
+        <div class="cert-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px;">
+          <div>
+            <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Shift Date</div>
+            <div id="cert-shift-date" style="font-size: 12px; font-weight: 800; color: #0A2540;">Today</div>
+          </div>
+          <div>
+            <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Duty Shift</div>
+            <div id="cert-shift-name" style="font-size: 12px; font-weight: 800; color: #0A2540;">Morning (07:00 - 15:00)</div>
+          </div>
+          <div>
+            <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Certifying Manager</div>
+            <div id="cert-manager-name" style="font-size: 12px; font-weight: 800; color: #0A2540;">Mark Kamau</div>
+          </div>
+          <div>
+            <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Audit Security Status</div>
+            <div style="font-size: 11px; font-weight: 800; color: #059669;">Verified (Database Sync)</div>
+          </div>
+        </div>
+
+        <!-- Attendance Reconciliation Summary -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0A2540; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <span>Staff Attendance Reconciliation</span>
+            <span id="cert-turnout-pill" style="background: #0A2540; color: #fff; font-size: 10px; padding: 2px 6px; font-weight: 800;">Turnout: 0%</span>
+          </div>
+          <div class="metrics-strip" style="margin-bottom: 0;">
+            <div class="metric-card present">
+              <div class="metric-label">Present Staff</div>
+              <div class="metric-value" id="cert-stat-present">0</div>
+            </div>
+            <div class="metric-card absent">
+              <div class="metric-label">Absent Staff</div>
+              <div class="metric-value" id="cert-stat-absent">0</div>
+            </div>
+            <div class="metric-card late">
+              <div class="metric-label">Late / Excused</div>
+              <div class="metric-value" id="cert-stat-late">0</div>
+            </div>
+            <div class="metric-card rate">
+              <div class="metric-label">Station Coverage</div>
+              <div class="metric-value" id="cert-stat-coverage">0/71</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Station Allocation Checklist -->
+        <div style="margin-bottom: 14px; border: 1px solid #E2E8F0; padding: 10px; background: #FFFFFF;">
+          <div style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0A2540; margin-bottom: 8px;">
+            Key Department Staffing Coverage Checklist
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+            <div style="padding: 6px 8px; background: #F8FAFC; border: 1px solid #E2E8F0;" id="cert-chk-cashier">
+              <strong>Cashier Suite:</strong> <span id="cert-cashier-val">2 Staff Assigned</span>
+            </div>
+            <div style="padding: 6px 8px; background: #F8FAFC; border: 1px solid #E2E8F0;" id="cert-chk-minishop">
+              <strong>Front Mini Shop:</strong> <span id="cert-minishop-val">2 Staff Assigned</span>
+            </div>
+            <div style="padding: 6px 8px; background: #F8FAFC; border: 1px solid #E2E8F0;" id="cert-chk-rows">
+              <strong>Dining Rows (1-6):</strong> <span id="cert-rows-val">Allocated</span>
+            </div>
+            <div style="padding: 6px 8px; background: #F8FAFC; border: 1px solid #E2E8F0;" id="cert-chk-esection">
+              <strong>Upper Tier (E Section):</strong> <span id="cert-esection-val">Allocated</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Handover Notes & Incident Report -->
+        <div style="margin-bottom: 14px;">
+          <label for="cert-handover-notes" style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: #0A2540; display: block; margin-bottom: 4px;">
+            Duty Manager Handover Notes & Shift Incident Log
+          </label>
+          <textarea id="cert-handover-notes" class="form-input" rows="3" placeholder="Enter handover notes (e.g., VIP booking at Table 12, cash drawer reconciled, inventory status)..." style="width: 100%; font-family: var(--font-family); font-size: 11.5px; line-height: 1.4; resize: vertical;"></textarea>
+        </div>
+
+        <!-- Official Certification Seal Block -->
+        <div class="cert-seal-block" style="border: 2px dashed #0A2540; background: #F0F9FF; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 44px; height: 44px; border-radius: 50% !important; border: 2px solid #0A2540; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: 900; color: #0A2540; text-align: center; text-transform: uppercase; line-height: 1.1; flex-shrink: 0; background: #FFFFFF;">
+              <span>OFFICIAL</span>
+              <span>SEAL</span>
+              <span>2026</span>
+            </div>
+            <div>
+              <div style="font-size: 11px; font-weight: 800; color: #0A2540; text-transform: uppercase;">Executive Hospitality Roster Certification</div>
+              <div style="font-size: 9.5px; color: #64748B;">This digital record is cryptographically signed and stored in the enterprise audit log.</div>
+              <div id="cert-timestamp-seal" style="font-size: 9px; font-family: monospace; color: #0284C7; font-weight: 700; margin-top: 2px;">CERT-TIMESTAMP: 2026-10-18T04:20Z</div>
+            </div>
+          </div>
+          <div id="cert-stamp-badge" style="background: #059669; color: #fff; font-size: 10px; font-weight: 900; padding: 6px 10px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+            CERTIFIED
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #F8FAFC; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 8px;">
+        <button type="button" class="btn-secondary" id="btn-certify-print" style="font-size: 11px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Print Certified PDF
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-secondary" id="btn-certify-whatsapp" style="font-size: 11px; padding: 8px 12px; background: #25D366; color: #fff; border-color: #128C7E; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send WhatsApp
+          </button>
+          <button type="button" class="btn-primary" id="btn-certify-complete" style="font-size: 11px; padding: 8px 16px;">
+            Certify & Complete Handover
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=3.2"></script>
 </body>
 </html>

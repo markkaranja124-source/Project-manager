@@ -335,7 +335,8 @@
 
             const managerIndicator = document.getElementById('manager-session-indicator');
             if (managerIndicator) {
-              managerIndicator.textContent = `Manager: ${data.manager.email}`;
+              const displayName = data.manager.name || data.manager.email.split('@')[0];
+              managerIndicator.textContent = `Duty Manager: ${displayName}`;
             }
 
             const nameEl = document.getElementById('settings-manager-name');
@@ -343,6 +344,8 @@
             if (nameEl) nameEl.textContent = AppState.manager.name;
             if (emailEl) emailEl.textContent = AppState.manager.email;
           }
+
+          cleanOrphanAttendance();
 
           // Persist to local cache and re-render views
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -362,6 +365,20 @@
     } catch (err) {
       console.warn('[SYNC] Running in offline cached mode:', err);
     }
+  }
+
+  function cleanOrphanAttendance() {
+    if (!AppState.attendance || !Array.isArray(AppState.staff)) return;
+    const activeStaffIds = new Set(AppState.staff.map(s => s.id));
+    Object.keys(AppState.attendance).forEach(dateKey => {
+      if (AppState.attendance[dateKey] && typeof AppState.attendance[dateKey] === 'object') {
+        Object.keys(AppState.attendance[dateKey]).forEach(staffId => {
+          if (!activeStaffIds.has(staffId)) {
+            delete AppState.attendance[dateKey][staffId];
+          }
+        });
+      }
+    });
   }
 
   function updateSyncStatusUI(status, customTime = null) {
@@ -399,6 +416,8 @@
     if (btnSave) btnSave.disabled = true;
     if (btnText) btnText.textContent = 'Saving...';
     updateSyncStatusUI('syncing');
+
+    cleanOrphanAttendance();
 
     try {
       // 1. Immediate local cache write
@@ -450,6 +469,8 @@
 
   function saveState() {
     try {
+      cleanOrphanAttendance();
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         staff: AppState.staff,
         attendance: AppState.attendance,
@@ -1223,9 +1244,238 @@
   }
 
   // =========================================================================
-  // VIEW 3: END-OF-MONTH ABSENTEE REPORT
+  // VIEW 3: WAITER ATTENDANCE SUMMARY & ABSENTEE REPORT
   // =========================================================================
+  let summaryScope = 'MONTH'; // 'MONTH' or 'WEEK'
+  let summaryShiftFilter = 'ALL';
+
+  function calculateAttendanceSummaryData() {
+    const activeStaff = AppState.staff.filter(s => s.active);
+    const filteredStaff = (summaryShiftFilter === 'ALL')
+      ? activeStaff
+      : activeStaff.filter(s => (s.shift || 'Morning') === summaryShiftFilter);
+
+    let dateList = [];
+    let periodTitle = '';
+
+    if (summaryScope === 'WEEK') {
+      const days = getWeekDaysList(new Date());
+      dateList = days.map(d => d.dateKey);
+      const f = days[0];
+      const l = days[6];
+      periodTitle = `Week of ${f.weekday} ${f.dayNumber} ${f.monthShort} - ${l.weekday} ${l.dayNumber} ${l.monthShort} ${l.dateObj.getFullYear()}`;
+    } else {
+      const monthIndex = parseInt(AppState.absenteeMonth, 10);
+      const year = parseInt(AppState.absenteeYear, 10);
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      periodTitle = `${monthNames[monthIndex]} ${year}`;
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        dateList.push(`${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+      }
+    }
+
+    let grandPresent = 0;
+    let grandAbsent = 0;
+    let grandLate = 0;
+    let grandOff = 0;
+
+    const rosterSummary = filteredStaff.map(staff => {
+      let p = 0;
+      let a = 0;
+      let l = 0;
+      let o = 0;
+
+      dateList.forEach(dateKey => {
+        const record = getStaffAttendance(dateKey, staff.id);
+        const st = record.status || 'U';
+        if (st === 'P') p++;
+        else if (st === 'A') a++;
+        else if (st === 'L') l++;
+        else if (st === 'O') o++;
+      });
+
+      const totalRecorded = p + a + l;
+      const turnoutRate = totalRecorded > 0 ? Math.round((p / totalRecorded) * 100) : 0;
+
+      grandPresent += p;
+      grandAbsent += a;
+      grandLate += l;
+      grandOff += o;
+
+      return {
+        staff,
+        presentDays: p,
+        absentDays: a,
+        lateDays: l,
+        offDays: o,
+        turnoutRate
+      };
+    });
+
+    const grandTotalRecorded = grandPresent + grandAbsent + grandLate;
+    const grandTurnoutRate = grandTotalRecorded > 0 ? Math.round((grandPresent / grandTotalRecorded) * 100) : 0;
+
+    return {
+      periodTitle,
+      rosterSummary,
+      totals: {
+        present: grandPresent,
+        absent: grandAbsent,
+        late: grandLate,
+        off: grandOff,
+        turnoutRate: grandTurnoutRate
+      }
+    };
+  }
+
+  function renderAttendanceSummaryTable() {
+    const tableContainer = document.getElementById('attendance-summary-table-container');
+    const labelPeriod = document.getElementById('summary-active-period-label');
+    if (!tableContainer) return;
+
+    const data = calculateAttendanceSummaryData();
+    if (labelPeriod) labelPeriod.textContent = data.periodTitle.toUpperCase();
+
+    let html = `
+      <table class="matrix-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th class="sticky-col" style="min-width: 140px;">WAITER NAME & ID</th>
+            <th style="min-width: 80px;">SHIFT</th>
+            <th style="background-color: #064E3B; min-width: 60px;" title="Total Days Present">PRESENT (P)</th>
+            <th style="background-color: #7F1D1D; min-width: 60px;" title="Total Days Absent">ABSENT (A)</th>
+            <th style="background-color: #78350F; min-width: 60px;" title="Total Days Late">LATE (L)</th>
+            <th style="background-color: #334155; min-width: 60px;" title="Total Days Off">OFF (O)</th>
+            <th style="background-color: var(--c-navy-dark); min-width: 60px;">TURNOUT %</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    if (data.rosterSummary.length === 0) {
+      html += `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 24px; color: var(--c-gray-dark); font-weight: 700;">
+            No active waiters match the selected filter.
+          </td>
+        </tr>
+      `;
+    } else {
+      data.rosterSummary.forEach(item => {
+        const staff = item.staff;
+        const shiftName = staff.shift || 'Morning';
+        const shiftClass = shiftName.toLowerCase();
+
+        html += `
+          <tr>
+            <td class="sticky-col">
+              <div style="font-size: 12px; font-weight: 800; color: var(--c-navy-primary);">${escapeHtml(staff.name)}</div>
+              <div style="font-size: 9px; color: var(--c-gray-dark); font-weight: 700;">${escapeHtml(staff.code)}</div>
+            </td>
+            <td><span class="shift-tag shift-${shiftClass}">${escapeHtml(shiftName)}</span></td>
+            <td class="summary-stat-cell present">${item.presentDays}</td>
+            <td class="summary-stat-cell absent">${item.absentDays}</td>
+            <td class="summary-stat-cell late">${item.lateDays}</td>
+            <td class="summary-stat-cell off">${item.offDays}</td>
+            <td style="font-weight: 800; font-size: 11px; color: var(--c-black);">${item.turnoutRate}%</td>
+          </tr>
+        `;
+      });
+
+      // Grand Totals Row
+      html += `
+        </tbody>
+        <tfoot>
+          <tr class="summary-totals-row">
+            <td class="sticky-col" style="background-color: #E2E8F0; font-weight: 900; color: var(--c-navy-primary);">
+              TOTALS (ROSTER - ${data.rosterSummary.length})
+            </td>
+            <td>--</td>
+            <td class="summary-stat-cell present" style="font-size: 12px; font-weight: 900;">${data.totals.present}</td>
+            <td class="summary-stat-cell absent" style="font-size: 12px; font-weight: 900;">${data.totals.absent}</td>
+            <td class="summary-stat-cell late" style="font-size: 12px; font-weight: 900;">${data.totals.late}</td>
+            <td class="summary-stat-cell off" style="font-size: 12px; font-weight: 900;">${data.totals.off}</td>
+            <td style="font-size: 12px; font-weight: 900; color: var(--c-navy-primary);">${data.totals.turnoutRate}%</td>
+          </tr>
+        </tfoot>
+      `;
+    }
+
+    html += `</table>`;
+    tableContainer.innerHTML = html;
+  }
+
+  function downloadAttendanceCsv() {
+    const data = calculateAttendanceSummaryData();
+    if (!data.rosterSummary || data.rosterSummary.length === 0) {
+      showToast('No waiter records available to export.');
+      return;
+    }
+
+    const businessName = AppState.settings?.businessName || 'Executive Waiter Management';
+
+    // CSV Header Lines
+    const lines = [
+      `"${businessName.replace(/"/g, '""')} - WAITER ATTENDANCE SUMMARY"`,
+      `"Report Period: ${data.periodTitle.replace(/"/g, '""')}"`,
+      `"Export Date: ${new Date().toLocaleString().replace(/"/g, '""')}"`,
+      `""`,
+      `"Employee ID","Waiter Name","Assigned Shift","Days Present (P)","Days Absent (A)","Days Late (L)","Days Off (O)","Attendance Turnout %"`
+    ];
+
+    // Data Rows
+    data.rosterSummary.forEach(item => {
+      const s = item.staff;
+      const row = [
+        `"${(s.code || '').replace(/"/g, '""')}"`,
+        `"${(s.name || '').replace(/"/g, '""')}"`,
+        `"${(s.shift || 'Morning').replace(/"/g, '""')}"`,
+        item.presentDays,
+        item.absentDays,
+        item.lateDays,
+        item.offDays,
+        `"${item.turnoutRate}%"`
+      ];
+      lines.push(row.join(','));
+    });
+
+    // Totals Row
+    lines.push(`""`);
+    lines.push([
+      `"TOTALS"`,
+      `"All Waitstaff (${data.rosterSummary.length})"`,
+      `"--"`,
+      data.totals.present,
+      data.totals.absent,
+      data.totals.late,
+      data.totals.off,
+      `"${data.totals.turnoutRate}%"`
+    ].join(','));
+
+    // UTF-8 BOM + CSV string
+    const csvContent = '\uFEFF' + lines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    const cleanPeriod = data.periodTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `waiter-attendance-summary-${cleanPeriod}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(`Downloaded: waiter-attendance-summary-${cleanPeriod}.csv`);
+  }
+
   function renderAbsenteeReport() {
+    renderAttendanceSummaryTable();
+
     const container = document.getElementById('absentee-cards-list');
     if (!container) return;
 
@@ -1327,8 +1577,16 @@
             <span class="card-stat-num">${item.presentDays}</span>
           </div>
           <div class="card-stat-item">
+            <span class="card-stat-title">Days Absent</span>
+            <span class="card-stat-num" style="color:var(--c-status-absent-bg);">${item.absentDays}</span>
+          </div>
+          <div class="card-stat-item">
             <span class="card-stat-title">Days Late</span>
-            <span class="card-stat-num">${item.lateDays}</span>
+            <span class="card-stat-num" style="color:var(--c-status-late-bg);">${item.lateDays}</span>
+          </div>
+          <div class="card-stat-item">
+            <span class="card-stat-title">Days Off</span>
+            <span class="card-stat-num" style="color:var(--c-status-off-bg);">${item.offDays}</span>
           </div>
           <div class="card-stat-item">
             <span class="card-stat-title">Attendance Rate</span>
@@ -1339,6 +1597,218 @@
 
       container.appendChild(card);
     });
+  }
+
+  // =========================================================================
+  // PROGRAMMATIC TAB NAVIGATION
+  // =========================================================================
+  function navigateToTab(targetId) {
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      if (tab.getAttribute('data-target') === targetId) {
+        tab.click();
+      }
+    });
+  }
+
+  // =========================================================================
+  // WEEKLY ATTENDANCE REGISTER MODAL
+  // =========================================================================
+  let weekModalRefDate = new Date();
+  let weekModalSelectedStaffId = 'ALL';
+
+  function getWeekDaysList(referenceDate) {
+    const d = new Date(referenceDate);
+    const day = d.getDay(); // 0 is Sun, 1 is Mon...
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const days = [];
+    const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    for (let i = 0; i < 7; i++) {
+      const cur = new Date(monday);
+      cur.setDate(monday.getDate() + i);
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, '0');
+      const dayNum = String(cur.getDate()).padStart(2, '0');
+      days.push({
+        dateObj: cur,
+        dateKey: `${y}-${m}-${dayNum}`,
+        weekday: weekdayNames[i],
+        dayNumber: cur.getDate(),
+        monthShort: cur.toLocaleString('default', { month: 'short' })
+      });
+    }
+    return days;
+  }
+
+  function openWeekAttendanceModal(initialStaffId = 'ALL') {
+    weekModalRefDate = new Date(AppState.currentDate || new Date());
+    weekModalSelectedStaffId = initialStaffId;
+
+    const modal = document.getElementById('modal-week-attendance');
+    if (modal) modal.classList.add('active');
+
+    populateWeekStaffFilterOptions();
+    renderWeekAttendanceModal();
+  }
+
+  function closeWeekAttendanceModal() {
+    const modal = document.getElementById('modal-week-attendance');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function populateWeekStaffFilterOptions() {
+    const select = document.getElementById('select-week-staff-filter');
+    if (!select) return;
+
+    const activeStaff = AppState.staff.filter(s => s.active);
+    let html = `<option value="ALL">ALL EMPLOYEES (FULL ROSTER - ${activeStaff.length})</option>`;
+    activeStaff.forEach(s => {
+      const selected = (s.id === weekModalSelectedStaffId) ? 'selected' : '';
+      html += `<option value="${s.id}" ${selected}>${escapeHtml(s.name)} (${escapeHtml(s.code)}) - ${escapeHtml(s.shift || 'Morning')}</option>`;
+    });
+    select.innerHTML = html;
+  }
+
+  function renderWeekAttendanceModal() {
+    const container = document.getElementById('week-attendance-table-container');
+    const labelRange = document.getElementById('week-range-label');
+    if (!container) return;
+
+    const days = getWeekDaysList(weekModalRefDate);
+    const firstDay = days[0];
+    const lastDay = days[6];
+
+    if (labelRange) {
+      labelRange.textContent = `${firstDay.weekday}, ${firstDay.monthShort} ${firstDay.dayNumber} – ${lastDay.weekday}, ${lastDay.monthShort} ${lastDay.dayNumber}, ${lastDay.dateObj.getFullYear()}`;
+    }
+
+    // Determine staff to display
+    const activeStaff = AppState.staff.filter(s => s.active);
+    const displayStaff = (weekModalSelectedStaffId === 'ALL')
+      ? activeStaff
+      : activeStaff.filter(s => s.id === weekModalSelectedStaffId);
+
+    // Metrics calculation across displayed staff for the 7 days
+    let totalPresent = 0;
+    let totalAbsent = 0;
+    let totalLate = 0;
+    let totalOff = 0;
+    let totalPossible = 0;
+
+    activeStaff.forEach(s => {
+      days.forEach(d => {
+        const record = getStaffAttendance(d.dateKey, s.id);
+        if (record.status === 'P') { totalPresent++; totalPossible++; }
+        else if (record.status === 'A') { totalAbsent++; totalPossible++; }
+        else if (record.status === 'L') { totalLate++; totalPossible++; }
+        else if (record.status === 'O') { totalOff++; }
+      });
+    });
+
+    const turnoutRate = totalPossible > 0 ? Math.round((totalPresent / totalPossible) * 100) : 0;
+
+    const elP = document.getElementById('stat-week-present');
+    const elA = document.getElementById('stat-week-absent');
+    const elO = document.getElementById('stat-week-other');
+    const elR = document.getElementById('stat-week-rate');
+    if (elP) elP.textContent = totalPresent;
+    if (elA) elA.textContent = totalAbsent;
+    if (elO) elO.textContent = `${totalLate + totalOff}`;
+    if (elR) elR.textContent = `${turnoutRate}%`;
+
+    // Render Weekly Matrix Table
+    let html = `
+      <table class="matrix-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th class="sticky-col" style="min-width: 140px;">STAFF MEMBER</th>
+    `;
+
+    days.forEach(d => {
+      const isToday = formatDateKey(new Date()) === d.dateKey;
+      const todayHighlight = isToday ? 'style="background-color: var(--c-navy-light); color: #fff;"' : '';
+      html += `
+        <th ${todayHighlight}>
+          ${escapeHtml(d.weekday)}<br>
+          <span style="font-size: 8px; opacity: 0.85;">${d.dayNumber} ${escapeHtml(d.monthShort)}</span>
+        </th>
+      `;
+    });
+
+    html += `
+            <th style="background-color: var(--c-navy-dark); min-width: 32px;" title="Total Present">P</th>
+            <th style="background-color: #7F1D1D; min-width: 32px;" title="Total Absent">A</th>
+            <th style="background-color: #78350F; min-width: 32px;" title="Total Late">L</th>
+            <th style="background-color: var(--c-black); min-width: 48px;" title="Weekly Turnout Rate">RATE</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    if (displayStaff.length === 0) {
+      html += `
+        <tr>
+          <td colspan="12" style="text-align: center; padding: 24px; color: var(--c-gray-dark); font-weight: 700;">
+            No staff records found for this selection.
+          </td>
+        </tr>
+      `;
+    } else {
+      displayStaff.forEach(staff => {
+        let staffP = 0;
+        let staffA = 0;
+        let staffL = 0;
+        let staffO = 0;
+
+        html += `
+          <tr>
+            <td class="sticky-col">
+              <div style="font-size: 12px; font-weight: 700; color: var(--c-navy-primary);">${escapeHtml(staff.name)}</div>
+              <div style="font-size: 9px; color: var(--c-gray-dark);">${escapeHtml(staff.code)} · <span class="shift-tag shift-${(staff.shift || 'Morning').toLowerCase()}">${escapeHtml(staff.shift || 'Morning')}</span></div>
+            </td>
+        `;
+
+        days.forEach(d => {
+          const record = getStaffAttendance(d.dateKey, staff.id);
+          const status = record.status || 'U';
+
+          if (status === 'P') staffP++;
+          else if (status === 'A') staffA++;
+          else if (status === 'L') staffL++;
+          else if (status === 'O') staffO++;
+
+          const noteTooltip = record.note ? ` - Note: ${escapeHtml(record.note)}` : '';
+          html += `
+            <td style="padding: 2px;">
+              <span class="cell-status ${status}" title="${d.dateKey}: ${escapeHtml(staff.name)} [${status}]${noteTooltip}">
+                ${status !== 'U' ? status : '-'}
+              </span>
+            </td>
+          `;
+        });
+
+        const staffTotalDays = staffP + staffA + staffL;
+        const staffRate = staffTotalDays > 0 ? Math.round((staffP / staffTotalDays) * 100) : 0;
+
+        html += `
+            <td style="font-weight: 800; color: var(--c-navy-primary);">${staffP}</td>
+            <td style="font-weight: 800; color: var(--c-status-absent-bg);">${staffA}</td>
+            <td style="font-weight: 800; color: var(--c-status-late-bg);">${staffL}</td>
+            <td style="font-weight: 800; color: var(--c-black);">${staffRate}%</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    container.innerHTML = html;
   }
 
   // =========================================================================
@@ -1381,11 +1851,30 @@
             Station: ${escapeHtml(staff.station || 'General')} | Shift: <span class="shift-tag shift-${(staff.shift || 'Morning').toLowerCase()}">${escapeHtml(staff.shift || 'Morning')}</span> | Phone: ${escapeHtml(staff.phone || 'N/A')}
           </div>
         </div>
-        <div class="staff-row-actions">
+        <div class="staff-row-actions" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+          <button type="button" class="btn-small btn-secondary btn-staff-week-att" data-id="${staff.id}" title="View this waiter's week attendance">📅 Week</button>
+          <button type="button" class="btn-small btn-secondary btn-staff-month-att" data-id="${staff.id}" title="View this waiter's monthly attendance">🗓️ Month</button>
           <button type="button" class="btn-small btn-secondary btn-edit-staff" data-id="${staff.id}">Edit</button>
           <button type="button" class="btn-small btn-danger btn-delete-staff" data-id="${staff.id}">Delete</button>
         </div>
       `;
+
+      // Event: View waiter's week attendance
+      const btnStaffWeek = row.querySelector('.btn-staff-week-att');
+      if (btnStaffWeek) {
+        btnStaffWeek.addEventListener('click', () => {
+          openWeekAttendanceModal(staff.id);
+        });
+      }
+
+      // Event: View waiter's monthly attendance
+      const btnStaffMonth = row.querySelector('.btn-staff-month-att');
+      if (btnStaffMonth) {
+        btnStaffMonth.addEventListener('click', () => {
+          navigateToTab('view-monthly');
+          showToast(`Monthly Register for ${staff.name}`);
+        });
+      }
 
       // Event: Edit staff
       row.querySelector('.btn-edit-staff').addEventListener('click', () => {
@@ -1443,6 +1932,12 @@
     if (printOrg) printOrg.textContent = AppState.settings.businessName.toUpperCase();
     if (printPeriod) printPeriod.textContent = `MONTHLY WAITER ATTENDANCE REGISTER - ${monthName.toUpperCase()} ${year}`;
     if (printDate) printDate.textContent = new Date().toLocaleString('en-US');
+
+    const printManager = document.getElementById('print-manager-on-duty');
+    if (printManager) {
+      const mgrName = AppState.manager?.name || 'Executive Duty Manager';
+      printManager.textContent = `${mgrName} (General Manager)`;
+    }
 
     // Populate Section 1: Staff Absentee Table with Specific Dates
     const tbodyAbsentee = document.getElementById('print-absentee-table-body');
@@ -1648,6 +2143,245 @@
   function closeSettingsModal() {
     const modal = document.getElementById('modal-settings');
     if (modal) modal.classList.remove('active');
+  }
+
+  // =========================================================================
+  // EXECUTIVE MANAGER SESSION DROPDOWN & SHIFT HANDOVER
+  // =========================================================================
+  function toggleManagerProfileDropdown(forceState) {
+    const dropdown = document.getElementById('manager-profile-dropdown');
+    const pill = document.getElementById('btn-manager-session-menu');
+    if (!dropdown) return;
+
+    const shouldShow = (typeof forceState === 'boolean') ? forceState : (dropdown.style.display === 'none' || !dropdown.style.display);
+
+    if (shouldShow) {
+      // Sync dynamic manager data into dropdown
+      const nameEl = document.getElementById('mp-dropdown-name');
+      const emailEl = document.getElementById('mp-dropdown-email');
+      const initialsEl = document.getElementById('mp-dropdown-initials');
+      const avatarImg = document.getElementById('mp-dropdown-avatar-img');
+      const shiftEl = document.getElementById('mp-tel-shift');
+
+      if (nameEl) nameEl.textContent = AppState.manager.name || 'Mark Kamau';
+      if (emailEl) emailEl.textContent = AppState.manager.email || 'manager@executive.com';
+      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'AR';
+
+      if (avatarImg) {
+        if (AppState.manager.avatar) {
+          avatarImg.src = AppState.manager.avatar;
+          avatarImg.style.display = 'block';
+          if (initialsEl) initialsEl.style.display = 'none';
+        } else {
+          avatarImg.style.display = 'none';
+          if (initialsEl) initialsEl.style.display = 'inline';
+        }
+      }
+
+      if (shiftEl) {
+        const activeShiftName = AppState.currentShift || 'Morning';
+        shiftEl.textContent = `${activeShiftName} Shift`;
+      }
+
+      dropdown.style.display = 'block';
+      if (pill) pill.classList.add('active');
+    } else {
+      dropdown.style.display = 'none';
+      if (pill) pill.classList.remove('active');
+    }
+  }
+
+  function closeManagerProfileDropdown() {
+    toggleManagerProfileDropdown(false);
+  }
+
+  // Shift Handover Certification Modal
+  let currentCertificationDocRef = 'ER-CERT-2026-X89';
+
+  function openShiftHandoverModal() {
+    closeManagerProfileDropdown();
+    const modal = document.getElementById('modal-shift-handover');
+    if (!modal) return;
+
+    // Generate formal audit reference ID if needed
+    currentCertificationDocRef = `ER-CERT-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const docRefEl = document.getElementById('cert-doc-ref');
+    if (docRefEl) docRefEl.textContent = currentCertificationDocRef;
+
+    // Shift Date & Name
+    const dateEl = document.getElementById('cert-shift-date');
+    const shiftEl = document.getElementById('cert-shift-name');
+    const mgrEl = document.getElementById('cert-manager-name');
+
+    const formattedDate = AppState.currentDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    if (dateEl) dateEl.textContent = formattedDate;
+
+    const currentShift = AppState.currentShift || 'Morning';
+    if (shiftEl) shiftEl.textContent = `${currentShift} Shift`;
+    if (mgrEl) mgrEl.textContent = AppState.manager.name || 'Mark Kamau';
+
+    // Calculate attendance turnout for current date
+    const dateKey = formatDateKey(AppState.currentDate);
+    const activeStaff = AppState.staff.filter(s => s.active);
+    let presentCount = 0;
+    let absentCount = 0;
+    let lateCount = 0;
+
+    activeStaff.forEach(staff => {
+      const rec = getStaffAttendance(dateKey, staff.id);
+      if (rec.status === 'P') presentCount++;
+      else if (rec.status === 'A') absentCount++;
+      else if (rec.status === 'L' || rec.status === 'O') lateCount++;
+    });
+
+    const turnoutPct = activeStaff.length > 0 ? Math.round((presentCount / activeStaff.length) * 100) : 0;
+
+    const statPresent = document.getElementById('cert-stat-present');
+    const statAbsent = document.getElementById('cert-stat-absent');
+    const statLate = document.getElementById('cert-stat-late');
+    const turnoutPill = document.getElementById('cert-turnout-pill');
+
+    if (statPresent) statPresent.textContent = presentCount;
+    if (statAbsent) statAbsent.textContent = absentCount;
+    if (statLate) statLate.textContent = lateCount;
+    if (turnoutPill) turnoutPill.textContent = `Turnout: ${turnoutPct}%`;
+
+    // Evaluate station coverage
+    const shiftAssignments = (floorPlanState.assignments[dateKey] && floorPlanState.assignments[dateKey][currentShift]) || {};
+    const assignedStationCount = Object.keys(shiftAssignments).length;
+    const statCoverage = document.getElementById('cert-stat-coverage');
+    if (statCoverage) statCoverage.textContent = `${assignedStationCount}/71 Points`;
+
+    // Check Cashier Suite (dual staff)
+    const chkCashier = document.getElementById('cert-cashier-val');
+    const hasCashier1 = !!shiftAssignments['station_cashier'];
+    const hasCashier2 = !!shiftAssignments['station_cashier_2'];
+    if (chkCashier) {
+      if (hasCashier1 && hasCashier2) {
+        const name1 = AppState.staff.find(s => s.id === shiftAssignments['station_cashier'].staff_id)?.name || 'Staff 1';
+        const name2 = AppState.staff.find(s => s.id === shiftAssignments['station_cashier_2'].staff_id)?.name || 'Staff 2';
+        chkCashier.innerHTML = `<span style="color: #059669; font-weight: 800;">Both Tills Allocated (${escapeHtml(name1)} & ${escapeHtml(name2)})</span>`;
+      } else if (hasCashier1 || hasCashier2) {
+        chkCashier.innerHTML = `<span style="color: #D97706; font-weight: 700;">Partial Coverage (1/2 Staff Assigned)</span>`;
+      } else {
+        chkCashier.innerHTML = `<span style="color: #DC2626; font-weight: 700;">Unassigned (Needs 2 Staff)</span>`;
+      }
+    }
+
+    // Check Front Mini Shop (dual staff)
+    const chkMiniShop = document.getElementById('cert-minishop-val');
+    const hasMini1 = !!shiftAssignments['station_minishop'];
+    const hasMini2 = !!shiftAssignments['station_minishop_2'];
+    if (chkMiniShop) {
+      if (hasMini1 && hasMini2) {
+        const name1 = AppState.staff.find(s => s.id === shiftAssignments['station_minishop'].staff_id)?.name || 'Staff 1';
+        const name2 = AppState.staff.find(s => s.id === shiftAssignments['station_minishop_2'].staff_id)?.name || 'Staff 2';
+        chkMiniShop.innerHTML = `<span style="color: #059669; font-weight: 800;">Both Attendants Allocated (${escapeHtml(name1)} & ${escapeHtml(name2)})</span>`;
+      } else if (hasMini1 || hasMini2) {
+        chkMiniShop.innerHTML = `<span style="color: #D97706; font-weight: 700;">Partial Coverage (1/2 Staff Assigned)</span>`;
+      } else {
+        chkMiniShop.innerHTML = `<span style="color: #DC2626; font-weight: 700;">Unassigned (Needs 2 Staff)</span>`;
+      }
+    }
+
+    // Check Dining Rows 1-6
+    const chkRows = document.getElementById('cert-rows-val');
+    let rowsCovered = 0;
+    ['row1', 'row2', 'row3', 'row4', 'row5', 'row6'].forEach(rowId => {
+      const section = TABLE_ROW_SECTIONS[rowId];
+      if (section && section.tables.some(tId => shiftAssignments[tId])) {
+        rowsCovered++;
+      }
+    });
+    if (chkRows) {
+      if (rowsCovered === 6) {
+        chkRows.innerHTML = `<span style="color: #059669; font-weight: 800;">All 6 Rows Assigned</span>`;
+      } else {
+        chkRows.innerHTML = `<span style="color: #D97706; font-weight: 700;">${rowsCovered}/6 Rows Allocated</span>`;
+      }
+    }
+
+    // Check Upper Tier E Section
+    const chkESection = document.getElementById('cert-esection-val');
+    const eSection = TABLE_ROW_SECTIONS['esection'];
+    const hasEAssigned = eSection && eSection.tables.some(tId => shiftAssignments[tId]);
+    if (chkESection) {
+      if (hasEAssigned) {
+        chkESection.innerHTML = `<span style="color: #059669; font-weight: 800;">Allocated to 1 Staff</span>`;
+      } else {
+        chkESection.innerHTML = `<span style="color: #DC2626; font-weight: 700;">Unassigned</span>`;
+      }
+    }
+
+    // Timestamp seal
+    const sealTime = document.getElementById('cert-timestamp-seal');
+    if (sealTime) {
+      sealTime.textContent = `CERT-HASH: ${new Date().toISOString().replace(/\\.\\d+Z$/, 'Z')}-${(AppState.manager.id || 'MGR01').substring(0, 6)}`;
+    }
+
+    modal.classList.add('active');
+  }
+
+  function closeShiftHandoverModal() {
+    const modal = document.getElementById('modal-shift-handover');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function buildWhatsAppCertificationMessage() {
+    const dateKey = formatDateKey(AppState.currentDate);
+    const currentShift = AppState.currentShift || 'Morning';
+    const mgrName = AppState.manager?.name || 'Executive Duty Manager';
+    const notesInput = document.getElementById('cert-handover-notes');
+    const notes = (notesInput && notesInput.value.trim()) ? notesInput.value.trim() : 'Routine shift handover completed with standard floor operations.';
+
+    const activeStaff = AppState.staff.filter(s => s.active);
+    let presentCount = 0;
+    let absentCount = 0;
+    activeStaff.forEach(staff => {
+      const rec = getStaffAttendance(dateKey, staff.id);
+      if (rec.status === 'P') presentCount++;
+      else if (rec.status === 'A') absentCount++;
+    });
+    const turnoutPct = activeStaff.length > 0 ? Math.round((presentCount / activeStaff.length) * 100) : 0;
+
+    const shiftAssignments = (floorPlanState.assignments[dateKey] && floorPlanState.assignments[dateKey][currentShift]) || {};
+
+    const cashier1 = shiftAssignments['station_cashier'] ? (AppState.staff.find(s => s.id === shiftAssignments['station_cashier'].staff_id)?.name || 'Assigned') : 'Unassigned';
+    const cashier2 = shiftAssignments['station_cashier_2'] ? (AppState.staff.find(s => s.id === shiftAssignments['station_cashier_2'].staff_id)?.name || 'Assigned') : 'Unassigned';
+
+    const mini1 = shiftAssignments['station_minishop'] ? (AppState.staff.find(s => s.id === shiftAssignments['station_minishop'].staff_id)?.name || 'Assigned') : 'Unassigned';
+    const mini2 = shiftAssignments['station_minishop_2'] ? (AppState.staff.find(s => s.id === shiftAssignments['station_minishop_2'].staff_id)?.name || 'Assigned') : 'Unassigned';
+
+    const lines = [
+      '*EXECUTIVE RESTAURANT & HOSPITALITY GROUP*',
+      '*OFFICIAL SHIFT HANDOVER & ATTENDANCE CERTIFICATION*',
+      `Document Ref: ${currentCertificationDocRef}`,
+      `Date: ${dateKey}`,
+      `Shift: ${currentShift} Shift`,
+      `Duty Manager: ${mgrName}`,
+      '',
+      '*STAFF ATTENDANCE AUDIT*',
+      `- Present Staff: ${presentCount} of ${activeStaff.length}`,
+      `- Absent Staff: ${absentCount}`,
+      `- Turnout Rate: ${turnoutPct}%`,
+      '',
+      '*KEY DEPARTMENT COVERAGE*',
+      `- Cashier Suite (2 Staff): ${cashier1} & ${cashier2}`,
+      `- Front Mini Shop (2 Staff): ${mini1} & ${mini2}`,
+      '',
+      '*DUTY MANAGER HANDOVER NOTES*',
+      notes,
+      '',
+      'Status: CERTIFIED & DIGITALLY VERIFIED',
+      `Audit Timestamp: ${new Date().toISOString()}`
+    ];
+
+    return lines.join('\n');
   }
 
   // =========================================================================
@@ -1999,22 +2733,86 @@
 
   function buildLocalFloorPlanFallback() {
     const stationsCatalog = [
-      { id: 'booth_1', name: 'Booth 1', section: 'Booths', capacity: 4, shape: 'booth' },
-      { id: 'booth_2', name: 'Booth 2', section: 'Booths', capacity: 4, shape: 'booth' },
-      { id: 'booth_3', name: 'Booth 3', section: 'Booths', capacity: 4, shape: 'booth' },
-      { id: 'booth_4', name: 'Booth 4', section: 'Booths', capacity: 4, shape: 'booth' },
-      { id: 'table_1', name: 'Table 1', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_2', name: 'Table 2', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_3', name: 'Table 3', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_4', name: 'Table 4', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_5', name: 'Table 5', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_6', name: 'Table 6', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_7', name: 'Table 7', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'table_8', name: 'Table 8', section: 'Main Dining', capacity: 4, shape: 'square' },
-      { id: 'section_a_1', name: 'Table A1', section: 'Section A', capacity: 6, shape: 'rect' },
-      { id: 'section_a_2', name: 'Table A2', section: 'Section A', capacity: 6, shape: 'rect' },
-      { id: 'section_b_1', name: 'Table B1', section: 'Section B', capacity: 6, shape: 'rect' },
-      { id: 'bar', name: 'Bar Counter', section: 'Bar Area', capacity: 4, shape: 'bar' }
+      // 1. MAIN DINING - LEFT SECTION (18 TABLES: 3x6 GRID)
+      { id: 'table_1', name: 'Table 1', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_2', name: 'Table 2', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_3', name: 'Table 3', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_4', name: 'Table 4', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_5', name: 'Table 5', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_6', name: 'Table 6', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_7', name: 'Table 7', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_8', name: 'Table 8', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_9', name: 'Table 9', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_10', name: 'Table 10', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_11', name: 'Table 11', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_12', name: 'Table 12', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_13', name: 'Table 13', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_14', name: 'Table 14', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_15', name: 'Table 15', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_16', name: 'Table 16', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_17', name: 'Table 17', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_18', name: 'Table 18', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+
+      // 2. MAIN DINING - RIGHT SECTION (18 TABLES: 3x6 GRID)
+      { id: 'table_19', name: 'Table 19', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_20', name: 'Table 20', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_21', name: 'Table 21', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_22', name: 'Table 22', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_23', name: 'Table 23', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_24', name: 'Table 24', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_25', name: 'Table 25', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_26', name: 'Table 26', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_27', name: 'Table 27', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_28', name: 'Table 28', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_29', name: 'Table 29', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_30', name: 'Table 30', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_31', name: 'Table 31', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_32', name: 'Table 32', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_33', name: 'Table 33', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_34', name: 'Table 34', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_35', name: 'Table 35', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_36', name: 'Table 36', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+
+      // 3. UPPER DINING (STEPPED / TIERED TABLES)
+      { id: 'table_37', name: 'Table 37', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_38', name: 'Table 38', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_39', name: 'Table 39', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_40', name: 'Table 40', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_41', name: 'Table 41', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_42', name: 'Table 42', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_43', name: 'Table 43', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_44', name: 'Table 44', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_45', name: 'Table 45', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
+      { id: 'table_46', name: 'Table 46', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
+
+      // 4. SERVICE, PRODUCTION & RETAIL STATIONS
+      { id: 'station_samosa', name: 'Samosa & Kababs Maker', section: 'Snacks & Grill', type: 'kitchen', capacity: 2, shape: 'rect' },
+      { id: 'station_chef_prep', name: 'Chef Station (Left)', section: 'Kitchen Prep', type: 'kitchen', capacity: 2, shape: 'rect' },
+      { id: 'station_barista', name: 'Barista Counter', section: 'Beverages', type: 'bar', capacity: 2, shape: 'bar' },
+      { id: 'station_kitchen_butchery', name: 'Kitchen Butchery (Prep)', section: 'Meat Prep', type: 'kitchen', capacity: 2, shape: 'rect' },
+      { id: 'station_cashier', name: 'Cashier 1', section: 'Accounts & POS', type: 'service', capacity: 1, shape: 'rect' },
+      { id: 'station_cashier_2', name: 'Cashier 2', section: 'Accounts & POS', type: 'service', capacity: 1, shape: 'rect' },
+      { id: 'station_main_office', name: 'Main Office', section: 'Management', type: 'office', capacity: 2, shape: 'rect' },
+      { id: 'station_jiko', name: 'Jiko (Main Cooking)', section: 'Kitchen Core', type: 'kitchen', capacity: 4, shape: 'rect' },
+      { id: 'station_chips_chicken', name: 'Chips Chicken Sausage Display', section: 'Carvery & Display', type: 'kitchen', capacity: 2, shape: 'rect' },
+      { id: 'station_store', name: 'Store & Inventory', section: 'Inventory', type: 'inventory', capacity: 2, shape: 'rect' },
+      { id: 'station_nyama_cook', name: 'Nyama Cook (Grill Master)', section: 'Grill Station', type: 'kitchen', capacity: 2, shape: 'rect' },
+      { id: 'station_stock_guy', name: 'Stock Guy', section: 'Inventory', type: 'inventory', capacity: 1, shape: 'rect' },
+      { id: 'station_dishes', name: 'Dishes (Scullery)', section: 'Sanitation', type: 'service', capacity: 2, shape: 'rect' },
+      { id: 'station_kitchen_orders', name: 'Kitchen Orders Pickup Pass', section: 'Order Pass', type: 'service', capacity: 2, shape: 'rect' },
+      { id: 'station_minishop', name: 'Mini Shop 1', section: 'Retail Wing', type: 'retail', capacity: 1, shape: 'rect' },
+      { id: 'station_minishop_2', name: 'Mini Shop 2', section: 'Retail Wing', type: 'retail', capacity: 1, shape: 'rect' },
+      { id: 'station_butchery', name: 'Butchery (Retail Counter)', section: 'Retail Wing', type: 'retail', capacity: 2, shape: 'rect' },
+
+      // 5. LEGACY BACKWARD-COMPATIBILITY ALIASES
+      { id: 'booth_1', name: 'Booth 1 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+      { id: 'booth_2', name: 'Booth 2 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+      { id: 'booth_3', name: 'Booth 3 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+      { id: 'booth_4', name: 'Booth 4 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+      { id: 'section_a_1', name: 'Section A - Upper (Legacy)', section: 'Section A', type: 'large_table', capacity: 6, shape: 'rect' },
+      { id: 'section_a_2', name: 'Section A - Lower (Legacy)', section: 'Section A', type: 'large_table', capacity: 6, shape: 'rect' },
+      { id: 'section_b_1', name: 'Section B (Legacy)', section: 'Section B', type: 'large_table', capacity: 6, shape: 'rect' },
+      { id: 'bar', name: 'Bar Counter (Legacy)', section: 'Bar Area', type: 'bar', capacity: 4, shape: 'bar' }
     ];
 
     const PALETTE = ['#2563EB', '#16A34A', '#EA580C', '#9333EA', '#DC2626', '#EAB308', '#06B6D4', '#EC4899'];
@@ -2067,12 +2865,11 @@
 
     const highlightedStaffId = AppState.floorPlanHighlightedStaffId;
 
-    // Helper to generate station badge SVG
+    // Helper to generate station assignment badge SVG pill
     function renderBadgeSvg(st, cx, cy) {
-      const asgn = st.assignment;
+      const asgn = st ? st.assignment : null;
       const isAssigned = asgn && asgn.staff_id && asgn.staff_name;
       const isHighlighted = highlightedStaffId && asgn && asgn.staff_id === highlightedStaffId;
-      const highlightClass = isHighlighted ? 'highlighted' : '';
 
       if (isAssigned) {
         const rawName = asgn.staff_name.split(' ')[0] || asgn.staff_code || 'Assigned';
@@ -2081,308 +2878,827 @@
         const stat = FP_STATUS_MAP[asgn.status] || FP_STATUS_MAP['P'];
 
         return `
-          <g class="fp-station ${highlightClass}" data-station-id="${st.id}" style="cursor: pointer;">
-            <!-- Badge Pill -->
-            <rect x="${cx - 43}" y="${cy - 9}" width="86" height="18" rx="0" fill="#0F172A" stroke="${isHighlighted ? '#F59E0B' : '#334155'}" stroke-width="${isHighlighted ? 2.5 : 1}"/>
-            <!-- Staff Color Dot -->
-            <circle cx="${cx - 33}" cy="${cy}" r="4" fill="${staffColor}"/>
-            <!-- Staff Name -->
-            <text x="${cx - 24}" y="${cy + 3.5}" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="700" fill="#FFFFFF">${name}</text>
-            <!-- Attendance Status Indicator Dot -->
-            <circle cx="${cx + 33}" cy="${cy}" r="3.5" fill="${stat.color}" stroke="#0F172A" stroke-width="1"/>
+          <g class="fp-badge-assigned">
+            <rect x="${cx - 38}" y="${cy - 8}" width="76" height="16" rx="3" fill="#0F172A" stroke="${isHighlighted ? '#F59E0B' : '#334155'}" stroke-width="${isHighlighted ? 2.5 : 1}"/>
+            <circle cx="${cx - 29}" cy="${cy}" r="3.5" fill="${staffColor}"/>
+            <text x="${cx - 21}" y="${cy + 3}" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="800" fill="#FFFFFF">${name}</text>
+            <circle cx="${cx + 29}" cy="${cy}" r="3" fill="${stat.color}" stroke="#0F172A" stroke-width="0.8"/>
           </g>
         `;
       } else {
         return `
-          <g class="fp-station ${highlightClass}" data-station-id="${st.id}" style="cursor: pointer;">
-            <rect x="${cx - 35}" y="${cy - 8}" width="70" height="16" rx="0" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1" stroke-dasharray="2 2" opacity="0.95"/>
-            <text x="${cx}" y="${cy + 3}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#64748B">+ Assign</text>
+          <g class="fp-badge-unassigned">
+            <rect x="${cx - 30}" y="${cy - 7}" width="60" height="14" rx="3" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1" stroke-dasharray="2 2" opacity="0.95"/>
+            <text x="${cx}" y="${cy + 3}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="700" fill="#64748B">+ Assign</text>
           </g>
         `;
       }
     }
 
-    // Helper for booth item
-    function renderBooth(id, bx, labelText) {
-      const st = stationMap[id] || { id, name: labelText, assignment: null };
-      const cx = bx + 56;
-      const cy = 88;
+    // Helper to render standard 4-seater dining table (square wooden table + 4 chairs)
+    function renderDiningTable(id, cx, cy, labelNum) {
+      const st = stationMap[id] || { id, name: `Table ${labelNum}`, assignment: null };
       const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
 
       return `
-        <!-- Booth: ${id} -->
+        <!-- Table ${labelNum} (${id}) -->
         <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
-          <!-- Left Bench -->
-          <rect x="${bx}" y="48" width="18" height="66" rx="2" fill="#991B1B" stroke="#7F1D1D" stroke-width="1.5"/>
-          <!-- Right Bench -->
-          <rect x="${bx + 94}" y="48" width="18" height="66" rx="2" fill="#991B1B" stroke="#7F1D1D" stroke-width="1.5"/>
-          <!-- Dining Table Center -->
-          <rect x="${bx + 22}" y="52" width="68" height="58" rx="2" fill="#D97706" stroke="${isHighlighted ? '#F59E0B' : '#92400E'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
-          <!-- Booth Label -->
-          <text x="${cx}" y="67" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#78350F">${labelText}</text>
-          ${renderBadgeSvg(st, cx, cy)}
-        </g>
-      `;
-    }
-
-    // Helper for square 4-seater dining table
-    function renderSquareTable(id, tx, ty, labelText) {
-      const st = stationMap[id] || { id, name: labelText, assignment: null };
-      const cx = tx + 30;
-      const cy = ty + 30;
-      const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
-
-      return `
-        <!-- Table: ${id} -->
-        <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
-          <!-- 4 Surrounding Chairs -->
-          <rect x="${tx + 16}" y="${ty - 12}" width="28" height="9" rx="2" fill="#78350F"/>
-          <rect x="${tx + 16}" y="${ty + 63}" width="28" height="9" rx="2" fill="#78350F"/>
-          <rect x="${tx - 11}" y="${ty + 16}" width="9" height="28" rx="2" fill="#78350F"/>
-          <rect x="${tx + 62}" y="${ty + 16}" width="9" height="28" rx="2" fill="#78350F"/>
-          <!-- Table Surface -->
-          <rect x="${tx}" y="${ty}" width="60" height="60" rx="2" fill="#B45309" stroke="${isHighlighted ? '#F59E0B' : '#78350F'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
+          <!-- 4 Chairs -->
+          <rect x="${cx - 15}" y="${cy - 35}" width="30" height="7" rx="2" fill="#78350F"/>
+          <rect x="${cx - 15}" y="${cy + 28}" width="30" height="7" rx="2" fill="#78350F"/>
+          <rect x="${cx - 35}" y="${cy - 15}" width="7" height="30" rx="2" fill="#78350F"/>
+          <rect x="${cx + 28}" y="${cy - 15}" width="7" height="30" rx="2" fill="#78350F"/>
+          <!-- Wooden Tabletop Surface -->
+          <rect x="${cx - 26}" y="${cy - 26}" width="52" height="52" rx="3" fill="#D97706" stroke="${isHighlighted ? '#F59E0B' : '#92400E'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
+          <rect x="${cx - 22}" y="${cy - 22}" width="44" height="44" rx="2" fill="none" stroke="#B45309" stroke-width="1" opacity="0.6"/>
           <!-- Table Title -->
-          <text x="${cx}" y="${ty + 17}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#FFFFFF">${labelText}</text>
-          ${renderBadgeSvg(st, cx, ty + 38)}
+          <text x="${cx}" y="${cy - 9}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="900" fill="#FFFFFF">Tbl ${labelNum}</text>
+          <!-- Badge -->
+          ${renderBadgeSvg(st, cx, cy + 9)}
         </g>
       `;
     }
 
-    // Assemble complete vector blueprint SVG
+    // Helper for Upper Stepped Dining Table
+    function renderUpperTable(id, cx, cy, labelNum, isRedBox) {
+      const st = stationMap[id] || { id, name: `Table ${labelNum}`, assignment: null };
+      const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+      const borderColor = isRedBox ? '#DC2626' : (isHighlighted ? '#F59E0B' : '#92400E');
+      const tableFill = isRedBox ? '#B45309' : '#D97706';
+
+      return `
+        <!-- Upper Table ${labelNum} (${id}) -->
+        <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
+          <!-- 4 Chairs -->
+          <rect x="${cx - 14}" y="${cy - 33}" width="28" height="6" rx="2" fill="#78350F"/>
+          <rect x="${cx - 14}" y="${cy + 27}" width="28" height="6" rx="2" fill="#78350F"/>
+          <rect x="${cx - 33}" y="${cy - 14}" width="6" height="28" rx="2" fill="#78350F"/>
+          <rect x="${cx + 27}" y="${cy - 14}" width="6" height="28" rx="2" fill="#78350F"/>
+          <!-- Table Surface -->
+          <rect x="${cx - 25}" y="${cy - 25}" width="50" height="50" rx="3" fill="${tableFill}" stroke="${borderColor}" stroke-width="${isRedBox ? 2.5 : (isHighlighted ? 2.5 : 1.5)}"/>
+          <text x="${cx}" y="${cy - 9}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#FFFFFF">Tbl ${labelNum}</text>
+          ${renderBadgeSvg(st, cx, cy + 9)}
+        </g>
+      `;
+    }
+
+    // Assemble Master Architectural Floor Plan SVG
     const svgHtml = `
-      <svg viewBox="0 0 830 480" class="fp-svg-canvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Restaurant Architectural Floor Plan Blueprint">
+      <svg viewBox="0 0 1020 1260" class="fp-svg-canvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Restaurant Architectural Floor Plan Blueprint">
         <defs>
-          <!-- Floor Tile Pattern -->
-          <pattern id="fp-tile" width="20" height="20" patternUnits="userSpaceOnUse">
+          <!-- Blueprint Grid -->
+          <pattern id="bp-tile" width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="0.5"/>
           </pattern>
-          <pattern id="kitchen-tile" width="14" height="14" patternUnits="userSpaceOnUse">
-            <path d="M 14 0 L 0 0 0 14" fill="none" stroke="#CBD5E1" stroke-width="0.6"/>
+          <!-- Kitchen Tile -->
+          <pattern id="kitchen-tile" width="16" height="16" patternUnits="userSpaceOnUse">
+            <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#CBD5E1" stroke-width="0.6"/>
+          </pattern>
+          <!-- Restroom Tile -->
+          <pattern id="restroom-tile" width="12" height="12" patternUnits="userSpaceOnUse">
+            <path d="M 12 0 L 0 0 0 12" fill="none" stroke="#CBD5E1" stroke-width="0.5"/>
+          </pattern>
+          <!-- Butcher Tile -->
+          <pattern id="butcher-tile" width="15" height="15" patternUnits="userSpaceOnUse">
+            <path d="M 15 0 L 0 0 0 15" fill="none" stroke="#FECDD3" stroke-width="0.5"/>
           </pattern>
         </defs>
 
         <!-- Floor Background -->
-        <rect x="8" y="8" width="814" height="464" fill="#FDFBF7" stroke="#0F172A" stroke-width="4"/>
-        <rect x="8" y="8" width="814" height="464" fill="url(#fp-tile)" opacity="0.6"/>
+        <rect x="25" y="30" width="970" height="1200" rx="4" fill="#FCFBFA" stroke="#0F172A" stroke-width="4"/>
+        <rect x="25" y="30" width="970" height="1200" fill="url(#bp-tile)" opacity="0.65"/>
+        <rect x="29" y="34" width="962" height="1192" rx="2" fill="none" stroke="#64748B" stroke-width="1" stroke-dasharray="8 4"/>
 
-        <!-- Top Planters along ledge -->
-        <g fill="#15803D" stroke="#14532D" stroke-width="1">
-          <circle cx="24" cy="22" r="9"/>
-          <circle cx="158" cy="22" r="9"/>
-          <circle cx="292" cy="22" r="9"/>
-          <circle cx="426" cy="22" r="9"/>
-          <circle cx="560" cy="22" r="9"/>
+        <!-- ================= MASTER ARCHITECTURAL HEADER STRIP ================= -->
+        <g id="master-header-strip">
+          <rect x="25" y="8" width="970" height="24" fill="#0F172A" rx="3"/>
+          <text x="40" y="24" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" font-weight="900" fill="#38BDF8" letter-spacing="1.5">RESTAURANT ARCHITECTURAL FLOOR PLAN · MASTER BLUEPRINT</text>
+          <text x="980" y="24" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="700" fill="#94A3B8">NORTH ↑</text>
         </g>
 
-        <!-- ================= BOOTHS 1 - 4 (TOP ROW) ================= -->
-        ${renderBooth('booth_1', 38, 'Booth 1')}
-        ${renderBooth('booth_2', 172, 'Booth 2')}
-        ${renderBooth('booth_3', 306, 'Booth 3')}
-        ${renderBooth('booth_4', 440, 'Booth 4')}
-
-        <!-- ================= MAIN DINING TABLES 1 - 4 (ROW 1) ================= -->
-        ${renderSquareTable('table_1', 65, 148, 'Table 1')}
-        ${renderSquareTable('table_2', 200, 148, 'Table 2')}
-        ${renderSquareTable('table_3', 335, 148, 'Table 3')}
-        ${renderSquareTable('table_4', 470, 148, 'Table 4')}
-
-        <!-- ================= MAIN DINING TABLES 5 - 8 (ROW 2) ================= -->
-        ${renderSquareTable('table_5', 65, 245, 'Table 5')}
-        ${renderSquareTable('table_6', 200, 245, 'Table 6')}
-        ${renderSquareTable('table_7', 335, 245, 'Table 7')}
-        ${renderSquareTable('table_8', 470, 245, 'Table 8')}
-
-        <!-- ================= KITCHEN & PREP AREA (TOP RIGHT) ================= -->
-        <rect x="595" y="10" width="225" height="160" fill="#F1F5F9" stroke="#334155" stroke-width="3"/>
-        <rect x="595" y="10" width="225" height="160" fill="url(#kitchen-tile)" opacity="0.4"/>
-        <text x="707" y="28" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#475569" letter-spacing="1">KITCHEN & PREP</text>
-        
-        <!-- Kitchen Cooktop (4 Burners) -->
-        <rect x="612" y="38" width="56" height="34" fill="#334155" rx="2"/>
-        <circle cx="626" cy="47" r="5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
-        <circle cx="654" cy="47" r="5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
-        <circle cx="626" cy="63" r="5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
-        <circle cx="654" cy="63" r="5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
-        <text x="640" y="80" text-anchor="middle" font-size="7" font-weight="700" fill="#64748B">RANGE</text>
-
-        <!-- Kitchen Double Sink -->
-        <rect x="682" y="38" width="50" height="34" fill="#CBD5E1" stroke="#475569" stroke-width="1.5"/>
-        <line x1="707" y1="38" x2="707" y2="72" stroke="#475569" stroke-width="1.5"/>
-        <circle cx="694" cy="55" r="3" fill="#64748B"/>
-        <circle cx="720" cy="55" r="3" fill="#64748B"/>
-        <text x="707" y="80" text-anchor="middle" font-size="7" font-weight="700" fill="#64748B">SINKS</text>
-
-        <!-- Kitchen Prep Counter -->
-        <rect x="746" y="38" width="60" height="34" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5"/>
-        <text x="776" y="58" text-anchor="middle" font-size="8" font-weight="700" fill="#64748B">PREP</text>
-
-        <!-- Service Pass Window -->
-        <line x1="615" y1="170" x2="720" y2="170" stroke="#B45309" stroke-width="4"/>
-        <text x="667" y="165" text-anchor="middle" font-size="8" font-weight="800" fill="#B45309">SERVICE PASS</text>
-
-        <!-- Storage Shelf -->
-        <rect x="612" y="98" width="194" height="24" fill="#E2E8F0" stroke="#94A3B8" stroke-dasharray="3 2"/>
-        <text x="709" y="114" text-anchor="middle" font-size="8" font-weight="700" fill="#64748B">STORAGE / DRY GOODS</text>
-
-        <!-- ================= SECTION A: PRIVATE DINING ROOM ================= -->
-        <rect x="595" y="174" width="225" height="162" fill="#F5EBE1" stroke="#334155" stroke-width="3"/>
-        <text x="707" y="193" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#78350F" letter-spacing="1">SECTION A (PRIVATE)</text>
-
-        <!-- Table A1 (Upper 6-Seater) -->
-        ${(() => {
-          const st = stationMap['section_a_1'] || { id: 'section_a_1', name: 'Table A1', assignment: null };
-          const cx = 707;
-          const cy = 236;
-          const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
-          return `
-            <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
-              <!-- 6 Chairs (3 Top, 3 Bottom) -->
-              <rect x="645" y="196" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="694" y="196" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="743" y="196" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="645" y="252" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="694" y="252" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="743" y="252" width="26" height="8" rx="2" fill="#78350F"/>
-              <!-- Long Table -->
-              <rect x="630" y="206" width="154" height="44" rx="2" fill="#D97706" stroke="${isHighlighted ? '#F59E0B' : '#92400E'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
-              <text x="${cx}" y="221" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#FFFFFF">Table A1 (6-Seat)</text>
-              ${renderBadgeSvg(st, cx, cy)}
-            </g>
-          `;
-        })()}
-
-        <!-- Table A2 (Lower 6-Seater) -->
-        ${(() => {
-          const st = stationMap['section_a_2'] || { id: 'section_a_2', name: 'Table A2', assignment: null };
-          const cx = 707;
-          const cy = 305;
-          const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
-          return `
-            <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
-              <!-- 6 Chairs (3 Top, 3 Bottom) -->
-              <rect x="645" y="266" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="694" y="266" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="743" y="266" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="645" y="322" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="694" y="322" width="26" height="8" rx="2" fill="#78350F"/>
-              <rect x="743" y="322" width="26" height="8" rx="2" fill="#78350F"/>
-              <!-- Long Table -->
-              <rect x="630" y="276" width="154" height="44" rx="2" fill="#D97706" stroke="${isHighlighted ? '#F59E0B' : '#92400E'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
-              <text x="${cx}" y="291" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#FFFFFF">Table A2 (6-Seat)</text>
-              ${renderBadgeSvg(st, cx, cy)}
-            </g>
-          `;
-        })()}
-
-        <!-- ================= SECTION B: LOWER DINING ROOM ================= -->
-        <rect x="415" y="342" width="175" height="126" fill="#F8FAFC" stroke="#334155" stroke-width="3"/>
-        <!-- Door Gap -->
-        <line x1="415" y1="365" x2="415" y2="405" stroke="#FDFBF7" stroke-width="4"/>
-        <text x="502" y="360" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#64748B" letter-spacing="1">SECTION B</text>
-
-        <!-- Table B1 (6-Seater) -->
-        ${(() => {
-          const st = stationMap['section_b_1'] || { id: 'section_b_1', name: 'Table B1', assignment: null };
-          const cx = 502;
-          const cy = 413;
-          const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
-          return `
-            <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
-              <!-- 6 Chairs -->
-              <rect x="445" y="369" width="25" height="8" rx="2" fill="#78350F"/>
-              <rect x="490" y="369" width="25" height="8" rx="2" fill="#78350F"/>
-              <rect x="535" y="369" width="25" height="8" rx="2" fill="#78350F"/>
-              <rect x="445" y="428" width="25" height="8" rx="2" fill="#78350F"/>
-              <rect x="490" y="428" width="25" height="8" rx="2" fill="#78350F"/>
-              <rect x="535" y="428" width="25" height="8" rx="2" fill="#78350F"/>
-              <!-- Long Table -->
-              <rect x="432" y="379" width="140" height="46" rx="2" fill="#D97706" stroke="${isHighlighted ? '#F59E0B' : '#92400E'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
-              <text x="${cx}" y="396" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#FFFFFF">Table B1 (6-Seat)</text>
-              ${renderBadgeSvg(st, cx, cy)}
-            </g>
-          `;
-        })()}
-
-        <!-- ================= BAR AREA (BOTTOM LEFT) ================= -->
-        <rect x="25" y="342" width="255" height="126" fill="#F1F5F9" stroke="#94A3B8" stroke-dasharray="3 3"/>
-        <text x="152" y="360" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="900" fill="#64748B" letter-spacing="1">BAR & COCKTAIL AREA</text>
-
-        <!-- Curved Wooden Bar Counter -->
-        <path d="M 40 376 L 225 376 Q 248 376 248 398 L 248 450 L 230 450 L 230 394 L 40 394 Z" fill="#78350F" stroke="#451A03" stroke-width="2"/>
-
-        <!-- 4 Bar Stools -->
-        <circle cx="65" cy="412" r="8.5" fill="#CBD5E1" stroke="#64748B" stroke-width="1.5"/>
-        <circle cx="115" cy="412" r="8.5" fill="#CBD5E1" stroke="#64748B" stroke-width="1.5"/>
-        <circle cx="165" cy="412" r="8.5" fill="#CBD5E1" stroke="#64748B" stroke-width="1.5"/>
-        <circle cx="215" cy="412" r="8.5" fill="#CBD5E1" stroke="#64748B" stroke-width="1.5"/>
-
-        <!-- Back Counter & Prep -->
-        <rect x="40" y="448" width="180" height="14" fill="#334155"/>
-        <rect x="115" y="450" width="30" height="9" fill="#94A3B8" stroke="#475569" stroke-width="1"/>
-
-        <!-- Bar Interactive Station -->
-        ${(() => {
-          const st = stationMap['bar'] || { id: 'bar', name: 'Bar Counter', assignment: null };
-          const cx = 135;
-          const cy = 428;
-          const isHighlighted = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
-          return `
-            <g class="fp-station ${isHighlighted ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
-              <rect x="55" y="396" width="160" height="46" rx="2" fill="rgba(15, 23, 42, 0.75)" stroke="${isHighlighted ? '#F59E0B' : '#38BDF8'}" stroke-width="${isHighlighted ? 2.5 : 1.5}"/>
-              <text x="${cx}" y="411" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="900" fill="#F8FAFC">BAR STATION</text>
-              ${renderBadgeSvg(st, cx, cy)}
-            </g>
-          `;
-        })()}
-
-        <!-- ================= RESTROOMS (BOTTOM RIGHT) ================= -->
-        <rect x="595" y="342" width="225" height="126" fill="#F8FAFC" stroke="#334155" stroke-width="3"/>
-        <line x1="707" y1="342" x2="707" y2="468" stroke="#334155" stroke-width="2"/>
-        
-        <!-- Men Restroom -->
-        <text x="651" y="360" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#64748B">MEN</text>
-        <rect x="610" y="375" width="36" height="38" fill="#E2E8F0" stroke="#94A3B8"/>
-        <circle cx="628" cy="394" r="8" fill="#FFFFFF" stroke="#64748B"/>
-        <!-- Urinal -->
-        <rect x="660" y="375" width="14" height="20" rx="4" fill="#FFFFFF" stroke="#64748B"/>
-        <!-- Sink -->
-        <rect x="660" y="425" width="28" height="18" fill="#CBD5E1" stroke="#64748B"/>
-
-        <!-- Women Restroom -->
-        <text x="763" y="360" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#64748B">WOMEN</text>
-        <rect x="720" y="375" width="36" height="38" fill="#E2E8F0" stroke="#94A3B8"/>
-        <circle cx="738" cy="394" r="8" fill="#FFFFFF" stroke="#64748B"/>
-        <rect x="770" y="375" width="36" height="38" fill="#E2E8F0" stroke="#94A3B8"/>
-        <circle cx="788" cy="394" r="8" fill="#FFFFFF" stroke="#64748B"/>
-        <!-- Sinks -->
-        <rect x="735" y="425" width="55" height="18" fill="#CBD5E1" stroke="#64748B"/>
-
-        <!-- ================= MAIN ENTRANCE (BOTTOM CENTER) ================= -->
-        <g>
-          <!-- Entrance Opening -->
-          <rect x="290" y="452" width="100" height="24" fill="#FDFBF7"/>
-          <line x1="290" y1="466" x2="330" y2="445" stroke="#0F172A" stroke-width="3"/>
-          <path d="M 330 445 A 35 35 0 0 1 330 466" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
-          <line x1="390" y1="466" x2="350" y2="445" stroke="#0F172A" stroke-width="3"/>
-          <path d="M 350 445 A 35 35 0 0 0 350 466" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
-          <text x="340" y="475" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="900" fill="#0F172A" letter-spacing="1">MAIN ENTRANCE</text>
+        <!-- ================= TOP: BACK ENTRANCE / EXIT ================= -->
+        <g id="back-entrance">
+          <rect x="515" y="35" width="70" height="48" fill="#FEF2F2" stroke="#EF4444" stroke-width="2"/>
+          <!-- Double Exit Doors Swing -->
+          <line x1="515" y1="50" x2="540" y2="38" stroke="#DC2626" stroke-width="2.5"/>
+          <path d="M 540 38 A 25 25 0 0 1 540 54" fill="none" stroke="#EF4444" stroke-dasharray="2 2"/>
+          <line x1="585" y1="50" x2="560" y2="38" stroke="#DC2626" stroke-width="2.5"/>
+          <path d="M 560 38 A 25 25 0 0 0 560 54" fill="none" stroke="#EF4444" stroke-dasharray="2 2"/>
+          <!-- Egress Arrow & Text -->
+          <polygon points="550,37 555,44 545,44" fill="#DC2626"/>
+          <text x="550" y="67" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="900" fill="#DC2626">Back entrance</text>
+          <text x="550" y="77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="900" fill="#DC2626">exit</text>
         </g>
+
+        <!-- ================= 1. STORE (FAR TOP-LEFT CORNER) ================= -->
+        <g id="room-store">
+          <!-- Room Perimeter: Spans from outer west wall to corridor wall (x: 25 to 515, y: 35 to 195) -->
+          <rect x="25" y="35" width="490" height="160" fill="#F1F5F9" stroke="#334155" stroke-width="3"/>
+          <rect x="25" y="35" width="490" height="160" fill="url(#kitchen-tile)" opacity="0.15"/>
+          
+          <!-- Diagonal architectural watermarked label matching sketch -->
+          <text x="270" y="110" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#CBD5E1" letter-spacing="8" opacity="0.55" transform="rotate(-7 270 110)">STORE</text>
+
+          <!-- Main Clear Store Room Title Header -->
+          <text x="270" y="68" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="900" fill="#1E293B" letter-spacing="3">STORE</text>
+          <text x="270" y="82" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#64748B">CENTRAL DRY STORAGE & INVENTORY SUITE</text>
+
+          <!-- Storage Shelving Units & Logistics Racks -->
+          <!-- Rack A: Along top wall -->
+          <rect x="40" y="45" width="180" height="20" fill="#E2E8F0" stroke="#94A3B8" stroke-dasharray="3 2" rx="2"/>
+          <text x="130" y="58" text-anchor="middle" font-size="7.5" font-weight="800" fill="#475569">RACK A · DRY GOODS & INGREDIENTS</text>
+
+          <!-- Pallets Zone: West wall -->
+          <rect x="40" y="90" width="105" height="90" fill="#E2E8F0" stroke="#94A3B8" stroke-dasharray="3 2" rx="2"/>
+          <text x="92" y="132" text-anchor="middle" font-size="8" font-weight="800" fill="#64748B">PALLET BAYS</text>
+          <text x="92" y="145" text-anchor="middle" font-size="7" font-weight="600" fill="#94A3B8">BULK SACKS & OIL</text>
+
+          <!-- Rack B: East wall near corridor -->
+          <rect x="420" y="45" width="80" height="135" fill="#E2E8F0" stroke="#94A3B8" stroke-dasharray="3 2" rx="2"/>
+          <text x="460" y="105" text-anchor="middle" font-size="8" font-weight="800" fill="#64748B" transform="rotate(90 460 105)">RACK B · BOXES & PACKAGING</text>
+
+          <!-- Store Door Swing to Corridor -->
+          <line x1="515" y1="120" x2="495" y2="105" stroke="#334155" stroke-width="2.5"/>
+          <path d="M 495 105 A 20 20 0 0 1 515 135" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
+
+          <!-- Interactive Station: Store Attendant -->
+          ${(() => {
+            const st = stationMap['station_store'] || { id: 'station_store', name: 'Store', assignment: null };
+            const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
+                <rect x="200" y="115" width="140" height="46" rx="3" fill="#FFFFFF" stroke="${isHigh ? '#F59E0B' : '#94A3B8'}" stroke-width="${isHigh ? 2.5 : 1.5}"/>
+                <text x="270" y="132" text-anchor="middle" font-size="9.5" font-weight="900" fill="#1E293B">STORE KEEPER</text>
+                ${renderBadgeSvg(st, 270, 148)}
+              </g>
+            `;
+          })()}
+        </g>
+
+        <!-- ================= 2. CHIPS CHICKEN SAUSAGE CHEF DISPLAY ZONE ================= -->
+        <g id="room-chef-display">
+          <!-- Room Perimeter: Directly underneath Store (x: 25 to 515, y: 195 to 330) -->
+          <rect x="25" y="195" width="490" height="135" fill="#FFFBEB" stroke="#B45309" stroke-width="3"/>
+          <text x="270" y="218" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12.5" font-weight="900" fill="#92400E" letter-spacing="1.5">CHIPS CHICKEN SAUSAGE</text>
+          <text x="270" y="233" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="800" fill="#B45309">CHEF DISPLAY ZONE</text>
+          
+          <!-- Hot Warmer Glass Case & Commercial Deep Fryers -->
+          <rect x="40" y="248" width="180" height="42" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" rx="2"/>
+          <text x="130" y="267" text-anchor="middle" font-size="8.5" font-weight="800" fill="#92400E">HOT FOOD DISPLAY WARMER</text>
+          <circle cx="70" cy="278" r="4" fill="#F59E0B"/>
+          <circle cx="100" cy="278" r="4" fill="#F59E0B"/>
+          <circle cx="130" cy="278" r="4" fill="#F59E0B"/>
+          <circle cx="160" cy="278" r="4" fill="#F59E0B"/>
+          <circle cx="190" cy="278" r="4" fill="#F59E0B"/>
+          
+          <!-- Fryer Battery -->
+          <rect x="40" y="295" width="110" height="28" fill="#334155" rx="2"/>
+          <text x="95" y="313" text-anchor="middle" font-size="7.5" font-weight="800" fill="#F1F5F9">COMMERCIAL DEEP FRYERS</text>
+
+          <!-- Interactive Station: Chips Chicken Sausage Attendant -->
+          ${(() => {
+            const st = stationMap['station_chips_chicken'] || { id: 'station_chips_chicken', name: 'Chips Chicken Sausage', assignment: null };
+            const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
+                <rect x="270" y="250" width="200" height="48" rx="3" fill="#FFFFFF" stroke="${isHigh ? '#F59E0B' : '#D97706'}" stroke-width="${isHigh ? 2.5 : 1.5}"/>
+                <text x="370" y="270" text-anchor="middle" font-size="9" font-weight="900" fill="#B45309">DISPLAY ZONE ATTENDANT</text>
+                ${renderBadgeSvg(st, 370, 287)}
+              </g>
+            `;
+          })()}
+        </g>
+
+        <!-- ================= 3. JIKO (MAIN COOKING KITCHEN) ================= -->
+        <g id="room-jiko">
+          <!-- Room Perimeter: Below Display Zone, right of Samosa/Chef (x: 180 to 515, y: 330 to 480) -->
+          <rect x="180" y="330" width="335" height="150" fill="#F8FAFC" stroke="#334155" stroke-width="3"/>
+          <rect x="180" y="330" width="335" height="150" fill="url(#kitchen-tile)" opacity="0.3"/>
+          <text x="270" y="358" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="900" fill="#1E293B" letter-spacing="3">JIKO</text>
+          <text x="270" y="373" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="800" fill="#64748B">MAIN COOKING CORE</text>
+          
+          <!-- Commercial Range (6 Burners) -->
+          <rect x="195" y="388" width="75" height="45" fill="#1E293B" rx="2"/>
+          <circle cx="209" cy="400" r="4.5" fill="#475569" stroke="#94A3B8"/>
+          <circle cx="232" cy="400" r="4.5" fill="#475569" stroke="#94A3B8"/>
+          <circle cx="255" cy="400" r="4.5" fill="#475569" stroke="#94A3B8"/>
+          <circle cx="209" cy="420" r="4.5" fill="#475569" stroke="#94A3B8"/>
+          <circle cx="232" cy="420" r="4.5" fill="#475569" stroke="#94A3B8"/>
+          <circle cx="255" cy="420" r="4.5" fill="#475569" stroke="#94A3B8"/>
+          <text x="232" y="428" text-anchor="middle" font-size="7" font-weight="800" fill="#94A3B8">HEAVY RANGE</text>
+
+          <!-- Stainless Prep Island -->
+          <rect x="290" y="388" width="85" height="45" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5" rx="2"/>
+          <text x="332" y="408" text-anchor="middle" font-size="8" font-weight="800" fill="#475569">CHEF PREP</text>
+          <text x="332" y="421" text-anchor="middle" font-size="7" font-weight="700" fill="#64748B">ISLAND</text>
+
+          <!-- Double Kitchen Sink -->
+          <rect x="445" y="345" width="60" height="35" fill="#CBD5E1" stroke="#475569" stroke-width="1.5"/>
+          <line x1="475" y1="345" x2="475" y2="380" stroke="#475569" stroke-width="1.5"/>
+          <text x="475" y="390" text-anchor="middle" font-size="7" font-weight="700" fill="#64748B">WASH SINK</text>
+
+          <!-- Interactive Station: Jiko Cook -->
+          ${(() => {
+            const st = stationMap['station_jiko'] || { id: 'station_jiko', name: 'Jiko', assignment: null };
+            const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;">
+                <rect x="395" y="395" width="110" height="42" rx="3" fill="#FFFFFF" stroke="${isHigh ? '#F59E0B' : '#334155'}" stroke-width="${isHigh ? 2.5 : 1.5}"/>
+                <text x="450" y="411" text-anchor="middle" font-size="9" font-weight="900" fill="#0F172A">JIKO HEAD CHEF</text>
+                ${renderBadgeSvg(st, 450, 427)}
+              </g>
+            `;
+          })()}
+        </g>
+
+        <!-- ================= 4. KITCHEN ORDERS PASS & KITCHEN ENTRANCE ================= -->
+        <!-- Kitchen Orders Counter -->
+        ${(() => {
+          const st = stationMap['station_kitchen_orders'] || { id: 'station_kitchen_orders', name: 'Kitchen Orders', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="pass-kitchen-orders">
+              <rect x="180" y="480" width="285" height="50" fill="#FEF3C7" stroke="#B45309" stroke-width="3"/>
+              <text x="270" y="502" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#92400E" letter-spacing="1">Kitchen Orders</text>
+              <text x="270" y="516" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="700" fill="#B45309">DISPATCH PASS-THROUGH</text>
+              ${renderBadgeSvg(st, 395, 505)}
+            </g>
+          `;
+        })()}
+
+        <!-- Kitchen Entrance Doorway -->
+        <g id="door-kitchen-entrance">
+          <rect x="465" y="480" width="50" height="50" fill="#F8FAFC" stroke="#334155" stroke-width="2"/>
+          <line x1="465" y1="505" x2="485" y2="488" stroke="#0F172A" stroke-width="2.5"/>
+          <path d="M 485 488 A 20 20 0 0 1 485 513" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
+          <line x1="515" y1="505" x2="495" y2="522" stroke="#0F172A" stroke-width="2.5"/>
+          <path d="M 495 522 A 20 20 0 0 1 495 497" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
+          <text x="490" y="534" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="900" fill="#0F172A">Kitchen</text>
+          <text x="490" y="543" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="900" fill="#0F172A">Entrance</text>
+        </g>
+
+        <!-- ================= 5. CENTRAL SERVICE COLUMN (NYAMA COOK, STOCK, CHANGING ROOM, DISHES) ================= -->
+        <!-- Nyama Cook Station -->
+        ${(() => {
+          const st = stationMap['station_nyama_cook'] || { id: 'station_nyama_cook', name: 'Nyama Cook', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-nyama-cook">
+              <rect x="515" y="83" width="55" height="170" fill="#FEF2F2" stroke="#DC2626" stroke-width="2.5"/>
+              <!-- Charcoal Grill -->
+              <rect x="522" y="93" width="41" height="40" fill="#1E293B" rx="2"/>
+              <line x1="525" y1="101" x2="560" y2="101" stroke="#EF4444" stroke-width="1.5"/>
+              <line x1="525" y1="111" x2="560" y2="111" stroke="#EF4444" stroke-width="1.5"/>
+              <line x1="525" y1="121" x2="560" y2="121" stroke="#EF4444" stroke-width="1.5"/>
+              <text x="542" y="148" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#DC2626">Nyama</text>
+              <text x="542" y="160" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#DC2626">cook</text>
+              ${renderBadgeSvg(st, 542, 198)}
+            </g>
+          `;
+        })()}
+
+        <!-- Stock Guy -->
+        ${(() => {
+          const st = stationMap['station_stock_guy'] || { id: 'station_stock_guy', name: 'Stock Guy', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-stock-guy">
+              <rect x="570" y="83" width="60" height="75" fill="#F8FAFC" stroke="#334155" stroke-width="2"/>
+              <text x="600" y="103" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#334155">Stock guy</text>
+              ${renderBadgeSvg(st, 600, 129)}
+            </g>
+          `;
+        })()}
+
+        <!-- Waiters, Cashier & Minishop Changing Room -->
+        <g id="room-changing">
+          <rect x="570" y="158" width="60" height="172" fill="#F1F5F9" stroke="#64748B" stroke-width="2"/>
+          <text x="600" y="180" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="800" fill="#475569">Waiters,</text>
+          <text x="600" y="193" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="800" fill="#475569">cashier</text>
+          <text x="600" y="206" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="800" fill="#475569">& minishop</text>
+          <text x="600" y="222" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#1E293B">changing</text>
+          <text x="600" y="235" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#1E293B">room</text>
+          <!-- Locker icons -->
+          <rect x="575" y="255" width="50" height="65" fill="#E2E8F0" stroke="#94A3B8" stroke-dasharray="2 2"/>
+          <text x="600" y="292" text-anchor="middle" font-size="7" font-weight="700" fill="#64748B">LOCKERS</text>
+        </g>
+
+        <!-- Dishes / Scullery Area -->
+        ${(() => {
+          const st = stationMap['station_dishes'] || { id: 'station_dishes', name: 'Dishes', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-dishes">
+              <rect x="515" y="330" width="115" height="150" fill="#F0FDF4" stroke="#16A34A" stroke-width="2.5"/>
+              <text x="572" y="358" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#15803D" letter-spacing="2">Dishes</text>
+              <text x="572" y="375" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#16A34A">SCULLERY & WASH-UP</text>
+              <!-- Triple Sink -->
+              <rect x="525" y="390" width="95" height="32" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.5"/>
+              <line x1="556" y1="390" x2="556" y2="422" stroke="#16A34A" stroke-width="1"/>
+              <line x1="588" y1="390" x2="588" y2="422" stroke="#16A34A" stroke-width="1"/>
+              <text x="572" y="410" text-anchor="middle" font-size="7" font-weight="700" fill="#15803D">TRIPLE SINK</text>
+              ${renderBadgeSvg(st, 572, 450)}
+            </g>
+          `;
+        })()}
+
+        <!-- ================= 6. LADIES WASHROOM (UPPER RIGHT) ================= -->
+        <g id="room-washroom">
+          <rect x="630" y="35" width="225" height="255" fill="#FDF2F8" stroke="#DB2777" stroke-width="3"/>
+          <rect x="630" y="35" width="225" height="255" fill="url(#restroom-tile)" opacity="0.3"/>
+          <!-- Title text (rendered clearly right-side up for easy reading) -->
+          <text x="742" y="65" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#9D174D" letter-spacing="1">Ladies</text>
+          <text x="742" y="81" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#9D174D" letter-spacing="1">washroom</text>
+          <!-- Restroom Stalls -->
+          <rect x="710" y="100" width="65" height="70" fill="#FCE7F3" stroke="#F472B6" stroke-width="1.5"/>
+          <circle cx="742" cy="135" r="12" fill="#FFFFFF" stroke="#DB2777" stroke-width="1.5"/>
+          <text x="742" y="139" text-anchor="middle" font-size="8" font-weight="900" fill="#DB2777">WC 1</text>
+          <rect x="780" y="100" width="65" height="70" fill="#FCE7F3" stroke="#F472B6" stroke-width="1.5"/>
+          <circle cx="812" cy="135" r="12" fill="#FFFFFF" stroke="#DB2777" stroke-width="1.5"/>
+          <text x="812" y="139" text-anchor="middle" font-size="8" font-weight="900" fill="#DB2777">WC 2</text>
+          <!-- Vanity Basins -->
+          <rect x="645" y="105" width="50" height="70" fill="#FCE7F3" stroke="#F472B6" stroke-width="1.5"/>
+          <ellipse cx="670" cy="125" rx="14" ry="10" fill="#FFFFFF" stroke="#DB2777"/>
+          <ellipse cx="670" cy="157" rx="14" ry="10" fill="#FFFFFF" stroke="#DB2777"/>
+          <text x="670" y="173" text-anchor="middle" font-size="6.5" font-weight="700" fill="#9D174D">SINKS</text>
+          <!-- Entry Doorway marked with brackets and swing arc -->
+          <g id="washroom-entry">
+            <rect x="630" y="245" width="60" height="45" fill="#FDF2F8"/>
+            <line x1="630" y1="265" x2="655" y2="250" stroke="#DB2777" stroke-width="2.5"/>
+            <path d="M 655 250 A 25 25 0 0 1 655 275" fill="none" stroke="#F472B6" stroke-dasharray="2 2"/>
+            <text x="660" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#BE185D">[ entry ]</text>
+          </g>
+        </g>
+
+        <!-- ================= 7. UPPER ELEVATED / STEPPED DINING TABLES ================= -->
+        <g id="upper-tiered-tables">
+          <!-- Stepped Zone Background Outline -->
+          <path d="M 480 535 L 855 535 L 855 470 L 785 470 L 785 400 L 785 330 L 630 330 L 630 400 L 555 400 L 480 470 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 2"/>
+          
+          <text x="670" y="324" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="800" fill="#64748B" letter-spacing="1">ELEVATED DINING SECTION (TIERS 1 - 3)</text>
+
+          <!-- TIER 3 (TOP STEP - RED PEN OUTLINE FROM SKETCH) -->
+          <rect x="625" y="330" width="150" height="66" fill="#FEF2F2" stroke="#DC2626" stroke-width="2.5" rx="2"/>
+          <text x="700" y="342" text-anchor="middle" font-size="8" font-weight="900" fill="#DC2626">TIER 3 (TOP PLATFORM)</text>
+          ${renderUpperTable('table_45', 665, 365, 45, true)}
+          ${renderUpperTable('table_46', 740, 365, 46, true)}
+
+          <!-- TIER 2 (MIDDLE STEP - 3 TABLES) -->
+          <rect x="555" y="400" width="225" height="66" fill="#F8FAFC" stroke="#64748B" stroke-width="1.5" rx="2"/>
+          <text x="560" y="412" font-size="7.5" font-weight="800" fill="#64748B">TIER 2</text>
+          ${renderUpperTable('table_42', 590, 435, 42, false)}
+          ${renderUpperTable('table_43', 665, 435, 43, false)}
+          ${renderUpperTable('table_44', 740, 435, 44, false)}
+
+          <!-- TIER 1 (BASE ROW - 5 TABLES HORIZONTAL) -->
+          <rect x="480" y="470" width="375" height="65" fill="#F8FAFC" stroke="#64748B" stroke-width="1.5" rx="2"/>
+          <text x="485" y="482" font-size="7.5" font-weight="800" fill="#64748B">TIER 1</text>
+          ${renderUpperTable('table_37', 515, 505, 37, false)}
+          ${renderUpperTable('table_38', 590, 505, 38, false)}
+          ${renderUpperTable('table_39', 665, 505, 39, false)}
+          ${renderUpperTable('table_40', 740, 505, 40, false)}
+          ${renderUpperTable('table_41', 815, 505, 41, false)}
+        </g>
+
+        <!-- ================= 8. LEFT SERVICE STRIP (VERTICAL ALONG WEST WALL) ================= -->
+        <!-- Wall separating left strip from dining / corridor -->
+        <line x1="180" y1="330" x2="180" y2="1230" stroke="#0F172A" stroke-width="3"/>
+
+        <!-- A. Samosa & Kababs Maker (Located directly below Chips Display Zone) -->
+        ${(() => {
+          const st = stationMap['station_samosa'] || { id: 'station_samosa', name: 'Samosa & Kababs Maker', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-samosa">
+              <rect x="25" y="330" width="155" height="110" fill="#FFF7ED" stroke="#EA580C" stroke-width="2.5"/>
+              <!-- 3 Sub Compartments -->
+              <rect x="30" y="336" width="145" height="28" fill="#FFEDD5" stroke="#F97316"/>
+              <text x="102" y="354" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#9A3412">Samosa</text>
+              <rect x="30" y="366" width="145" height="28" fill="#FFEDD5" stroke="#F97316"/>
+              <text x="102" y="384" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#9A3412">Kababs</text>
+              <rect x="30" y="396" width="145" height="38" fill="#FFEDD5" stroke="#F97316"/>
+              <text x="102" y="411" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" fill="#9A3412">Maker</text>
+              ${renderBadgeSvg(st, 102, 423)}
+            </g>
+          `;
+        })()}
+
+        <!-- B. Chef Station -->
+        ${(() => {
+          const st = stationMap['station_chef_prep'] || { id: 'station_chef_prep', name: 'Chef Station', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-chef-prep">
+              <rect x="25" y="440" width="155" height="110" fill="#F8FAFC" stroke="#475569" stroke-width="2.5"/>
+              <text x="102" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="900" fill="#1E293B" letter-spacing="1">Chef</text>
+              <text x="102" y="485" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#64748B">PREP STATION</text>
+              <!-- Cutting board & knife -->
+              <rect x="45" y="495" width="115" height="16" fill="#E2E8F0" stroke="#94A3B8" rx="2"/>
+              ${renderBadgeSvg(st, 102, 532)}
+            </g>
+          `;
+        })()}
+
+        <!-- C. Barista Counter -->
+        ${(() => {
+          const st = stationMap['station_barista'] || { id: 'station_barista', name: 'Barista', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-barista">
+              <rect x="25" y="550" width="155" height="130" fill="#FEFCE8" stroke="#CA8A04" stroke-width="2.5"/>
+              <text x="102" y="582" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="900" fill="#854D0E" letter-spacing="1">Barista</text>
+              <text x="102" y="597" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#A16207">ESPRESSO & DRINKS</text>
+              <!-- Espresso machine -->
+              <rect x="45" y="605" width="115" height="26" fill="#1E293B" rx="2"/>
+              <circle cx="75" cy="618" r="5" fill="#E2E8F0"/>
+              <circle cx="102" cy="618" r="5" fill="#E2E8F0"/>
+              <circle cx="129" cy="618" r="5" fill="#E2E8F0"/>
+              ${renderBadgeSvg(st, 102, 656)}
+            </g>
+          `;
+        })()}
+
+        <!-- D. Kitchen Butchery -->
+        ${(() => {
+          const st = stationMap['station_kitchen_butchery'] || { id: 'station_kitchen_butchery', name: 'Kitchen Butchery', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-kitchen-butchery">
+              <rect x="25" y="680" width="155" height="140" fill="#FFF1F2" stroke="#E11D48" stroke-width="2.5"/>
+              <text x="102" y="712" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#BE123C">Kitchen</text>
+              <text x="102" y="728" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#BE123C">Butchery</text>
+              <text x="102" y="742" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="700" fill="#E11D48">MEAT PREPARATION</text>
+              <!-- Butcher block -->
+              <rect x="50" y="752" width="105" height="26" fill="#FDE047" stroke="#CA8A04" rx="2"/>
+              <text x="102" y="769" text-anchor="middle" font-size="7.5" font-weight="800" fill="#713F12">BUTCHER BLOCK</text>
+              ${renderBadgeSvg(st, 102, 802)}
+            </g>
+          `;
+        })()}
+
+        <!-- E. Cashier Station (Always 2 Staff: Cashier 1 & Cashier 2) -->
+        <g id="room-cashier-suite">
+          <rect x="25" y="820" width="155" height="140" fill="#EFF6FF" stroke="#2563EB" stroke-width="2.5"/>
+          <text x="102" y="840" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#1E40AF" letter-spacing="1">Cashier (2)</text>
+          <text x="102" y="853" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="700" fill="#3B82F6">DUAL POS TILLS</text>
+
+          <!-- Cashier 1 (Till 1) -->
+          ${(() => {
+            const st1 = stationMap['station_cashier'] || { id: 'station_cashier', name: 'Cashier 1', assignment: null };
+            const isHigh1 = highlightedStaffId && st1.assignment && st1.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh1 ? 'highlighted' : ''}" data-station-id="${st1.id}" style="cursor: pointer;" id="station-cashier">
+                <rect x="35" y="860" width="135" height="42" rx="4" fill="#FFFFFF" stroke="${isHigh1 ? '#F59E0B' : '#93C5FD'}" stroke-width="${isHigh1 ? 2.5 : 1.5}"/>
+                <rect x="42" y="868" width="28" height="26" rx="2" fill="#1E293B"/>
+                <rect x="46" y="872" width="20" height="12" rx="1" fill="#38BDF8"/>
+                <text x="42" y="884" font-size="0"></text>
+                <text x="74" y="885" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#1E40AF">TILL 1</text>
+                ${renderBadgeSvg(st1, 126, 881)}
+              </g>
+            `;
+          })()}
+
+          <!-- Cashier 2 (Till 2) -->
+          ${(() => {
+            const st2 = stationMap['station_cashier_2'] || { id: 'station_cashier_2', name: 'Cashier 2', assignment: null };
+            const isHigh2 = highlightedStaffId && st2.assignment && st2.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh2 ? 'highlighted' : ''}" data-station-id="${st2.id}" style="cursor: pointer;" id="station-cashier-2">
+                <rect x="35" y="908" width="135" height="42" rx="4" fill="#FFFFFF" stroke="${isHigh2 ? '#F59E0B' : '#93C5FD'}" stroke-width="${isHigh2 ? 2.5 : 1.5}"/>
+                <rect x="42" y="916" width="28" height="26" rx="2" fill="#1E293B"/>
+                <rect x="46" y="920" width="20" height="12" rx="1" fill="#38BDF8"/>
+                <text x="74" y="933" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#1E40AF">TILL 2</text>
+                ${renderBadgeSvg(st2, 126, 929)}
+              </g>
+            `;
+          })()}
+        </g>
+
+        <!-- F. Main Office -->
+        ${(() => {
+          const st = stationMap['station_main_office'] || { id: 'station_main_office', name: 'Main Office', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-main-office">
+              <rect x="25" y="960" width="155" height="270" fill="#F8FAFC" stroke="#0F172A" stroke-width="3"/>
+              <text x="102" y="995" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="900" fill="#0F172A" letter-spacing="1">Main office</text>
+              <text x="102" y="1010" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#64748B">MANAGEMENT SUITE</text>
+              <!-- Executive Desk -->
+              <rect x="40" y="1025" width="125" height="60" fill="#78350F" stroke="#451A03" stroke-width="2" rx="3"/>
+              <rect x="75" y="1035" width="55" height="30" fill="#0F172A" rx="2"/>
+              <text x="102" y="1054" text-anchor="middle" font-size="8" font-weight="800" fill="#F8FAFC">DESK</text>
+              <!-- Office Chair -->
+              <circle cx="102" cy="1110" r="14" fill="#334155" stroke="#1E293B"/>
+              <!-- Office Door Swing -->
+              <line x1="180" y1="975" x2="155" y2="960" stroke="#0F172A" stroke-width="2.5"/>
+              <path d="M 155 960 A 25 25 0 0 1 180 985" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
+              ${renderBadgeSvg(st, 102, 1155)}
+            </g>
+          `;
+        })()}
+
+        <!-- ================= 9. MAIN DINING HALL (LEFT 3x6 GRID = 18 TABLES) ================= -->
+        <g id="dining-left-grid">
+          <text x="365" y="580" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" font-weight="900" fill="#475569" letter-spacing="1">MAIN DINING (LEFT SECTION · 18 TABLES)</text>
+
+          <!-- Row 1: Tables 1, 2, 3 -->
+          ${renderDiningTable('table_1', 265, 625, 1)}
+          ${renderDiningTable('table_2', 365, 625, 2)}
+          ${renderDiningTable('table_3', 465, 625, 3)}
+
+          <!-- Row 2: Tables 4, 5, 6 -->
+          ${renderDiningTable('table_4', 265, 725, 4)}
+          ${renderDiningTable('table_5', 365, 725, 5)}
+          ${renderDiningTable('table_6', 465, 725, 6)}
+
+          <!-- Row 3: Tables 7, 8, 9 -->
+          ${renderDiningTable('table_7', 265, 825, 7)}
+          ${renderDiningTable('table_8', 365, 825, 8)}
+          ${renderDiningTable('table_9', 465, 825, 9)}
+
+          <!-- Row 4: Tables 10, 11, 12 -->
+          ${renderDiningTable('table_10', 265, 925, 10)}
+          ${renderDiningTable('table_11', 365, 925, 11)}
+          ${renderDiningTable('table_12', 465, 925, 12)}
+
+          <!-- Row 5: Tables 13, 14, 15 -->
+          ${renderDiningTable('table_13', 265, 1025, 13)}
+          ${renderDiningTable('table_14', 365, 1025, 14)}
+          ${renderDiningTable('table_15', 465, 1025, 15)}
+
+          <!-- Row 6: Tables 16, 17, 18 -->
+          ${renderDiningTable('table_16', 265, 1125, 16)}
+          ${renderDiningTable('table_17', 365, 1125, 17)}
+          ${renderDiningTable('table_18', 465, 1125, 18)}
+        </g>
+
+        <!-- ================= 10. CENTRAL RUNWAY / PROMENADE ================= -->
+        <g id="central-runway">
+          <line x1="510" y1="565" x2="510" y2="1200" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <line x1="550" y1="565" x2="550" y2="1200" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="530" y="880" text-anchor="middle" transform="rotate(-90 530 880)" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="800" fill="#94A3B8" letter-spacing="2">CENTRAL SERVICE RUNWAY</text>
+        </g>
+
+        <!-- ================= 11. MAIN DINING HALL (RIGHT 3x6 GRID = 18 TABLES) ================= -->
+        <g id="dining-right-grid">
+          <text x="705" y="580" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" font-weight="900" fill="#475569" letter-spacing="1">MAIN DINING (RIGHT SECTION · 18 TABLES)</text>
+
+          <!-- Row 1: Tables 19, 20, 21 -->
+          ${renderDiningTable('table_19', 605, 625, 19)}
+          ${renderDiningTable('table_20', 705, 625, 20)}
+          ${renderDiningTable('table_21', 805, 625, 21)}
+
+          <!-- Row 2: Tables 22, 23, 24 -->
+          ${renderDiningTable('table_22', 605, 725, 22)}
+          ${renderDiningTable('table_23', 705, 725, 23)}
+          ${renderDiningTable('table_24', 805, 725, 24)}
+
+          <!-- Row 3: Tables 25, 26, 27 -->
+          ${renderDiningTable('table_25', 605, 825, 25)}
+          ${renderDiningTable('table_26', 705, 825, 26)}
+          ${renderDiningTable('table_27', 805, 825, 27)}
+
+          <!-- Row 4: Tables 28, 29, 30 -->
+          ${renderDiningTable('table_28', 605, 925, 28)}
+          ${renderDiningTable('table_29', 705, 925, 29)}
+          ${renderDiningTable('table_30', 805, 925, 30)}
+
+          <!-- Row 5: Tables 31, 32, 33 -->
+          ${renderDiningTable('table_31', 605, 1025, 31)}
+          ${renderDiningTable('table_32', 705, 1025, 32)}
+          ${renderDiningTable('table_33', 805, 1025, 33)}
+
+          <!-- Row 6: Tables 34, 35, 36 -->
+          ${renderDiningTable('table_34', 605, 1125, 34)}
+          ${renderDiningTable('table_35', 705, 1125, 35)}
+          ${renderDiningTable('table_36', 805, 1125, 36)}
+        </g>
+
+        <!-- ================= 12. EAST RETAIL & ENTRY WING ================= -->
+        <!-- Elevated Promenade / East Walkway Corridor connecting Restrooms & Dining -->
+        <g id="east-walkway-corridor">
+          <rect x="855" y="290" width="140" height="170" fill="#F8FAFC" stroke="#CBD5E1" stroke-dasharray="3 3"/>
+          <line x1="855" y1="290" x2="855" y2="460" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4 2"/>
+          <text x="925" y="375" text-anchor="middle" transform="rotate(-90 925 375)" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="800" fill="#94A3B8" letter-spacing="2">NORTH-EAST SERVICE WALKWAY</text>
+        </g>
+
+        <!-- A. MAIN RESTAURANT ENTRANCE (DIRECTLY ABOVE MINI SHOP ON EAST WALL) -->
+        <g id="main-front-entrance">
+          <!-- Entrance Vestibule / Foyer -->
+          <rect x="855" y="460" width="140" height="105" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4 2"/>
+          <rect x="870" y="472" width="115" height="82" rx="4" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+
+          <!-- East Exterior Wall Portal Break -->
+          <rect x="990" y="475" width="10" height="80" fill="#FCFBFA"/>
+          <line x1="995" y1="460" x2="995" y2="475" stroke="#0F172A" stroke-width="4"/>
+          <line x1="995" y1="555" x2="995" y2="565" stroke="#0F172A" stroke-width="4"/>
+
+          <!-- Double Glass Swing Doors (Swinging inward from East Wall) -->
+          <!-- Top Door Leaf & Arc -->
+          <line x1="995" y1="485" x2="962" y2="508" stroke="#0F172A" stroke-width="3"/>
+          <path d="M 962 508 A 40 40 0 0 1 995 522" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
+
+          <!-- Bottom Door Leaf & Arc -->
+          <line x1="995" y1="545" x2="962" y2="522" stroke="#0F172A" stroke-width="3"/>
+          <path d="M 962 522 A 40 40 0 0 0 995 508" fill="none" stroke="#64748B" stroke-dasharray="2 2"/>
+
+          <!-- Directional Inward Entry Arrows -->
+          <polygon points="948,513 956,508 956,518" fill="#1D4ED8"/>
+          <line x1="956" y1="513" x2="978" y2="513" stroke="#1D4ED8" stroke-width="2.5" stroke-linecap="round"/>
+
+          <!-- Architectural Typography -->
+          <text x="912" y="498" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="900" fill="#0F172A" letter-spacing="0.8">MAIN RESTAURANT</text>
+          <text x="912" y="513" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#1D4ED8" letter-spacing="1.5">ENTRANCE</text>
+          <text x="912" y="528" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7" font-weight="800" fill="#64748B" letter-spacing="0.5">PRIMARY GUEST ENTRY</text>
+          <text x="912" y="542" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="800" fill="#3B82F6">◄ STEP INSIDE</text>
+
+          <!-- Threshold Line into Dining Hall -->
+          <line x1="855" y1="460" x2="855" y2="565" stroke="#3B82F6" stroke-width="2" stroke-dasharray="4 3"/>
+        </g>
+
+        <!-- Wall separating dining room from right retail wing -->
+        <line x1="855" y1="565" x2="855" y2="1225" stroke="#0F172A" stroke-width="3"/>
+
+        <!-- B. Mini Shop (Always 2 Staff: Attendant 1 & Attendant 2) -->
+        <g id="room-minishop-suite">
+          <rect x="855" y="565" width="140" height="195" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2.5"/>
+          <text x="925" y="588" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#1D4ED8">Mini shop (2)</text>
+          <text x="925" y="602" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="700" fill="#3B82F6">FRONT SHOP · 2 ATTENDANTS</text>
+
+          <!-- Retail Shelves -->
+          <rect x="865" y="612" width="120" height="16" fill="#DBEAFE" stroke="#93C5FD"/>
+          <text x="925" y="623" text-anchor="middle" font-size="7" font-weight="700" fill="#1E40AF">RETAIL SHELF & SNACKS</text>
+          <rect x="865" y="632" width="120" height="16" fill="#DBEAFE" stroke="#93C5FD"/>
+          <text x="925" y="643" text-anchor="middle" font-size="7" font-weight="700" fill="#1E40AF">DRINKS COOLER</text>
+
+          <!-- Attendant 1 -->
+          ${(() => {
+            const st1 = stationMap['station_minishop'] || { id: 'station_minishop', name: 'Mini Shop 1', assignment: null };
+            const isHigh1 = highlightedStaffId && st1.assignment && st1.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh1 ? 'highlighted' : ''}" data-station-id="${st1.id}" style="cursor: pointer;" id="station-minishop">
+                <rect x="865" y="655" width="120" height="44" rx="4" fill="#FFFFFF" stroke="${isHigh1 ? '#F59E0B' : '#93C5FD'}" stroke-width="${isHigh1 ? 2.5 : 1.5}"/>
+                <text x="925" y="669" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="900" fill="#1D4ED8">ATTENDANT 1</text>
+                ${renderBadgeSvg(st1, 925, 686)}
+              </g>
+            `;
+          })()}
+
+          <!-- Attendant 2 -->
+          ${(() => {
+            const st2 = stationMap['station_minishop_2'] || { id: 'station_minishop_2', name: 'Mini Shop 2', assignment: null };
+            const isHigh2 = highlightedStaffId && st2.assignment && st2.assignment.staff_id === highlightedStaffId;
+            return `
+              <g class="fp-station ${isHigh2 ? 'highlighted' : ''}" data-station-id="${st2.id}" style="cursor: pointer;" id="station-minishop-2">
+                <rect x="865" y="705" width="120" height="44" rx="4" fill="#FFFFFF" stroke="${isHigh2 ? '#F59E0B' : '#93C5FD'}" stroke-width="${isHigh2 ? 2.5 : 1.5}"/>
+                <text x="925" y="719" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="900" fill="#1D4ED8">ATTENDANT 2</text>
+                ${renderBadgeSvg(st2, 925, 736)}
+              </g>
+            `;
+          })()}
+        </g>
+
+        <!-- C. Butchery Entrance -->
+        <g id="door-butchery-entrance">
+          <rect x="855" y="760" width="140" height="70" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1.5"/>
+          <line x1="855" y1="795" x2="880" y2="780" stroke="#E11D48" stroke-width="2.5"/>
+          <path d="M 880 780 A 25 25 0 0 1 880 805" fill="none" stroke="#FDA4AF" stroke-dasharray="2 2"/>
+          <text x="925" y="792" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#BE123C">Butchery</text>
+          <text x="925" y="805" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="900" fill="#BE123C">Entrance</text>
+        </g>
+
+        <!-- D. Butchery (Retail Meat Counter) -->
+        ${(() => {
+          const st = stationMap['station_butchery'] || { id: 'station_butchery', name: 'Butchery', assignment: null };
+          const isHigh = highlightedStaffId && st.assignment && st.assignment.staff_id === highlightedStaffId;
+          return `
+            <g class="fp-station ${isHigh ? 'highlighted' : ''}" data-station-id="${st.id}" style="cursor: pointer;" id="station-butchery">
+              <rect x="855" y="830" width="140" height="395" fill="#FFF1F2" stroke="#E11D48" stroke-width="3"/>
+              <rect x="855" y="830" width="140" height="395" fill="url(#butcher-tile)" opacity="0.35"/>
+              <text x="925" y="875" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="900" fill="#BE123C" letter-spacing="1">Butchery</text>
+              <text x="925" y="895" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#E11D48">RETAIL MEAT COUNTER</text>
+              <!-- Meat Display Chiller Case -->
+              <rect x="865" y="915" width="120" height="85" fill="#FFE4E6" stroke="#FB7185" stroke-width="2" rx="3"/>
+              <text x="925" y="955" text-anchor="middle" font-size="8" font-weight="900" fill="#9F1239">MEAT DISPLAY</text>
+              <text x="925" y="968" text-anchor="middle" font-size="7.5" font-weight="700" fill="#BE123C">CHILLER CASE</text>
+              <!-- Butcher Chopping Block -->
+              <rect x="880" y="1025" width="90" height="40" fill="#78350F" stroke="#451A03" rx="2"/>
+              <text x="925" y="1048" text-anchor="middle" font-size="7.5" font-weight="800" fill="#FEF3C7">CHOPPING BLOCK</text>
+              ${renderBadgeSvg(st, 925, 1120)}
+            </g>
+          `;
+        })()}
       </svg>
     `;
 
     container.innerHTML = svgHtml;
 
-    // Attach click handlers to all stations
+    // Attach click and hover handlers to all stations
     container.querySelectorAll('.fp-station').forEach(el => {
+      const stationId = el.getAttribute('data-station-id');
+      const sec = getSectionForTable(stationId);
+
+      // Row hover illumination
+      el.addEventListener('mouseenter', () => {
+        if (sec && sec.tables) {
+          sec.tables.forEach(tid => {
+            const rowEl = container.querySelector(`.fp-station[data-station-id="${tid}"]`);
+            if (rowEl) rowEl.classList.add('row-hover');
+          });
+        }
+      });
+
+      el.addEventListener('mouseleave', () => {
+        container.querySelectorAll('.fp-station.row-hover').forEach(h => h.classList.remove('row-hover'));
+      });
+
+      // Click to open Fast Waiter Selection
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        const stationId = el.getAttribute('data-station-id');
         if (stationId) {
           openTableAssignModal(stationId);
         }
       });
     });
+
+    // Reapply active zoom & section filter
+    if (window.currentZoomLevel && window.currentZoomLevel !== 1) {
+      const svg = container.querySelector('.fp-svg-canvas');
+      if (svg) svg.style.transform = `scale(${window.currentZoomLevel})`;
+    }
+    if (window.currentSectionFilter && window.currentSectionFilter !== 'all') {
+      applySectionFilter(window.currentSectionFilter);
+    }
+  }
+
+  // =========================================================================
+  // TABLE ROW / ZONE DEFINITIONS (COLUMNS & UPPER TIER E-SECTION)
+  // =========================================================================
+  const TABLE_ROW_SECTIONS = {
+    // Left Dining Grid (1-18)
+    'left_line_1': {
+      id: 'left_line_1',
+      name: 'Row 1 (Tables 1, 4, 7, 10, 13, 16)',
+      shortName: 'Row 1',
+      tables: ['table_1', 'table_4', 'table_7', 'table_10', 'table_13', 'table_16'],
+      label: 'Tables 1, 4, 7, 10, 13, 16'
+    },
+    'left_line_2': {
+      id: 'left_line_2',
+      name: 'Row 2 (Tables 2, 5, 8, 11, 14, 17)',
+      shortName: 'Row 2',
+      tables: ['table_2', 'table_5', 'table_8', 'table_11', 'table_14', 'table_17'],
+      label: 'Tables 2, 5, 8, 11, 14, 17'
+    },
+    'left_line_3': {
+      id: 'left_line_3',
+      name: 'Row 3 (Tables 3, 6, 9, 12, 15, 18)',
+      shortName: 'Row 3',
+      tables: ['table_3', 'table_6', 'table_9', 'table_12', 'table_15', 'table_18'],
+      label: 'Tables 3, 6, 9, 12, 15, 18'
+    },
+
+    // Right Dining Grid (19-36)
+    'right_line_1': {
+      id: 'right_line_1',
+      name: 'Row 4 (Tables 19, 22, 25, 28, 31, 34)',
+      shortName: 'Row 4',
+      tables: ['table_19', 'table_22', 'table_25', 'table_28', 'table_31', 'table_34'],
+      label: 'Tables 19, 22, 25, 28, 31, 34'
+    },
+    'right_line_2': {
+      id: 'right_line_2',
+      name: 'Row 5 (Tables 20, 23, 26, 29, 32, 35)',
+      shortName: 'Row 5',
+      tables: ['table_20', 'table_23', 'table_26', 'table_29', 'table_32', 'table_35'],
+      label: 'Tables 20, 23, 26, 29, 32, 35'
+    },
+    'right_line_3': {
+      id: 'right_line_3',
+      name: 'Row 6 (Tables 21, 24, 27, 30, 33, 36)',
+      shortName: 'Row 6',
+      tables: ['table_21', 'table_24', 'table_27', 'table_30', 'table_33', 'table_36'],
+      label: 'Tables 21, 24, 27, 30, 33, 36'
+    },
+
+    // Upper Tier ("E Section" / Elevated Balcony - 37-46)
+    'upper_tier_all': {
+      id: 'upper_tier_all',
+      name: 'E Section (Upper Tier · All 10 Tables)',
+      shortName: 'E Section',
+      tables: ['table_37', 'table_38', 'table_39', 'table_40', 'table_41', 'table_42', 'table_43', 'table_44', 'table_45', 'table_46'],
+      label: 'Tables 37 to 46 (Tiers 1, 2 & 3)'
+    }
+  };
+
+  function getSectionForTable(stationId) {
+    if (!stationId) return null;
+    for (const sec of Object.values(TABLE_ROW_SECTIONS)) {
+      if (sec.tables.includes(stationId)) {
+        return sec;
+      }
+    }
+    return null;
   }
 
   function renderFloorPlanSidebar() {
@@ -2435,37 +3751,154 @@
     renderFloorPlanSidebar();
   }
 
+  // Active Assignment Dialog Context
+  window.currentAssignContext = {
+    stationId: '',
+    sec: null,
+    scope: 'row'
+  };
+
   function openTableAssignModal(stationId) {
     const stations = AppState.floorPlanData.stations || [];
-    const station = stations.find(s => s.id === stationId);
-    if (!station) return;
+    let station = stations.find(s => s.id === stationId);
+    if (!station) {
+      const fallbackSec = getSectionForTable(stationId);
+      station = {
+        id: stationId,
+        name: stationId.startsWith('table_') ? `Table ${stationId.replace('table_', '')}` : stationId,
+        section: fallbackSec ? fallbackSec.name : 'Dining Section',
+        assignment: null
+      };
+    }
+
+    const sec = getSectionForTable(stationId);
+    window.currentAssignContext = {
+      stationId,
+      sec,
+      scope: sec ? 'row' : 'single'
+    };
 
     const modal = document.getElementById('modal-table-assign');
     const titleEl = document.getElementById('modal-table-assign-title');
     const nameEl = document.getElementById('assign-modal-station-name');
     const sectionEl = document.getElementById('assign-modal-section-info');
     const idInput = document.getElementById('assign-modal-station-id');
+    const badgeCountEl = document.getElementById('assign-badge-count');
+    const scopeWrapper = document.getElementById('assign-scope-wrapper');
+    const btnScopeRow = document.getElementById('btn-scope-row');
+    const btnScopeSingle = document.getElementById('btn-scope-single');
+    const scopeRowCount = document.getElementById('scope-row-count');
+    const scopeSingleName = document.getElementById('scope-single-name');
+    const cardsContainer = document.getElementById('assign-waiter-cards-list');
     const selectStaff = document.getElementById('select-assign-staff');
     const notesInput = document.getElementById('input-assign-notes');
 
-    if (titleEl) titleEl.textContent = `ASSIGN WAITER - ${station.name.toUpperCase()}`;
-    if (nameEl) nameEl.textContent = `${station.name} (${station.section})`;
-    if (sectionEl) sectionEl.textContent = `Capacity: ${station.capacity || 4} Guests · Shift: ${AppState.floorPlanShift}`;
     if (idInput) idInput.value = stationId;
 
-    const currentStaffId = station.assignment ? station.assignment.staff_id : null;
-    const currentNotes = station.assignment ? station.assignment.notes : '';
+    if (sec) {
+      if (titleEl) titleEl.textContent = `ASSIGN WAITER - ${sec.shortName.toUpperCase()}`;
+      if (nameEl) nameEl.textContent = sec.name;
+      if (sectionEl) sectionEl.textContent = `Serving ${sec.label} · Shift: ${AppState.floorPlanShift}`;
+      if (badgeCountEl) badgeCountEl.textContent = `${sec.tables.length} Tables`;
 
+      if (scopeWrapper) scopeWrapper.style.display = 'block';
+      if (scopeRowCount) scopeRowCount.textContent = sec.tables.length;
+      if (scopeSingleName) scopeSingleName.textContent = station.name;
+
+      updateScopeUI();
+    } else {
+      if (titleEl) titleEl.textContent = `ASSIGN STAFF - ${station.name.toUpperCase()}`;
+      if (nameEl) nameEl.textContent = `${station.name} (${station.section})`;
+      if (sectionEl) sectionEl.textContent = `Capacity: ${station.capacity || 4} Guests · Shift: ${AppState.floorPlanShift}`;
+      if (badgeCountEl) badgeCountEl.textContent = `1 Station`;
+
+      if (scopeWrapper) scopeWrapper.style.display = 'none';
+      window.currentAssignContext.scope = 'single';
+    }
+
+    const currentNotes = station.assignment ? station.assignment.notes : '';
     if (notesInput) notesInput.value = currentNotes || '';
 
-    // Populate active staff options
+    // Scope toggle buttons
+    if (btnScopeRow) {
+      btnScopeRow.onclick = () => {
+        window.currentAssignContext.scope = 'row';
+        updateScopeUI();
+      };
+    }
+    if (btnScopeSingle) {
+      btnScopeSingle.onclick = () => {
+        window.currentAssignContext.scope = 'single';
+        updateScopeUI();
+      };
+    }
+
+    function updateScopeUI() {
+      const isRow = window.currentAssignContext.scope === 'row';
+      if (btnScopeRow) btnScopeRow.classList.toggle('active', isRow);
+      if (btnScopeSingle) btnScopeSingle.classList.toggle('active', !isRow);
+    }
+
+    // Populate Fast Waiter Cards
+    const employees = AppState.floorPlanData.employees || [];
+    if (cardsContainer) {
+      if (employees.length === 0) {
+        cardsContainer.innerHTML = '<div style="padding: 14px; font-size: 11px; color: var(--c-gray-dark); text-align: center;">No active employees on roster for this shift.</div>';
+      } else {
+        cardsContainer.innerHTML = employees.map(emp => {
+          const stat = FP_STATUS_MAP[emp.status] || FP_STATUS_MAP['P'];
+          const initials = emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'W';
+          const assignedCount = (emp.assignedStations && emp.assignedStations.length) || 0;
+
+          // Check if this waiter is already assigned to this row or table
+          let isCurrent = false;
+          if (sec && sec.tables) {
+            isCurrent = sec.tables.some(tid => (emp.assignedStations || []).includes(tid));
+          } else {
+            isCurrent = (emp.assignedStations || []).includes(stationId);
+          }
+
+          let badgeHtml = '';
+          if (isCurrent) {
+            badgeHtml = `<span class="assign-waiter-badge" style="background: #2563EB; color: #FFFFFF;">Currently Assigned</span>`;
+          } else if (assignedCount > 0) {
+            badgeHtml = `<span class="assign-waiter-badge" style="background: #F1F5F9; color: #475569;">Serving ${assignedCount} ${assignedCount === 1 ? 'Table' : 'Tables'}</span>`;
+          } else {
+            badgeHtml = `<span class="assign-waiter-badge" style="background: #F0FDF4; color: #166534;">✅ Available</span>`;
+          }
+
+          return `
+            <div class="assign-waiter-card ${isCurrent ? 'is-current' : ''}" data-staff-id="${emp.id}" title="Click to assign ${escapeHtml(emp.name)}">
+              <div class="assign-waiter-card-left">
+                <div class="assign-waiter-avatar" style="background-color: ${emp.color || '#2563EB'};">
+                  ${escapeHtml(initials)}
+                </div>
+                <div>
+                  <div class="assign-waiter-name">${escapeHtml(emp.name)}</div>
+                  <div class="assign-waiter-role">${escapeHtml(emp.code)} · ${stat.label}</div>
+                </div>
+              </div>
+              <div>${badgeHtml}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Attach 1-click click handler to assign immediately!
+        cardsContainer.querySelectorAll('.assign-waiter-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const staffId = card.getAttribute('data-staff-id');
+            assignWaiterToTarget(staffId);
+          });
+        });
+      }
+    }
+
+    // Populate hidden native select fallback for tests
     if (selectStaff) {
-      const employees = AppState.floorPlanData.employees || [];
       let optionsHtml = '<option value="unassigned">[ Unassigned / None ]</option>';
       employees.forEach(emp => {
         const stat = FP_STATUS_MAP[emp.status] || FP_STATUS_MAP['P'];
-        const isSelected = emp.id === currentStaffId ? 'selected' : '';
-        optionsHtml += `<option value="${emp.id}" ${isSelected}>${escapeHtml(emp.code)} - ${escapeHtml(emp.name)} (${stat.label})</option>`;
+        optionsHtml += `<option value="${emp.id}">${escapeHtml(emp.code)} - ${escapeHtml(emp.name)} (${stat.label})</option>`;
       });
       selectStaff.innerHTML = optionsHtml;
     }
@@ -2478,73 +3911,147 @@
     if (modal) modal.classList.remove('active');
   }
 
-  async function saveTableAssignment() {
-    const idInput = document.getElementById('assign-modal-station-id');
-    const selectStaff = document.getElementById('select-assign-staff');
+  async function assignWaiterToTarget(staffId) {
+    const ctx = window.currentAssignContext || {};
+    const stationId = ctx.stationId;
+    const sec = ctx.sec;
+    const scope = ctx.scope || 'row';
     const notesInput = document.getElementById('input-assign-notes');
-
-    const stationId = idInput ? idInput.value : '';
-    const staffId = selectStaff ? selectStaff.value : 'unassigned';
     const notes = notesInput ? notesInput.value.trim() : '';
 
     if (!stationId) return;
 
+    const employees = AppState.floorPlanData.employees || [];
+    const emp = employees.find(e => e.id === staffId);
+    const empName = emp ? emp.name : 'Waiter';
+
     try {
-      const payload = {
-        date: AppState.floorPlanDate,
-        shift: AppState.floorPlanShift,
-        station_id: stationId,
-        staff_id: staffId === 'unassigned' ? null : staffId,
-        notes
-      };
+      if (scope === 'row' && sec && sec.tables && sec.tables.length > 0) {
+        // Bulk Assign Entire Section / Row
+        const assignments = sec.tables.map(tid => ({
+          station_id: tid,
+          staff_id: staffId === 'unassigned' ? null : staffId,
+          notes
+        }));
 
-      const res = await fetch('/api/floorplan/assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+        const payload = {
+          date: AppState.floorPlanDate,
+          shift: AppState.floorPlanShift,
+          assignments
+        };
 
-      const data = await res.json();
-      if (data.success) {
-        showToast('Station assignment saved.');
-        closeTableAssignModal();
-        loadFloorPlanData();
+        const res = await fetch('/api/floorplan/assign-bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(`⚡ ${empName} assigned to ${sec.shortName} (${sec.tables.length} tables)!`);
+          closeTableAssignModal();
+          loadFloorPlanData();
+        } else {
+          showToast(data.message || 'Error saving row assignment.');
+        }
       } else {
-        showToast(data.message || 'Error saving assignment.');
+        // Assign Single Table / Station
+        const payload = {
+          date: AppState.floorPlanDate,
+          shift: AppState.floorPlanShift,
+          station_id: stationId,
+          staff_id: staffId === 'unassigned' ? null : staffId,
+          notes
+        };
+
+        const res = await fetch('/api/floorplan/assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(`${empName} assigned to station.`);
+          closeTableAssignModal();
+          loadFloorPlanData();
+        } else {
+          showToast(data.message || 'Error saving assignment.');
+        }
       }
     } catch (err) {
       console.error(err);
-      showToast('Could not save station assignment.');
+      showToast('Could not save assignment.');
     }
   }
 
+  async function saveTableAssignment() {
+    const selectStaff = document.getElementById('select-assign-staff');
+    const staffId = selectStaff ? selectStaff.value : 'unassigned';
+    assignWaiterToTarget(staffId);
+  }
+
   async function unassignTable() {
-    const idInput = document.getElementById('assign-modal-station-id');
-    const stationId = idInput ? idInput.value : '';
+    const ctx = window.currentAssignContext || {};
+    const stationId = ctx.stationId;
+    const sec = ctx.sec;
+    const scope = ctx.scope || 'row';
+
     if (!stationId) return;
 
     try {
-      const payload = {
-        date: AppState.floorPlanDate,
-        shift: AppState.floorPlanShift,
-        station_id: stationId,
-        staff_id: null,
-        notes: ''
-      };
+      if (scope === 'row' && sec && sec.tables && sec.tables.length > 0) {
+        // Bulk Clear Entire Row
+        const assignments = sec.tables.map(tid => ({
+          station_id: tid,
+          staff_id: null,
+          notes: ''
+        }));
 
-      const res = await fetch('/api/floorplan/assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+        const payload = {
+          date: AppState.floorPlanDate,
+          shift: AppState.floorPlanShift,
+          assignments
+        };
 
-      const data = await res.json();
-      if (data.success) {
-        showToast('Table unassigned.');
-        closeTableAssignModal();
-        loadFloorPlanData();
+        const res = await fetch('/api/floorplan/assign-bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Section ${sec.shortName} cleared.`);
+          closeTableAssignModal();
+          loadFloorPlanData();
+        } else {
+          showToast(data.message || 'Error clearing assignment.');
+        }
       } else {
-        showToast(data.message || 'Error clearing assignment.');
+        // Clear Single Table
+        const payload = {
+          date: AppState.floorPlanDate,
+          shift: AppState.floorPlanShift,
+          station_id: stationId,
+          staff_id: null,
+          notes: ''
+        };
+
+        const res = await fetch('/api/floorplan/assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast('Table unassigned.');
+          closeTableAssignModal();
+          loadFloorPlanData();
+        } else {
+          showToast(data.message || 'Error clearing assignment.');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -2715,6 +4222,536 @@
     if (btnCancelBulk) btnCancelBulk.addEventListener('click', closeBulkAssignModal);
     if (btnSaveBulk) btnSaveBulk.addEventListener('click', saveBulkAssignments);
     if (btnAutoAssign) btnAutoAssign.addEventListener('click', autoAssignRoster);
+
+    // Zoom Controls
+    const btnZoomIn = document.getElementById('fp-zoom-in');
+    const btnZoomOut = document.getElementById('fp-zoom-out');
+    const btnZoomReset = document.getElementById('fp-zoom-reset');
+
+    if (btnZoomIn) btnZoomIn.addEventListener('click', () => setFloorPlanZoom((window.currentZoomLevel || 1.0) + 0.15));
+    if (btnZoomOut) btnZoomOut.addEventListener('click', () => setFloorPlanZoom((window.currentZoomLevel || 1.0) - 0.15));
+    if (btnZoomReset) btnZoomReset.addEventListener('click', () => setFloorPlanZoom(1.0));
+
+    // Section Filters
+    const filterContainer = document.getElementById('fp-section-filters');
+    if (filterContainer) {
+      filterContainer.querySelectorAll('.fp-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const filter = btn.getAttribute('data-filter') || 'all';
+          applySectionFilter(filter);
+        });
+      });
+    }
+
+    // Sidebar Staff Search
+    const staffSearchInput = document.getElementById('fp-staff-search');
+    if (staffSearchInput) {
+      staffSearchInput.addEventListener('input', (e) => {
+        filterSidebarEmployees(e.target.value);
+      });
+    }
+
+    // Initialize WhatsApp Floor Plan Dispatch
+    initWhatsAppFloorPlanFeature();
+  }
+
+  // =========================================================================
+  // WHATSAPP FLOOR PLAN DISPATCH TO SUPERVISOR
+  // =========================================================================
+  const WA_PHONE_KEY = 'executive_supervisor_wa_phone';
+
+  function initWhatsAppFloorPlanFeature() {
+    const btnOpen = document.getElementById('btn-open-wa-floorplan');
+    const btnClose = document.getElementById('btn-close-wa-floorplan');
+    const btnCancel = document.getElementById('btn-cancel-wa-floorplan');
+    const btnTomorrow = document.getElementById('btn-wa-select-tomorrow');
+    const btnToday = document.getElementById('btn-wa-select-today');
+    const inputDate = document.getElementById('wa-floorplan-date');
+    const selectShift = document.getElementById('wa-floorplan-shift');
+    const inputPhone = document.getElementById('wa-supervisor-phone');
+    const btnCopy = document.getElementById('btn-wa-copy-text');
+    const btnSendApi = document.getElementById('btn-send-wa-api');
+
+    if (btnOpen) {
+      btnOpen.addEventListener('click', openWhatsAppFloorPlanModal);
+    }
+    if (btnClose) {
+      btnClose.addEventListener('click', closeWhatsAppFloorPlanModal);
+    }
+    if (btnCancel) {
+      btnCancel.addEventListener('click', closeWhatsAppFloorPlanModal);
+    }
+
+    if (btnTomorrow) {
+      btnTomorrow.addEventListener('click', () => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        if (inputDate) inputDate.value = formatDateKey(tomorrow);
+        btnTomorrow.style.border = '1.5px solid #25D366';
+        btnTomorrow.style.background = '#F0FDF4';
+        btnTomorrow.style.color = '#166534';
+        if (btnToday) {
+          btnToday.style.border = '';
+          btnToday.style.background = '';
+          btnToday.style.color = '';
+        }
+        refreshWhatsAppFloorPlanPreview();
+      });
+    }
+
+    if (btnToday) {
+      btnToday.addEventListener('click', () => {
+        if (inputDate) inputDate.value = formatDateKey(new Date());
+        btnToday.style.border = '1.5px solid #25D366';
+        btnToday.style.background = '#F0FDF4';
+        btnToday.style.color = '#166534';
+        if (btnTomorrow) {
+          btnTomorrow.style.border = '';
+          btnTomorrow.style.background = '';
+          btnTomorrow.style.color = '';
+        }
+        refreshWhatsAppFloorPlanPreview();
+      });
+    }
+
+    if (inputDate) {
+      inputDate.addEventListener('change', refreshWhatsAppFloorPlanPreview);
+    }
+
+    if (selectShift) {
+      selectShift.addEventListener('change', refreshWhatsAppFloorPlanPreview);
+    }
+
+    if (inputPhone) {
+      inputPhone.addEventListener('input', () => {
+        const val = inputPhone.value.trim();
+        localStorage.setItem(WA_PHONE_KEY, val);
+        updateWhatsAppDirectLink();
+      });
+    }
+
+    if (btnCopy) {
+      btnCopy.addEventListener('click', copyWhatsAppFloorPlanText);
+    }
+
+    if (btnSendApi) {
+      btnSendApi.addEventListener('click', sendWhatsAppViaApi);
+    }
+  }
+
+  function openWhatsAppFloorPlanModal() {
+    const modal = document.getElementById('modal-whatsapp-floorplan');
+    if (!modal) return;
+
+    const inputDate = document.getElementById('wa-floorplan-date');
+    const selectShift = document.getElementById('wa-floorplan-shift');
+    const inputPhone = document.getElementById('wa-supervisor-phone');
+
+    // Default to tomorrow per user request!
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (inputDate) inputDate.value = formatDateKey(tomorrow);
+
+    if (selectShift) {
+      selectShift.value = AppState.floorPlanShift || 'Morning';
+    }
+
+    if (inputPhone) {
+      const saved = localStorage.getItem(WA_PHONE_KEY) || (AppState.settings && AppState.settings.whatsapp_recipient_phone) || '';
+      inputPhone.value = saved;
+    }
+
+    modal.classList.add('active');
+    refreshWhatsAppFloorPlanPreview();
+  }
+
+  function closeWhatsAppFloorPlanModal() {
+    const modal = document.getElementById('modal-whatsapp-floorplan');
+    if (modal) modal.classList.remove('active');
+  }
+
+  async function refreshWhatsAppFloorPlanPreview() {
+    const previewEl = document.getElementById('wa-floorplan-preview');
+    const inputDate = document.getElementById('wa-floorplan-date');
+    const selectShift = document.getElementById('wa-floorplan-shift');
+
+    const dateVal = inputDate && inputDate.value ? inputDate.value : formatDateKey(new Date());
+    const shiftVal = selectShift && selectShift.value ? selectShift.value : 'Morning';
+
+    if (previewEl) previewEl.value = 'Loading floor plan assignments...';
+
+    let stations = [];
+    let employees = [];
+
+    // If matches currently loaded date & shift in AppState
+    if (AppState.floorPlanDate === dateVal && AppState.floorPlanShift === shiftVal && AppState.floorPlanData.stations && AppState.floorPlanData.stations.length > 0) {
+      stations = AppState.floorPlanData.stations;
+      employees = AppState.floorPlanData.employees || [];
+    } else {
+      try {
+        const res = await fetch(`/api/floorplan/assignments?date=${encodeURIComponent(dateVal)}&shift=${encodeURIComponent(shiftVal)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            stations = data.stations || [];
+            employees = data.employees || [];
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch assignments for preview:', err);
+      }
+      if (stations.length === 0) {
+        stations = AppState.floorPlanData.stations || [];
+        employees = AppState.floorPlanData.employees || [];
+      }
+    }
+
+    const message = buildWhatsAppFloorPlanMessage(dateVal, shiftVal, stations, employees);
+    if (previewEl) {
+      previewEl.value = message;
+    }
+
+    updateWhatsAppDirectLink();
+  }
+
+  function updateWhatsAppDirectLink() {
+    const linkDirect = document.getElementById('btn-open-wa-direct');
+    const previewEl = document.getElementById('wa-floorplan-preview');
+    const inputPhone = document.getElementById('wa-supervisor-phone');
+
+    if (!linkDirect) return;
+
+    const rawPhone = inputPhone ? inputPhone.value.trim() : '';
+    let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+
+    // Format Kenyan phone numbers: e.g. 0712345678 -> 254712345678
+    if (cleanPhone.startsWith('0') && cleanPhone.length === 10) {
+      cleanPhone = '254' + cleanPhone.substring(1);
+    }
+
+    const message = previewEl ? previewEl.value : '';
+    const encoded = encodeURIComponent(message);
+
+    if (cleanPhone) {
+      linkDirect.href = `https://wa.me/${cleanPhone}?text=${encoded}`;
+    } else {
+      linkDirect.href = `https://wa.me/?text=${encoded}`;
+    }
+  }
+
+  function buildWhatsAppFloorPlanMessage(dateVal, shiftVal, stations, employees) {
+    let dateLabel = dateVal;
+    try {
+      const parts = dateVal.split('-');
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (e) {}
+
+    const business = (AppState.settings && AppState.settings.businessName) || 'EXECUTIVE RESTAURANT & BAR';
+
+    const stationMap = {};
+    const serviceStations = [];
+    stations.forEach(st => {
+      stationMap[st.id] = st;
+      if (st.id && st.id.startsWith('station_')) {
+        serviceStations.push(st);
+      }
+    });
+
+    // Helper to format Row 1 through Row 6 (e.g. "Row 1: Brian")
+    function formatRowAssignment(rowKey) {
+      const def = TABLE_ROW_SECTIONS[rowKey];
+      if (!def) return '';
+
+      const staffMap = {};
+      let assignedTablesCount = 0;
+
+      def.tables.forEach(tid => {
+        const st = stationMap[tid];
+        const asgn = st && st.assignment;
+        if (asgn && asgn.staff_id && asgn.staff_name) {
+          assignedTablesCount++;
+          const name = asgn.staff_name.split(' ')[0] || asgn.staff_name;
+          staffMap[name] = (staffMap[name] || 0) + 1;
+        }
+      });
+
+      const staffEntries = Object.entries(staffMap);
+      if (staffEntries.length === 0) {
+        return `- *${def.shortName}*: _Unassigned_`;
+      } else if (staffEntries.length === 1 && assignedTablesCount === def.tables.length) {
+        // e.g. "Row 1: Brian"
+        return `- *${def.shortName}*: ${staffEntries[0][0]}`;
+      } else if (staffEntries.length === 1) {
+        return `- *${def.shortName}*: ${staffEntries[0][0]} (${assignedTablesCount}/${def.tables.length} tables)`;
+      } else {
+        const splitText = staffEntries.map(([name, count]) => `${name} (${count} tables)`).join(', ');
+        return `- *${def.shortName}*: ${splitText}`;
+      }
+    }
+
+    // Helper to format E Section (allocated to one person)
+    function formatESection() {
+      const def = TABLE_ROW_SECTIONS['upper_tier_all'];
+      if (!def) return '';
+
+      const staffMap = {};
+      let assignedTablesCount = 0;
+
+      def.tables.forEach(tid => {
+        const st = stationMap[tid];
+        const asgn = st && st.assignment;
+        if (asgn && asgn.staff_id && asgn.staff_name) {
+          assignedTablesCount++;
+          const name = asgn.staff_name.split(' ')[0] || asgn.staff_name;
+          staffMap[name] = (staffMap[name] || 0) + 1;
+        }
+      });
+
+      const staffEntries = Object.entries(staffMap);
+      if (staffEntries.length === 0) {
+        return `- *E Section*: _Unassigned_`;
+      } else if (staffEntries.length === 1) {
+        const waiterName = staffEntries[0][0];
+        if (assignedTablesCount === def.tables.length) {
+          return `- *E Section*: ${waiterName} (Allocated to 1 Person - Tables 37 to 46)`;
+        } else {
+          return `- *E Section*: ${waiterName} (${assignedTablesCount}/10 tables)`;
+        }
+      } else {
+        staffEntries.sort((a, b) => b[1] - a[1]);
+        const primary = staffEntries[0][0];
+        const others = staffEntries.slice(1).map(([n, c]) => `${n} (${c})`).join(', ');
+        return `- *E Section*: ${primary} (Primary) - ${others}`;
+      }
+    }
+
+    function formatServiceStations(stationList) {
+      if (!stationList || stationList.length === 0) return '  (None)';
+
+      const getStaff = (id) => {
+        const s = stationMap[id];
+        return (s && s.assignment && s.assignment.staff_name) ? s.assignment.staff_name.split(' ')[0] : null;
+      };
+
+      const lines = [];
+
+      // 1. Cashier (Always 2 Staff)
+      const c1 = getStaff('station_cashier');
+      const c2 = getStaff('station_cashier_2');
+      if (c1 && c2) {
+        lines.push(`- *Cashier (2 Staff)*: ${c1} & ${c2}`);
+      } else if (c1 || c2) {
+        lines.push(`- *Cashier (2 Staff)*: ${c1 || c2} (1/2 Assigned)`);
+      } else {
+        lines.push(`- *Cashier (2 Staff)*: _Unassigned_`);
+      }
+
+      // 2. Front Mini Shop (Always 2 Staff)
+      const m1 = getStaff('station_minishop');
+      const m2 = getStaff('station_minishop_2');
+      if (m1 && m2) {
+        lines.push(`- *Front Mini Shop (2 Staff)*: ${m1} & ${m2}`);
+      } else if (m1 || m2) {
+        lines.push(`- *Front Mini Shop (2 Staff)*: ${m1 || m2} (1/2 Assigned)`);
+      } else {
+        lines.push(`- *Front Mini Shop (2 Staff)*: _Unassigned_`);
+      }
+
+      // 3. Other Production & Kitchen Stations
+      const otherStations = stationList.filter(s => 
+        !['station_cashier', 'station_cashier_2', 'station_minishop', 'station_minishop_2', 'booth_1', 'booth_2', 'booth_3', 'booth_4', 'section_a_1', 'section_a_2', 'section_b_1', 'bar'].includes(s.id)
+      );
+
+      otherStations.forEach(st => {
+        const staffName = st.assignment && st.assignment.staff_name;
+        const staffLabel = staffName ? staffName.split(' ')[0] : '_Unassigned_';
+        lines.push(`- *${st.name}*: ${staffLabel}`);
+      });
+
+      return lines.join('\n');
+    }
+
+    let assignedCount = 0;
+    stations.forEach(st => {
+      if (st.assignment && st.assignment.staff_id) assignedCount++;
+    });
+
+    const totalStations = stations.length;
+
+    const rowLines = [
+      formatRowAssignment('left_line_1'),
+      formatRowAssignment('left_line_2'),
+      formatRowAssignment('left_line_3'),
+      formatRowAssignment('right_line_1'),
+      formatRowAssignment('right_line_2'),
+      formatRowAssignment('right_line_3')
+    ].filter(Boolean).join('\n');
+
+    const eSectionLine = formatESection();
+
+    const message = 
+`*${business.toUpperCase()}*
+*DAILY FLOOR PLAN & SERVICE DUTY ROSTER*
+----------------------------------------
+*Date*: ${dateLabel}
+*Shift*: ${shiftVal} Shift
+*Coverage*: ${assignedCount}/${totalStations} Stations Assigned
+
+*MAIN DINING ROOM (ROWS 1 TO 6)*
+${rowLines}
+
+*E SECTION (UPPER TIER)*
+${eSectionLine}
+
+*KITCHEN & SERVICE STATIONS*
+${formatServiceStations(serviceStations)}
+
+----------------------------------------
+*Supervisor Notice*: Please ensure all staff check in with attendance upon arrival. Station reassignments must be logged in the system.
+_Dispatched by Restaurant Management Operations_`;
+
+    return message;
+  }
+
+  async function copyWhatsAppFloorPlanText() {
+    const previewEl = document.getElementById('wa-floorplan-preview');
+    if (!previewEl || !previewEl.value) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(previewEl.value);
+      } else {
+        previewEl.select();
+        document.execCommand('copy');
+      }
+      showToast('Floor plan duty roster copied to clipboard!');
+    } catch (err) {
+      console.error(err);
+      previewEl.select();
+      showToast('Text selected! Press Ctrl+C to copy.');
+    }
+  }
+
+  async function sendWhatsAppViaApi() {
+    const previewEl = document.getElementById('wa-floorplan-preview');
+    const inputPhone = document.getElementById('wa-supervisor-phone');
+    const inputDate = document.getElementById('wa-floorplan-date');
+    const selectShift = document.getElementById('wa-floorplan-shift');
+    const btnSendApi = document.getElementById('btn-send-wa-api');
+
+    const phone = inputPhone ? inputPhone.value.trim() : '';
+    if (!phone) {
+      showToast('Please enter supervisor WhatsApp phone number.');
+      if (inputPhone) inputPhone.focus();
+      return;
+    }
+
+    const messageText = previewEl ? previewEl.value.trim() : '';
+    if (!messageText) {
+      showToast('No message content to send.');
+      return;
+    }
+
+    if (btnSendApi) {
+      btnSendApi.disabled = true;
+      btnSendApi.textContent = 'Sending...';
+    }
+
+    try {
+      const payload = {
+        recipientPhone: phone,
+        date: inputDate ? inputDate.value : '',
+        shift: selectShift ? selectShift.value : '',
+        messageText
+      };
+
+      const res = await fetch('/api/floorplan/send-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToast('Floor plan sent successfully via WhatsApp!');
+        closeWhatsAppFloorPlanModal();
+      } else {
+        showToast(data.message || 'API delivery not active. Opening direct WhatsApp chat...');
+        if (data.fallbackUrl) {
+          window.open(data.fallbackUrl, '_blank');
+        } else {
+          const clean = phone.replace(/[^0-9]/g, '');
+          window.open(`https://wa.me/${clean}?text=${encodeURIComponent(messageText)}`, '_blank');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error sending message. Opening direct WhatsApp...');
+      const clean = phone.replace(/[^0-9]/g, '');
+      window.open(`https://wa.me/${clean}?text=${encodeURIComponent(messageText)}`, '_blank');
+    } finally {
+      if (btnSendApi) {
+        btnSendApi.disabled = false;
+        btnSendApi.textContent = '🚀 Send via API';
+      }
+    }
+  }
+
+  // Floor Plan Zoom & Section Filter Helpers
+  window.currentZoomLevel = 1.0;
+  window.currentSectionFilter = 'all';
+
+  function setFloorPlanZoom(level) {
+    window.currentZoomLevel = Math.max(0.65, Math.min(2.2, Math.round(level * 100) / 100));
+    const svg = document.querySelector('.fp-svg-canvas');
+    const levelText = document.getElementById('fp-zoom-level');
+    if (svg) {
+      svg.style.transform = `scale(${window.currentZoomLevel})`;
+    }
+    if (levelText) {
+      levelText.textContent = `${Math.round(window.currentZoomLevel * 100)}%`;
+    }
+  }
+
+  function applySectionFilter(filter) {
+    window.currentSectionFilter = filter;
+    document.querySelectorAll('.fp-filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
+    });
+
+    const allStations = document.querySelectorAll('.fp-station');
+    allStations.forEach(el => {
+      const id = el.getAttribute('data-station-id') || '';
+      if (filter === 'all') {
+        el.classList.remove('dimmed');
+      } else if (filter === 'left') {
+        const num = parseInt(id.replace('table_', ''), 10);
+        const match = !isNaN(num) && num >= 1 && num <= 18;
+        el.classList.toggle('dimmed', !match);
+      } else if (filter === 'right') {
+        const num = parseInt(id.replace('table_', ''), 10);
+        const match = !isNaN(num) && num >= 19 && num <= 36;
+        el.classList.toggle('dimmed', !match);
+      } else if (filter === 'upper') {
+        const num = parseInt(id.replace('table_', ''), 10);
+        const match = !isNaN(num) && num >= 37 && num <= 46;
+        el.classList.toggle('dimmed', !match);
+      } else if (filter === 'stations') {
+        const match = id.startsWith('station_');
+        el.classList.toggle('dimmed', !match);
+      }
+    });
+  }
+
+  function filterSidebarEmployees(query) {
+    const q = (query || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.fp-emp-item');
+    items.forEach(item => {
+      const nameEl = item.querySelector('.fp-emp-name');
+      const text = nameEl ? nameEl.textContent.toLowerCase() : '';
+      item.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
   }
 
   // =========================================================================
@@ -2856,6 +4893,41 @@
       });
     }
 
+    // Attendance Summary Scope & Shift Filters
+    const selSummaryScope = document.getElementById('select-summary-scope');
+    const selSummaryShift = document.getElementById('select-summary-shift-filter');
+    const btnDownloadCsv = document.getElementById('btn-download-attendance-csv');
+    const btnViewSummaryTable = document.getElementById('btn-view-summary-table');
+
+    if (selSummaryScope) {
+      selSummaryScope.addEventListener('change', (e) => {
+        summaryScope = e.target.value;
+        const monthSel = document.getElementById('select-month-absentee');
+        const yearSel = document.getElementById('select-year-absentee');
+        if (monthSel) monthSel.style.display = summaryScope === 'WEEK' ? 'none' : 'block';
+        if (yearSel) yearSel.style.display = summaryScope === 'WEEK' ? 'none' : 'block';
+        renderAttendanceSummaryTable();
+      });
+    }
+
+    if (selSummaryShift) {
+      selSummaryShift.addEventListener('change', (e) => {
+        summaryShiftFilter = e.target.value;
+        renderAttendanceSummaryTable();
+      });
+    }
+
+    if (btnDownloadCsv) {
+      btnDownloadCsv.addEventListener('click', downloadAttendanceCsv);
+    }
+
+    if (btnViewSummaryTable) {
+      btnViewSummaryTable.addEventListener('click', () => {
+        navigateToTab('view-absentee');
+        showToast('Viewing Waiter Attendance Summary List');
+      });
+    }
+
     // Print Buttons
     const btnPrintQuick = document.getElementById('btn-print-quick');
     const btnPrintMatrix = document.getElementById('btn-print-matrix-view');
@@ -2882,6 +4954,64 @@
     const btnAddModal = document.getElementById('btn-add-staff-modal');
     if (btnAddQuick) btnAddQuick.addEventListener('click', () => openStaffModal());
     if (btnAddModal) btnAddModal.addEventListener('click', () => openStaffModal());
+
+    // Staff View Toolbar: Week & Month Attendance buttons
+    const btnViewWeekAtt = document.getElementById('btn-view-week-attendance');
+    const btnViewMonthAtt = document.getElementById('btn-view-month-attendance');
+    if (btnViewWeekAtt) btnViewWeekAtt.addEventListener('click', () => openWeekAttendanceModal('ALL'));
+    if (btnViewMonthAtt) btnViewMonthAtt.addEventListener('click', () => navigateToTab('view-monthly'));
+
+    // Week Attendance Modal Controls
+    const btnCloseWeekModal = document.getElementById('btn-close-week-attendance-modal');
+    if (btnCloseWeekModal) btnCloseWeekModal.addEventListener('click', closeWeekAttendanceModal);
+
+    const btnPrevWeek = document.getElementById('btn-prev-week');
+    if (btnPrevWeek) {
+      btnPrevWeek.addEventListener('click', () => {
+        weekModalRefDate.setDate(weekModalRefDate.getDate() - 7);
+        renderWeekAttendanceModal();
+      });
+    }
+
+    const btnNextWeek = document.getElementById('btn-next-week');
+    if (btnNextWeek) {
+      btnNextWeek.addEventListener('click', () => {
+        weekModalRefDate.setDate(weekModalRefDate.getDate() + 7);
+        renderWeekAttendanceModal();
+      });
+    }
+
+    const btnTodayWeek = document.getElementById('btn-today-week');
+    if (btnTodayWeek) {
+      btnTodayWeek.addEventListener('click', () => {
+        weekModalRefDate = new Date();
+        renderWeekAttendanceModal();
+      });
+    }
+
+    const selectWeekStaff = document.getElementById('select-week-staff-filter');
+    if (selectWeekStaff) {
+      selectWeekStaff.addEventListener('change', (e) => {
+        weekModalSelectedStaffId = e.target.value;
+        renderWeekAttendanceModal();
+      });
+    }
+
+    const btnJumpToMonthly = document.getElementById('btn-jump-to-monthly');
+    if (btnJumpToMonthly) {
+      btnJumpToMonthly.addEventListener('click', () => {
+        closeWeekAttendanceModal();
+        navigateToTab('view-monthly');
+      });
+    }
+
+    const btnPrintWeekModal = document.getElementById('btn-print-week-modal');
+    if (btnPrintWeekModal) {
+      btnPrintWeekModal.addEventListener('click', () => {
+        const days = getWeekDaysList(weekModalRefDate);
+        prepareAndPrintRegister(days[0].dateObj.getMonth(), days[0].dateObj.getFullYear());
+      });
+    }
 
     const btnCloseStaff = document.getElementById('btn-close-staff-modal');
     const btnCancelStaff = document.getElementById('btn-cancel-staff-modal');
@@ -3138,6 +5268,112 @@
           }
           window.location.replace('/login.html?loggedout=1');
         }
+      });
+    }
+
+    // Manager Session Pill & Executive Dropdown Menu
+    const btnManagerSessionMenu = document.getElementById('btn-manager-session-menu');
+    const dropdownProfile = document.getElementById('manager-profile-dropdown');
+    const btnDropHandover = document.getElementById('btn-dropdown-handover');
+    const btnDropPrint = document.getElementById('btn-dropdown-print');
+    const btnDropPasskeys = document.getElementById('btn-dropdown-passkeys');
+    const btnDropSettings = document.getElementById('btn-dropdown-settings');
+    const btnDropLogout = document.getElementById('btn-dropdown-logout');
+
+    if (btnManagerSessionMenu) {
+      btnManagerSessionMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleManagerProfileDropdown();
+      });
+    }
+
+    if (btnDropHandover) {
+      btnDropHandover.addEventListener('click', () => {
+        openShiftHandoverModal();
+      });
+    }
+
+    if (btnDropPrint) {
+      btnDropPrint.addEventListener('click', () => {
+        closeManagerProfileDropdown();
+        prepareAndPrintRegister(AppState.currentDate.getMonth(), AppState.currentDate.getFullYear());
+      });
+    }
+
+    if (btnDropPasskeys) {
+      btnDropPasskeys.addEventListener('click', () => {
+        closeManagerProfileDropdown();
+        openSettingsModal();
+        setTimeout(() => {
+          const passkeyBtn = document.getElementById('btn-register-passkey');
+          if (passkeyBtn) passkeyBtn.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+      });
+    }
+
+    if (btnDropSettings) {
+      btnDropSettings.addEventListener('click', () => {
+        closeManagerProfileDropdown();
+        openSettingsModal();
+      });
+    }
+
+    if (btnDropLogout) {
+      btnDropLogout.addEventListener('click', () => {
+        closeManagerProfileDropdown();
+        if (btnLogoutHeader) btnLogoutHeader.click();
+      });
+    }
+
+    // Close Dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (dropdownProfile && dropdownProfile.style.display !== 'none') {
+        if (!dropdownProfile.contains(e.target) && !btnManagerSessionMenu.contains(e.target)) {
+          closeManagerProfileDropdown();
+        }
+      }
+    });
+
+    // Shift Handover Modal Controls
+    const btnCloseShiftHandover = document.getElementById('btn-close-shift-handover');
+    const btnCertifyPrint = document.getElementById('btn-certify-print');
+    const btnCertifyWhatsApp = document.getElementById('btn-certify-whatsapp');
+    const btnCertifyComplete = document.getElementById('btn-certify-complete');
+
+    if (btnCloseShiftHandover) btnCloseShiftHandover.addEventListener('click', closeShiftHandoverModal);
+    if (btnCertifyPrint) {
+      btnCertifyPrint.addEventListener('click', () => {
+        prepareAndPrintRegister(AppState.currentDate.getMonth(), AppState.currentDate.getFullYear());
+      });
+    }
+    if (btnCertifyWhatsApp) {
+      btnCertifyWhatsApp.addEventListener('click', () => {
+        const msg = buildWhatsAppCertificationMessage();
+        const encoded = encodeURIComponent(msg);
+        const supervisorPhone = (AppState.settings?.supervisorPhone || localStorage.getItem('supervisor_phone') || '').replace(/[^0-9]/g, '');
+        let cleanPhone = supervisorPhone;
+        if (cleanPhone.startsWith('0') && cleanPhone.length === 10) {
+          cleanPhone = '254' + cleanPhone.substring(1);
+        }
+        const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(msg).catch(() => {});
+        }
+        window.open(waUrl, '_blank');
+        showToast('Shift certification copied & opening WhatsApp...');
+      });
+    }
+    if (btnCertifyComplete) {
+      btnCertifyComplete.addEventListener('click', () => {
+        const badge = document.getElementById('cert-stamp-badge');
+        if (badge) {
+          badge.textContent = 'CERTIFIED & SIGNED';
+          badge.style.background = '#0284C7';
+        }
+        showToast(`Shift Handover Certified · Signed by ${AppState.manager.name || 'Duty Manager'}`);
+        setTimeout(() => {
+          closeShiftHandoverModal();
+        }, 700);
       });
     }
 
@@ -3432,6 +5668,13 @@
     renderAbsenteeReport();
     renderStaffDirectory();
     renderReminders();
+
+    // Auto-navigate to hash tab if present (e.g. #floorplan or #view-floorplan)
+    const initialHash = (window.location.hash || '').replace('#', '');
+    if (initialHash === 'floorplan' || initialHash === 'view-floorplan') {
+      const fpTab = document.querySelector('.nav-tab[data-target="view-floorplan"]');
+      if (fpTab) fpTab.click();
+    }
     
     // Check due reminders every 15s
     setInterval(pollDueReminders, 15000);

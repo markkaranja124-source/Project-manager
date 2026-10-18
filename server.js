@@ -21,7 +21,7 @@ const {
 } = require('@simplewebauthn/server');
 
 const { generateWeeklyReport, generateMonthlyReport, getWeekRange, getMonthRange, REPORTS_DIR } = require('./services/report-generator');
-const { sendReportNotification } = require('./services/whatsapp');
+const { sendReportNotification, sendDirectWhatsAppMessage } = require('./services/whatsapp');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -984,22 +984,86 @@ app.delete('/api/staff/:id', requireAuth, async (req, res) => {
 // ============================================================================
 
 const FLOOR_PLAN_STATIONS = [
-  { id: 'booth_1', name: 'Booth 1', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
-  { id: 'booth_2', name: 'Booth 2', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
-  { id: 'booth_3', name: 'Booth 3', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
-  { id: 'booth_4', name: 'Booth 4', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
-  { id: 'table_1', name: 'Table 1', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_2', name: 'Table 2', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_3', name: 'Table 3', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_4', name: 'Table 4', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_5', name: 'Table 5', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_6', name: 'Table 6', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_7', name: 'Table 7', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_8', name: 'Table 8', section: 'Main Dining', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'section_a_1', name: 'Section A - Upper', section: 'Section A', type: 'large_table', capacity: 6, shape: 'rect' },
-  { id: 'section_a_2', name: 'Section A - Lower', section: 'Section A', type: 'large_table', capacity: 6, shape: 'rect' },
-  { id: 'section_b_1', name: 'Section B', section: 'Section B', type: 'large_table', capacity: 6, shape: 'rect' },
-  { id: 'bar', name: 'Bar Counter', section: 'Bar Area', type: 'bar', capacity: 4, shape: 'bar' }
+  // ================= 1. MAIN DINING - LEFT SECTION (18 TABLES: 3x6 GRID) =================
+  { id: 'table_1', name: 'Table 1', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_2', name: 'Table 2', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_3', name: 'Table 3', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_4', name: 'Table 4', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_5', name: 'Table 5', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_6', name: 'Table 6', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_7', name: 'Table 7', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_8', name: 'Table 8', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_9', name: 'Table 9', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_10', name: 'Table 10', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_11', name: 'Table 11', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_12', name: 'Table 12', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_13', name: 'Table 13', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_14', name: 'Table 14', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_15', name: 'Table 15', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_16', name: 'Table 16', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_17', name: 'Table 17', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_18', name: 'Table 18', section: 'Main Dining (Left)', type: 'table', capacity: 4, shape: 'square' },
+
+  // ================= 2. MAIN DINING - RIGHT SECTION (18 TABLES: 3x6 GRID) =================
+  { id: 'table_19', name: 'Table 19', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_20', name: 'Table 20', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_21', name: 'Table 21', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_22', name: 'Table 22', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_23', name: 'Table 23', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_24', name: 'Table 24', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_25', name: 'Table 25', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_26', name: 'Table 26', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_27', name: 'Table 27', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_28', name: 'Table 28', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_29', name: 'Table 29', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_30', name: 'Table 30', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_31', name: 'Table 31', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_32', name: 'Table 32', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_33', name: 'Table 33', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_34', name: 'Table 34', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_35', name: 'Table 35', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_36', name: 'Table 36', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
+
+  // ================= 3. UPPER DINING (STEPPED / TIERED TABLES) =================
+  { id: 'table_37', name: 'Table 37', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_38', name: 'Table 38', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_39', name: 'Table 39', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_40', name: 'Table 40', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_41', name: 'Table 41', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_42', name: 'Table 42', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_43', name: 'Table 43', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_44', name: 'Table 44', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_45', name: 'Table 45', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
+  { id: 'table_46', name: 'Table 46', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
+
+  // ================= 4. SERVICE, PRODUCTION & RETAIL STATIONS =================
+  { id: 'station_samosa', name: 'Samosa & Kababs Maker', section: 'Snacks & Grill', type: 'kitchen', capacity: 2, shape: 'rect' },
+  { id: 'station_chef_prep', name: 'Chef Station (Left)', section: 'Kitchen Prep', type: 'kitchen', capacity: 2, shape: 'rect' },
+  { id: 'station_barista', name: 'Barista Counter', section: 'Beverages', type: 'bar', capacity: 2, shape: 'bar' },
+  { id: 'station_kitchen_butchery', name: 'Kitchen Butchery (Prep)', section: 'Meat Prep', type: 'kitchen', capacity: 2, shape: 'rect' },
+  { id: 'station_cashier', name: 'Cashier 1', section: 'Accounts & POS', type: 'service', capacity: 1, shape: 'rect' },
+  { id: 'station_cashier_2', name: 'Cashier 2', section: 'Accounts & POS', type: 'service', capacity: 1, shape: 'rect' },
+  { id: 'station_main_office', name: 'Main Office', section: 'Management', type: 'office', capacity: 2, shape: 'rect' },
+  { id: 'station_jiko', name: 'Jiko (Main Cooking)', section: 'Kitchen Core', type: 'kitchen', capacity: 4, shape: 'rect' },
+  { id: 'station_chips_chicken', name: 'Chips Chicken Sausage Display', section: 'Carvery & Display', type: 'kitchen', capacity: 2, shape: 'rect' },
+  { id: 'station_store', name: 'Store & Inventory', section: 'Inventory', type: 'inventory', capacity: 2, shape: 'rect' },
+  { id: 'station_nyama_cook', name: 'Nyama Cook (Grill Master)', section: 'Grill Station', type: 'kitchen', capacity: 2, shape: 'rect' },
+  { id: 'station_stock_guy', name: 'Stock Guy', section: 'Inventory', type: 'inventory', capacity: 1, shape: 'rect' },
+  { id: 'station_dishes', name: 'Dishes (Scullery)', section: 'Sanitation', type: 'service', capacity: 2, shape: 'rect' },
+  { id: 'station_kitchen_orders', name: 'Kitchen Orders Pickup Pass', section: 'Order Pass', type: 'service', capacity: 2, shape: 'rect' },
+  { id: 'station_minishop', name: 'Mini Shop 1', section: 'Retail Wing', type: 'retail', capacity: 1, shape: 'rect' },
+  { id: 'station_minishop_2', name: 'Mini Shop 2', section: 'Retail Wing', type: 'retail', capacity: 1, shape: 'rect' },
+  { id: 'station_butchery', name: 'Butchery (Retail Counter)', section: 'Retail Wing', type: 'retail', capacity: 2, shape: 'rect' },
+
+  // ================= 5. LEGACY BACKWARD-COMPATIBILITY ALIASES =================
+  { id: 'booth_1', name: 'Booth 1 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+  { id: 'booth_2', name: 'Booth 2 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+  { id: 'booth_3', name: 'Booth 3 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+  { id: 'booth_4', name: 'Booth 4 (Legacy)', section: 'Booths', type: 'booth', capacity: 4, shape: 'booth' },
+  { id: 'section_a_1', name: 'Section A - Upper (Legacy)', section: 'Section A', type: 'large_table', capacity: 6, shape: 'rect' },
+  { id: 'section_a_2', name: 'Section A - Lower (Legacy)', section: 'Section A', type: 'large_table', capacity: 6, shape: 'rect' },
+  { id: 'section_b_1', name: 'Section B (Legacy)', section: 'Section B', type: 'large_table', capacity: 6, shape: 'rect' },
+  { id: 'bar', name: 'Bar Counter (Legacy)', section: 'Bar Area', type: 'bar', capacity: 4, shape: 'bar' }
 ];
 
 const STAFF_AVATAR_COLORS = [
@@ -1209,6 +1273,56 @@ app.post('/api/floorplan/assign-bulk', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/floorplan/send-whatsapp
+ * Dispatches floor plan duty roster text directly to supervisor via WhatsApp API
+ */
+app.post('/api/floorplan/send-whatsapp', requireAuth, async (req, res) => {
+  try {
+    const { recipientPhone, date, shift, messageText } = req.body;
+    if (!messageText || !messageText.trim()) {
+      return res.status(400).json({ success: false, message: 'Message content is required.' });
+    }
+
+    const phone = (recipientPhone || '').trim();
+
+    // Optionally persist supervisor phone in settings for future convenience
+    if (phone) {
+      await dbPool.execute(
+        'INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ("supervisor_whatsapp", ?) ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`)',
+        [phone]
+      );
+    }
+
+    // Attempt dispatch via configured WhatsApp API provider (Twilio or Meta)
+    const result = await sendDirectWhatsAppMessage({
+      recipientPhone: phone,
+      messageText: messageText.trim()
+    });
+
+    if (result.success) {
+      console.log(`[FLOORPLAN] Roster for ${date} (${shift}) sent to supervisor ${phone} via WhatsApp`);
+      return res.json({
+        success: true,
+        message: 'Floor plan sent successfully to supervisor via WhatsApp API.',
+        sid: result.sid || (result.data && result.data.messages && result.data.messages[0] && result.data.messages[0].id)
+      });
+    } else {
+      // Return status indicating API wasn't enabled or encountered error, but frontend direct wa.me link is available
+      return res.json({
+        success: false,
+        status: result.status || 'ERROR',
+        message: result.error || 'WhatsApp API dispatch could not complete.',
+        fallbackUrl: `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(messageText)}`
+      });
+    }
+  } catch (err) {
+    console.error('[FLOORPLAN] WhatsApp dispatch error:', err);
+    return res.status(500).json({ success: false, message: 'Server error sending WhatsApp message.' });
+  }
+});
+
+
 
 // ============================================================================
 // PROTECTED APPLICATION API ROUTES
@@ -1379,10 +1493,13 @@ app.post('/api/save', requireAuth, async (req, res) => {
 
     // 2. Sync Attendance
     if (attendance && typeof attendance === 'object') {
+      const [currentStaffRows] = await connection.execute('SELECT id FROM `staff`');
+      const validStaffIds = new Set(currentStaffRows.map(r => r.id));
+
       for (const [dateKey, dayRecords] of Object.entries(attendance)) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
         for (const [staffId, att] of Object.entries(dayRecords)) {
-          if (!att || !att.status) continue;
+          if (!att || !att.status || !validStaffIds.has(staffId)) continue;
           await connection.execute(`
             INSERT INTO \`attendance\` (\`date\`, staff_id, status, note)
             VALUES (?, ?, ?, ?)
