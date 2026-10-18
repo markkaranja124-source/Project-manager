@@ -222,7 +222,7 @@
       id: '',
       name: 'Manager',
       email: '',
-      initials: 'MG',
+      initials: 'G',
       avatar: null
     },
     floorPlanDate: new Date().toISOString().split('T')[0],
@@ -2165,7 +2165,7 @@
 
       if (nameEl) nameEl.textContent = AppState.manager.name || 'Manager';
       if (emailEl) emailEl.textContent = AppState.manager.email || '';
-      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'MG';
+      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'G';
 
       if (avatarImg) {
         if (AppState.manager.avatar) {
