@@ -115,22 +115,9 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 4. Seed default manager account if table is empty
+    // 4. Ensure managers table is ready (no default credentials seeded)
     const [rows] = await dbPool.execute('SELECT COUNT(*) as count FROM `managers`');
-    if (rows[0].count === 0) {
-      const defaultName = process.env.DEFAULT_MANAGER_NAME || 'Executive Manager';
-      const defaultEmail = (process.env.DEFAULT_MANAGER_EMAIL || 'manager@executive.com').toLowerCase().trim();
-      const defaultPassword = process.env.DEFAULT_MANAGER_PASSWORD || 'Manager123!';
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(defaultPassword, salt);
-      const managerId = 'mgr_' + Date.now();
-
-      await dbPool.execute(
-        'INSERT INTO `managers` (id, name, email, password_hash) VALUES (?, ?, ?, ?)',
-        [managerId, defaultName, defaultEmail, passwordHash]
-      );
-      console.log(`[AUTH] Seeded default manager: ${defaultEmail} (Password configured in .env)`);
-    }
+    console.log(`[AUTH] Managers in system: ${rows[0].count}`);
   } catch (err) {
     console.error('[DB] Database initialization error:', err.message);
   }
@@ -436,6 +423,76 @@ app.post('/api/auth/signup', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Registration service temporarily unavailable.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Allows a manager to reset their password using their registered email address
+ */
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email address and new password are required.'
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long.'
+      });
+    }
+
+    // Verify manager account exists
+    const [rows] = await dbPool.execute(
+      'SELECT id, name, email FROM `managers` WHERE email = ? LIMIT 1',
+      [cleanEmail]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No manager account was found with that email address. Please check your spelling.'
+      });
+    }
+
+    // Hash new password using bcrypt (10 rounds)
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update password in database
+    await dbPool.execute(
+      'UPDATE `managers` SET password_hash = ? WHERE email = ?',
+      [passwordHash, cleanEmail]
+    );
+
+    console.log(`[AUTH] Password reset successfully for: ${cleanEmail}`);
+
+    return res.json({
+      success: true,
+      message: 'Your password has been successfully reset! You can now sign in.'
+    });
+
+  } catch (err) {
+    console.error('[AUTH] Reset password error:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Password reset service temporarily unavailable.'
     });
   }
 });

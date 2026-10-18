@@ -220,9 +220,9 @@
     reminders: [],
     manager: {
       id: '',
-      name: 'Executive Manager',
-      email: 'manager@executive.com',
-      initials: 'AR',
+      name: 'Manager',
+      email: '',
+      initials: 'MG',
       avatar: null
     },
     floorPlanDate: new Date().toISOString().split('T')[0],
@@ -312,8 +312,8 @@
             const avatar = data.manager.avatar || localStorage.getItem(AVATAR_KEY) || null;
             AppState.manager = {
               id: data.manager.id || '',
-              name: data.manager.name || 'Executive Manager',
-              email: data.manager.email || 'manager@executive.com',
+              name: data.manager.name || 'Manager',
+              email: data.manager.email || '',
               initials: initials,
               avatar: avatar
             };
@@ -2163,9 +2163,9 @@
       const avatarImg = document.getElementById('mp-dropdown-avatar-img');
       const shiftEl = document.getElementById('mp-tel-shift');
 
-      if (nameEl) nameEl.textContent = AppState.manager.name || 'Mark Kamau';
-      if (emailEl) emailEl.textContent = AppState.manager.email || 'manager@executive.com';
-      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'AR';
+      if (nameEl) nameEl.textContent = AppState.manager.name || 'Manager';
+      if (emailEl) emailEl.textContent = AppState.manager.email || '';
+      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'MG';
 
       if (avatarImg) {
         if (AppState.manager.avatar) {

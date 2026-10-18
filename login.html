@@ -624,7 +624,7 @@
               id="manager-email" 
               name="email" 
               required 
-              placeholder="manager@executive.com"
+              placeholder="e.g. manager@domain.com"
               autocomplete="username"
               spellcheck="false"
             >
@@ -723,7 +723,7 @@
               type="email" 
               class="form-input" 
               id="passkey-email" 
-              placeholder="manager@executive.com"
+              placeholder="e.g. manager@domain.com"
               autocomplete="username webauthn"
               spellcheck="false"
             >
@@ -784,26 +784,90 @@
 
   </div>
 
-  <!-- Interactive Password Recovery / IT Support Modal -->
+  <!-- Interactive Password Recovery / Reset Modal -->
   <div class="recovery-modal-overlay" id="modal-password-recovery">
     <div class="recovery-modal-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #E2E8F0;">
-        <h3 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: #0F172A; text-transform: uppercase;">
-          Manager Password Recovery
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #E2E8F0;">
+        <h3 style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px;">
+          Reset Your Password
         </h3>
-        <button type="button" id="btn-close-recovery" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: #64748B;">&times;</button>
+        <button type="button" id="btn-close-recovery" style="background: transparent; border: none; font-size: 22px; cursor: pointer; color: #64748B; line-height: 1;">&times;</button>
       </div>
-      <div style="font-size: 12px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
-        To maintain corporate audit compliance, manager passwords can be reset via the system administrator or through your registered corporate email.
-      </div>
-      <div style="background: #F8FAFC; border: 1px solid #CBD5E1; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 11.5px;">
-        <div style="font-weight: 800; color: #1E293B; margin-bottom: 4px;">Default Test Credentials:</div>
-        <div>Email: <strong style="color: #2563EB;">manager@executive.com</strong></div>
-        <div>Password: <strong style="color: #2563EB;">Manager123!</strong></div>
-      </div>
-      <button type="button" class="btn-login" id="btn-dismiss-recovery" style="height: 38px; font-size: 11px;">
-        Return to Login
-      </button>
+
+      <p style="font-size: 12px; color: #475569; line-height: 1.5; margin-bottom: 14px;">
+        Enter your registered manager email address below to set a new password.
+      </p>
+
+      <div id="recovery-feedback" class="auth-feedback" style="display: none; margin-bottom: 14px; padding: 10px 12px; font-size: 11.5px; border-radius: 6px;"></div>
+
+      <form id="form-reset-password" novalidate>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="reset-email" style="font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px; display: block;">Registered Email</label>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </span>
+            <input 
+              type="email" 
+              class="form-input" 
+              id="reset-email" 
+              required 
+              placeholder="e.g. manager@domain.com"
+              spellcheck="false"
+            >
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="reset-new-password" style="font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px; display: block;">New Password (Min. 6 Characters)</label>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            <input 
+              type="password" 
+              class="form-input" 
+              id="reset-new-password" 
+              required 
+              placeholder="••••••••••••"
+            >
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label" for="reset-confirm-password" style="font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px; display: block;">Confirm New Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            <input 
+              type="password" 
+              class="form-input" 
+              id="reset-confirm-password" 
+              required 
+              placeholder="••••••••••••"
+            >
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button type="submit" class="btn-login" id="btn-submit-reset" style="flex: 1; height: 42px; font-size: 12px; margin-top: 0;">
+            <span id="btn-reset-text">Set New Password</span>
+          </button>
+          <button type="button" id="btn-dismiss-recovery" style="background: #F1F5F9; border: 1.5px solid #CBD5E1; color: #475569; border-radius: 8px; padding: 0 16px; font-weight: 700; font-size: 12px; cursor: pointer;">
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -832,13 +896,96 @@
       const btnDismissRecovery = document.getElementById('btn-dismiss-recovery');
 
       if (btnForgot && modalRecovery) {
-        btnForgot.addEventListener('click', () => modalRecovery.classList.add('active'));
+        btnForgot.addEventListener('click', () => {
+          modalRecovery.classList.add('active');
+          const resetFb = document.getElementById('recovery-feedback');
+          if (resetFb) resetFb.style.display = 'none';
+        });
       }
       if (btnCloseRecovery) {
         btnCloseRecovery.addEventListener('click', () => modalRecovery.classList.remove('active'));
       }
       if (btnDismissRecovery) {
         btnDismissRecovery.addEventListener('click', () => modalRecovery.classList.remove('active'));
+      }
+
+      // Password Reset Form Submission
+      const formReset = document.getElementById('form-reset-password');
+      const resetEmail = document.getElementById('reset-email');
+      const resetNewPassword = document.getElementById('reset-new-password');
+      const resetConfirmPassword = document.getElementById('reset-confirm-password');
+      const resetFeedback = document.getElementById('recovery-feedback');
+      const btnSubmitReset = document.getElementById('btn-submit-reset');
+      const btnResetText = document.getElementById('btn-reset-text');
+
+      function showResetFeedback(msg, type) {
+        if (!resetFeedback) return;
+        resetFeedback.style.display = 'block';
+        if (type === 'success') {
+          resetFeedback.style.background = '#ECFDF5';
+          resetFeedback.style.borderLeft = '4px solid #10B981';
+          resetFeedback.style.color = '#065F46';
+        } else {
+          resetFeedback.style.background = '#FEF2F2';
+          resetFeedback.style.borderLeft = '4px solid #EF4444';
+          resetFeedback.style.color = '#991B1B';
+        }
+        resetFeedback.textContent = msg;
+      }
+
+      if (formReset) {
+        formReset.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          if (resetFeedback) resetFeedback.style.display = 'none';
+
+          const email = resetEmail.value.trim().toLowerCase();
+          const newPassword = resetNewPassword.value;
+          const confirmPassword = resetConfirmPassword.value;
+
+          if (!email) {
+            showResetFeedback('Please enter your registered email address.', 'error');
+            return;
+          }
+          if (!newPassword || newPassword.length < 6) {
+            showResetFeedback('New password must be at least 6 characters long.', 'error');
+            return;
+          }
+          if (newPassword !== confirmPassword) {
+            showResetFeedback('Passwords do not match.', 'error');
+            return;
+          }
+
+          btnSubmitReset.disabled = true;
+          btnResetText.textContent = 'Updating...';
+
+          try {
+            const resp = await fetch('/api/auth/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, newPassword })
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+              showResetFeedback(data.message, 'success');
+              if (inputEmail) inputEmail.value = email;
+              if (inputPassword) inputPassword.value = '';
+              setTimeout(() => {
+                modalRecovery.classList.remove('active');
+                showFeedback('Password reset successfully! Please sign in with your new password.', 'success');
+                formReset.reset();
+                if (resetFeedback) resetFeedback.style.display = 'none';
+              }, 1400);
+            } else {
+              showResetFeedback(data.message || 'Unable to reset password.', 'error');
+            }
+          } catch (err) {
+            showResetFeedback('Network error communicating with server.', 'error');
+          } finally {
+            btnSubmitReset.disabled = false;
+            btnResetText.textContent = 'Set New Password';
+          }
+        });
       }
 
       // Tab Switching between Password and Passkey
