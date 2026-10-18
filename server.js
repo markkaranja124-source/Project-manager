@@ -12,6 +12,7 @@ const session = require('express-session');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
 
 const {
   generateRegistrationOptions,
@@ -112,6 +113,19 @@ async function initDatabase() {
         KEY \`idx_assign_staff\` (\`staff_id\`),
         CONSTRAINT \`fk_assign_staff\` FOREIGN KEY (\`staff_id\`)
           REFERENCES \`staff\` (\`id\`) ON DELETE SET NULL ON UPDATE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Ensure password_resets table exists for secure OTP verification
+    await dbPool.execute(`
+      CREATE TABLE IF NOT EXISTS \`password_resets\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`email\` VARCHAR(191) NOT NULL,
+        \`otp_code\` VARCHAR(10) NOT NULL,
+        \`expires_at\` DATETIME NOT NULL,
+        \`used\` TINYINT(1) DEFAULT 0,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_email_otp\` (\`email\`, \`otp_code\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
@@ -428,21 +442,180 @@ app.post('/api/auth/signup', async (req, res) => {
 });
 
 /**
+ * Helper to dispatch OTP verification emails using Nodemailer
+ */
+async function sendOtpEmail(email, otpCode, managerName) {
+  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpFrom = process.env.SMTP_FROM || `"Ribhouse Manager Portal" <${smtpUser || 'no-reply@ribhouse.com'}>`;
+
+  // If SMTP is not yet configured, log to server console for immediate development & testing
+  if (!smtpUser || !smtpPass) {
+    console.warn(`\n========================================================================`);
+    console.warn(`[AUTH] PASSWORD RESET OTP FOR ${email}: [ ${otpCode} ]`);
+    console.warn(`[AUTH] (Valid for 10 minutes. Configure SMTP_USER and SMTP_PASS in .env to dispatch live emails)`);
+    console.warn(`========================================================================\n`);
+    return {
+      sent: false,
+      devMode: true,
+      message: 'SMTP credentials not configured in .env. Verification code logged to server console.'
+    };
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0B132B; color: #0F172A; padding: 24px; margin: 0; }
+          .card { max-width: 480px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; padding: 32px 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+          .title { font-size: 20px; font-weight: 800; color: #0F172A; margin-bottom: 8px; }
+          .subtitle { font-size: 13px; color: #64748B; margin-bottom: 24px; line-height: 1.5; }
+          .code-box { background: #F1F5F9; border: 2px dashed #2563EB; border-radius: 10px; padding: 18px; text-align: center; margin-bottom: 24px; }
+          .code { font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #1D4ED8; font-family: monospace; }
+          .expiry { font-size: 11px; color: #DC2626; font-weight: 700; margin-top: 6px; }
+          .footer { font-size: 11px; color: #94A3B8; text-align: center; margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="title">Password Reset Code</div>
+          <div class="subtitle">
+            Hello ${managerName || 'Manager'},<br>
+            We received a request to reset your password for your <strong>Ribhouse Restaurant Manager</strong> account.
+          </div>
+          <div class="code-box">
+            <div class="code">${otpCode}</div>
+            <div class="expiry">Expires in 10 minutes</div>
+          </div>
+          <p style="font-size: 12px; color: #475569; line-height: 1.5;">
+            Enter this 6-digit code on the reset password screen to verify your email ownership.
+            If you did not request this, please ignore this email or ensure your passkeys are secure.
+          </p>
+          <div class="footer">
+            &copy; 2026 Ribhouse Restaurant & Hospitality Operations Ltd.<br>
+            Secure Executive Management Portal
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: smtpFrom,
+      to: email,
+      subject: `Your Password Reset Code: ${otpCode} - Ribhouse Restaurant`,
+      text: `Your Ribhouse Restaurant password reset code is: ${otpCode}. It expires in 10 minutes.`,
+      html: htmlContent
+    });
+
+    console.log(`[AUTH] Password Reset OTP email successfully sent to ${email}`);
+    return { sent: true };
+  } catch (mailErr) {
+    console.error(`[AUTH] Failed to send email via SMTP:`, mailErr.message);
+    return { sent: false, error: mailErr.message };
+  }
+}
+
+/**
+ * POST /api/auth/forgot-password
+ * Generates a 6-digit OTP code, stores it with 10min expiry, and emails it to the manager
+ */
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please enter your registered email address.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
+    // Verify manager account exists in database
+    const [rows] = await dbPool.execute(
+      'SELECT id, name, email FROM `managers` WHERE email = ? LIMIT 1',
+      [cleanEmail]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No manager account was found with that email address. Please check your spelling.'
+      });
+    }
+
+    const manager = rows[0];
+
+    // Generate secure 6-digit OTP code
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Expire any existing OTPs for this email address
+    await dbPool.execute(
+      'UPDATE `password_resets` SET used = 1 WHERE email = ? AND used = 0',
+      [cleanEmail]
+    );
+
+    // Insert new OTP with 10-minute expiry
+    await dbPool.execute(
+      'INSERT INTO `password_resets` (email, otp_code, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))',
+      [cleanEmail, otpCode]
+    );
+
+    // Dispatch email
+    const mailResult = await sendOtpEmail(cleanEmail, otpCode, manager.name);
+
+    let message = `A 6-digit verification code has been sent to ${cleanEmail}. Please check your inbox.`;
+    let devOtp = null;
+    if (mailResult.devMode) {
+      message = `Verification code generated for ${cleanEmail}! (Check terminal or use code: ${otpCode})`;
+      devOtp = otpCode;
+    }
+
+    return res.json({
+      success: true,
+      message,
+      email: cleanEmail,
+      devOtp
+    });
+
+  } catch (err) {
+    console.error('[AUTH] forgot-password error:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to send verification code. Please try again.' });
+  }
+});
+
+/**
  * POST /api/auth/reset-password
- * Allows a manager to reset their password using their registered email address
+ * Verifies the 6-digit OTP code before permitting the password change
  */
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email, otpCode, newPassword } = req.body;
 
-    if (!email || !newPassword) {
+    if (!email || !otpCode || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Email address and new password are required.'
+        message: 'Email address, verification code, and new password are required.'
       });
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otpCode.trim();
 
     if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({
@@ -458,16 +631,35 @@ app.post('/api/auth/reset-password', async (req, res) => {
       });
     }
 
-    // Verify manager account exists
-    const [rows] = await dbPool.execute(
+    // Verify OTP code in database (must match email, be unused, and not expired)
+    const [otpRows] = await dbPool.execute(
+      'SELECT id FROM `password_resets` WHERE email = ? AND otp_code = ? AND used = 0 AND expires_at > NOW() ORDER BY id DESC LIMIT 1',
+      [cleanEmail, cleanOtp]
+    );
+
+    if (!otpRows || otpRows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification code. Please check the 6-digit code or request a new one.'
+      });
+    }
+
+    // Mark OTP as used
+    await dbPool.execute(
+      'UPDATE `password_resets` SET used = 1 WHERE id = ?',
+      [otpRows[0].id]
+    );
+
+    // Verify manager exists
+    const [mgrRows] = await dbPool.execute(
       'SELECT id, name, email FROM `managers` WHERE email = ? LIMIT 1',
       [cleanEmail]
     );
 
-    if (!rows || rows.length === 0) {
+    if (!mgrRows || mgrRows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No manager account was found with that email address. Please check your spelling.'
+        message: 'No manager account was found with that email address.'
       });
     }
 
@@ -481,11 +673,11 @@ app.post('/api/auth/reset-password', async (req, res) => {
       [passwordHash, cleanEmail]
     );
 
-    console.log(`[AUTH] Password reset successfully for: ${cleanEmail}`);
+    console.log(`[AUTH] Password successfully reset for verified owner: ${cleanEmail}`);
 
     return res.json({
       success: true,
-      message: 'Your password has been successfully reset! You can now sign in.'
+      message: 'Your password has been successfully reset! You can now log in.'
     });
 
   } catch (err) {
