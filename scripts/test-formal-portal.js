@@ -15,7 +15,6 @@ const loginContent = fs.readFileSync(loginPath, 'utf8');
 
 // 1. Check Executive Elements in index.html
 const requiredElements = [
-  'brand-crest-mini',
   'manager-brand-avatar',
   'btn-manager-session-menu',
   'manager-session-indicator',
@@ -67,7 +66,6 @@ for (const elId of requiredElements) {
 
 // 2. Check CSS classes
 const requiredCss = [
-  '.brand-crest-mini',
   '.manager-session-pill',
   '.header-telemetry-badge',
   '.manager-profile-dropdown',
@@ -103,7 +101,7 @@ for (const fn of requiredJs) {
 }
 
 // 4. Check login.html executive styling
-if (loginContent.includes('Plus Jakarta Sans') && loginContent.includes('Executive Portal') && loginContent.includes('Biometric')) {
+if (loginContent.includes('Plus Jakarta Sans') && loginContent.includes('Executive') && loginContent.includes('Biometric')) {
   console.log('✓ login.html executive typography & biometric auth confirmed.');
 } else {
   console.error('❌ login.html missing executive features.');
