@@ -445,35 +445,74 @@ app.post('/api/auth/signup', async (req, res) => {
  * Helper to dispatch OTP verification emails using Nodemailer
  */
 async function sendOtpEmail(email, otpCode, managerName) {
-  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  const smtpFrom = process.env.SMTP_FROM || `"Ribhouse Manager Portal" <${smtpUser || 'no-reply@ribhouse.com'}>`;
+  let smtpHost = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  let smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  let smtpUser = (process.env.SMTP_USER || '').trim();
+  let smtpPass = (process.env.SMTP_PASS || '').trim();
 
-  // If SMTP is not yet configured, log to server console for immediate development & testing
+  // If credentials are not in process.env, reload directly from .env file on disk
   if (!smtpUser || !smtpPass) {
-    console.warn(`\n========================================================================`);
-    console.warn(`[AUTH] PASSWORD RESET OTP FOR ${email}: [ ${otpCode} ]`);
-    console.warn(`[AUTH] (Valid for 10 minutes. Configure SMTP_USER and SMTP_PASS in .env to dispatch live emails)`);
-    console.warn(`========================================================================\n`);
+    try {
+      const envPath = path.join(__dirname, '.env');
+      if (fs.existsSync(envPath)) {
+        const parsed = require('dotenv').parse(fs.readFileSync(envPath));
+        if (parsed.SMTP_USER) smtpUser = parsed.SMTP_USER.trim();
+        if (parsed.SMTP_PASS) smtpPass = parsed.SMTP_PASS.trim();
+        if (parsed.SMTP_HOST) smtpHost = parsed.SMTP_HOST.trim();
+        if (parsed.SMTP_PORT) smtpPort = parseInt(parsed.SMTP_PORT.trim(), 10);
+        // Persist back to process.env so subsequent requests have them
+        if (smtpUser) process.env.SMTP_USER = smtpUser;
+        if (smtpPass) process.env.SMTP_PASS = smtpPass;
+        if (parsed.SMTP_HOST) process.env.SMTP_HOST = smtpHost;
+        if (parsed.SMTP_PORT) process.env.SMTP_PORT = String(smtpPort);
+      }
+    } catch (e) {
+      // Ignore file read error
+    }
+  }
+
+  // If SMTP is still missing credentials, fail honestly
+  if (!smtpUser || !smtpPass) {
+    const errorMsg = 'Email dispatch service is not configured yet. Please enter your SMTP_USER and SMTP_PASS (Gmail 16-character App Password) in the .env file.';
+    console.error(`[AUTH] Cannot send password reset email to ${email}: ${errorMsg}`);
     return {
       sent: false,
-      devMode: true,
-      message: 'SMTP credentials not configured in .env. Verification code logged to server console.'
+      error: errorMsg
     };
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      }
-    });
+    const isGmail = smtpHost.includes('gmail') || smtpUser.toLowerCase().endsWith('@gmail.com');
+    // Remove all spaces from App Password (e.g. Google formats as "xxxx xxxx xxxx xxxx")
+    const cleanPass = smtpPass.replace(/\s+/g, '');
+
+    const transporterConfig = isGmail
+      ? {
+          service: 'gmail',
+          auth: {
+            user: smtpUser,
+            pass: cleanPass
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        }
+      : {
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: {
+            user: smtpUser,
+            pass: cleanPass
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        };
+
+    const transporter = nodemailer.createTransport(transporterConfig);
+
+    const fromAddress = `"Ribhouse Manager Portal" <${smtpUser}>`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -516,18 +555,22 @@ async function sendOtpEmail(email, otpCode, managerName) {
     `;
 
     await transporter.sendMail({
-      from: smtpFrom,
+      from: fromAddress,
       to: email,
       subject: `Your Password Reset Code: ${otpCode} - Ribhouse Restaurant`,
       text: `Your Ribhouse Restaurant password reset code is: ${otpCode}. It expires in 10 minutes.`,
       html: htmlContent
     });
 
-    console.log(`[AUTH] Password Reset OTP email successfully sent to ${email}`);
+    console.log(`[AUTH] Password Reset OTP email successfully delivered via SMTP to ${email}`);
     return { sent: true };
   } catch (mailErr) {
     console.error(`[AUTH] Failed to send email via SMTP:`, mailErr.message);
-    return { sent: false, error: mailErr.message };
+    let errorHelp = mailErr.message;
+    if (mailErr.code === 'EAUTH' || mailErr.message.includes('Username and Password not accepted') || mailErr.message.includes('BadCredentials')) {
+      errorHelp = 'Gmail authentication failed. Please make sure 2-Step Verification is enabled on your Google Account and you are using a 16-character Google App Password (not your normal Gmail login password).';
+    }
+    return { sent: false, error: errorHelp };
   }
 }
 
@@ -579,18 +622,17 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     // Dispatch email
     const mailResult = await sendOtpEmail(cleanEmail, otpCode, manager.name);
 
-    let message = `A 6-digit verification code has been sent to ${cleanEmail}. Please check your inbox.`;
-    let devOtp = null;
-    if (mailResult.devMode) {
-      message = `Verification code generated for ${cleanEmail}! (Check terminal or use code: ${otpCode})`;
-      devOtp = otpCode;
+    if (!mailResult.sent) {
+      return res.status(503).json({
+        success: false,
+        message: mailResult.error || 'Failed to dispatch verification email. Please check your SMTP settings in .env.'
+      });
     }
 
     return res.json({
       success: true,
-      message,
-      email: cleanEmail,
-      devOtp
+      message: `A 6-digit verification code has been sent to ${cleanEmail}. Please check your inbox (and spam folder).`,
+      email: cleanEmail
     });
 
   } catch (err) {
@@ -1865,12 +1907,13 @@ app.post('/api/reminders', requireAuth, async (req, res) => {
 
     const cleanTitle = title.trim();
     const cleanDesc = (description || '').trim();
-    const cleanTime = reminder_time || '10:00';
-    const cleanRepeat = repeat_type || 'one-time';
+    const cleanTime = (reminder_time || '10:00').substring(0, 5);
+    const cleanRepeat = (repeat_type === 'none' || repeat_type === 'one-time') ? 'one-time' : (repeat_type || 'one-time');
     const cleanRepeatDay = repeat_day !== undefined && repeat_day !== '' ? String(repeat_day) : null;
     const cleanNotif = notification_type || 'both';
     const cleanActive = is_active === undefined ? 1 : (is_active ? 1 : 0);
-    const cleanDate = (cleanRepeat === 'one-time' && reminder_date) ? reminder_date : null;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const cleanDate = (cleanRepeat === 'one-time') ? (reminder_date || todayStr) : null;
     const managerId = req.session.manager ? req.session.manager.id : null;
 
     if (id) {
@@ -1967,7 +2010,7 @@ app.post('/api/reminders/:id/dismiss', requireAuth, async (req, res) => {
  */
 app.get('/api/reminders/due', requireAuth, (req, res) => {
   const alerts = Array.from(activeDueAlerts.values());
-  return res.json({ success: true, dueReminders: alerts });
+  return res.json({ success: true, due: alerts, dueReminders: alerts });
 });
 
 
@@ -2080,6 +2123,28 @@ app.get('/api/reports/:id/download', requireAuth, async (req, res) => {
 });
 
 /**
+ * GET /api/reports/download-monthly-pdf
+ * Generates and directly downloads the Restaurant Attendance PDF
+ */
+app.get('/api/reports/download-monthly-pdf', requireAuth, async (req, res) => {
+  try {
+    const today = new Date();
+    const year = req.query.year ? parseInt(req.query.year, 10) : today.getFullYear();
+    const month = req.query.month !== undefined ? parseInt(req.query.month, 10) : today.getMonth();
+
+    const report = await generateMonthlyReport(dbPool, year, month);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Restaurant_Attendance_${month + 1}_${year}.pdf"`);
+    const fileStream = fs.createReadStream(report.filePath);
+    fileStream.pipe(res);
+  } catch (err) {
+    console.error('[API] /api/reports/download-monthly-pdf error:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to generate PDF: ' + err.message });
+  }
+});
+
+/**
  * GET /api/reports/settings
  * Fetch schedule & WhatsApp preferences
  */
@@ -2179,9 +2244,9 @@ async function checkSchedulerTick() {
          (snooze_until IS NOT NULL AND snooze_until <= NOW()) OR
          (
            (snooze_until IS NULL OR snooze_until <= NOW()) AND
-           reminder_time = ? AND
+           reminder_time <= ? AND
            (
-             (repeat_type = 'one-time' AND reminder_date = ? AND (last_triggered IS NULL OR DATE(last_triggered) != ?)) OR
+             ((repeat_type IN ('one-time', 'none') OR repeat_type IS NULL) AND (reminder_date = ? OR reminder_date IS NULL) AND (last_triggered IS NULL OR DATE(last_triggered) != ?)) OR
              (repeat_type = 'daily' AND (last_triggered IS NULL OR DATE(last_triggered) != ?)) OR
              (repeat_type = 'weekly' AND (repeat_day = ? OR repeat_day IS NULL) AND (last_triggered IS NULL OR DATE(last_triggered) != ?)) OR
              (repeat_type = 'monthly' AND (repeat_day = ? OR repeat_day IS NULL) AND (last_triggered IS NULL OR DATE(last_triggered) != ?))
@@ -2207,8 +2272,11 @@ async function checkSchedulerTick() {
         id: rem.id,
         title: rem.title,
         description: rem.description || '',
+        reminder_time: rem.reminder_time,
         reminderTime: rem.reminder_time,
+        repeat_type: rem.repeat_type,
         repeatType: rem.repeat_type,
+        notification_type: rem.notification_type || 'both',
         notificationType: rem.notification_type || 'both',
         dueAt: new Date().toISOString()
       });
@@ -2349,7 +2417,7 @@ app.get(['/', '/index.html'], (req, res) => {
 app.use(express.static(path.join(__dirname), {
   index: false, // Prevent serving index.html automatically without requireAuth check
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html') || filePath.endsWith('.json')) {
+    if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html') || filePath.endsWith('.json') || filePath.endsWith('.png') || filePath.endsWith('.svg') || filePath.endsWith('.ico') || filePath.endsWith('.webp')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');

@@ -65,14 +65,14 @@ async function getBusinessSettings(dbPool) {
   try {
     const [rows] = await dbPool.execute('SELECT setting_key, setting_value FROM settings');
     const settings = {
-      businessName: 'Ribhouse Restaurant',
+      businessName: 'Restaurant Attendance',
       branch: 'Main Service Operations'
     };
     rows.forEach(r => { settings[r.setting_key] = r.setting_value; });
     return settings;
   } catch (e) {
     return {
-      businessName: 'Ribhouse Restaurant',
+      businessName: 'Restaurant Attendance',
       branch: 'Main Service Operations'
     };
   }
@@ -192,6 +192,10 @@ async function buildAttendancePdf({
   const cGrayBg = '#F8FAFC';
   const cRedText = '#991B1B';
 
+  const displayTitle = (businessName && !businessName.toUpperCase().includes('EXECUTIVE'))
+    ? businessName
+    : 'Restaurant Attendance';
+
   function drawHeader() {
     // Top Bar
     doc.rect(36, 40, doc.page.width - 72, 54).fill(cNavyDark);
@@ -199,7 +203,7 @@ async function buildAttendancePdf({
     doc.fillColor('#FFFFFF')
       .font('Helvetica-Bold')
       .fontSize(15)
-      .text(businessName.toUpperCase(), 48, 48, { characterSpacing: 1 });
+      .text(displayTitle.toUpperCase(), 48, 48, { characterSpacing: 1 });
 
     doc.font('Helvetica')
       .fontSize(9)
@@ -344,7 +348,7 @@ async function buildAttendancePdf({
       .font('Helvetica')
       .fontSize(8)
       .text(
-        `CONFIDENTIAL — ${businessName.toUpperCase()} — PAGE ${i + 1} OF ${range.count}`,
+        `CONFIDENTIAL — ${displayTitle.toUpperCase()} — PAGE ${i + 1} OF ${range.count}`,
         36,
         doc.page.height - 28,
         { align: 'center', width: doc.page.width - 72 }

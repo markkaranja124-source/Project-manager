@@ -11,9 +11,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ribhouse">
   <meta name="application-name" content="Ribhouse">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=5">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">
+  <link rel="manifest" href="/manifest.json?v=5">
   
   <!-- Modern Executive Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -875,6 +875,8 @@
                 required 
                 maxlength="6"
                 placeholder="e.g. 583921"
+                autocomplete="off"
+                value=""
                 style="letter-spacing: 3px; font-weight: 800; font-size: 16px;"
               >
             </div>
@@ -997,6 +999,9 @@
         if (resetStep2) resetStep2.style.display = 'none';
         if (formRequestOtp) formRequestOtp.reset();
         if (formVerifyReset) formVerifyReset.reset();
+        if (verifyOtpCode) verifyOtpCode.value = '';
+        if (verifyNewPassword) verifyNewPassword.value = '';
+        if (verifyConfirmPassword) verifyConfirmPassword.value = '';
         pendingResetEmail = '';
       }
 
@@ -1020,6 +1025,7 @@
           resetFeedback.style.display = 'none';
           resetStep2.style.display = 'none';
           resetStep1.style.display = 'block';
+          if (verifyOtpCode) verifyOtpCode.value = '';
         });
       }
 
@@ -1051,11 +1057,11 @@
               sentCodeTargetEmail.textContent = email;
               resetStep1.style.display = 'none';
               resetStep2.style.display = 'block';
-              showResetFeedback(data.message, 'success');
-              if (data.devOtp && verifyOtpCode) {
-                verifyOtpCode.value = data.devOtp;
+              if (verifyOtpCode) {
+                verifyOtpCode.value = '';
+                verifyOtpCode.focus();
               }
-              if (verifyOtpCode) verifyOtpCode.focus();
+              showResetFeedback(data.message, 'success');
             } else {
               showResetFeedback(data.message || 'Could not send verification code.', 'error');
             }
@@ -1338,10 +1344,18 @@
         } finally {
           btnSubmit.disabled = false;
           if (spinner) spinner.style.display = 'none';
-          if (lockIcon) lockIcon.style.display = 'inline-block';
           btnText.textContent = 'Sign In With Password';
         }
       });
+
+      // Register and update service worker for PWA icon and offline assets
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+          reg.update();
+        }).catch(err => {
+          console.log('SW registration skipped:', err);
+        });
+      }
 
     })();
   </script>

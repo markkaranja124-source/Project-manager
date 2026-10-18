@@ -11,9 +11,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ribhouse">
   <meta name="application-name" content="Ribhouse">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=5">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">
+  <link rel="manifest" href="/manifest.json?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -66,12 +66,12 @@
           </button>
           <span class="header-badge" id="reminders-badge-count">2</span>
         </div>
-        <button type="button" class="icon-btn" id="btn-print-quick" title="Print Official Register Sheet" aria-label="Print Register">
-          <!-- Printer Vector Icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-            <rect x="6" y="14" width="12" height="8"></rect>
+        <button type="button" class="icon-btn" id="btn-print-quick" title="Download Restaurant Attendance PDF" aria-label="Download Attendance PDF">
+          <!-- Download Vector Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
         </button>
         <button type="button" class="icon-btn" id="btn-settings-open" title="Settings & Passkey Setup" aria-label="Settings">
@@ -134,10 +134,10 @@
         </button>
 
         <button type="button" class="mp-menu-item" id="btn-dropdown-print">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <div class="mp-menu-text">
-            <span class="mp-menu-title">Print Official Roster Sheet</span>
-            <span class="mp-menu-desc">Physical paper ledger with sign-off blocks</span>
+            <span class="mp-menu-title">Download Attendance PDF</span>
+            <span class="mp-menu-desc">Save official Restaurant Attendance PDF</span>
           </div>
         </button>
 
@@ -327,8 +327,9 @@
           <!-- Dynamically Generated Matrix Grid -->
         </div>
 
-        <button type="button" class="btn-black" id="btn-print-matrix-view" style="width: 100%; margin-top: 4px;">
-          Print Monthly Register
+        <button type="button" class="btn-black" id="btn-print-matrix-view" style="width: 100%; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download Monthly Attendance PDF
         </button>
 
       </section>
@@ -389,13 +390,13 @@
                 </svg>
                 <span>Download CSV / Excel</span>
               </button>
-              <button type="button" class="btn-primary" id="btn-print-absentee-report" style="padding: 9px 14px; font-size: 11px;" title="Print official attendance audit sheet">
+              <button type="button" class="btn-primary" id="btn-print-absentee-report" style="padding: 9px 14px; font-size: 11px;" title="Download Restaurant Attendance PDF">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                  <rect x="6" y="14" width="12" height="8"></rect>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span>Print / PDF Sheet</span>
+                <span>Download Attendance PDF</span>
               </button>
             </div>
 
@@ -897,12 +898,12 @@
     <div class="print-header">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div style="width: 44px; height: 44px; border: 1.5px solid #0A2540; background: #0A2540; color: #F59E0B; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; letter-spacing: 1px;">
-          ER
+          G
         </div>
         <div>
-          <div class="print-org-name" id="print-org-name-text">EXECUTIVE RESTAURANT & HOSPITALITY GROUP</div>
-          <div class="print-report-title" id="print-period-title">OFFICIAL DUTY ROSTER & ATTENDANCE REGISTER</div>
-          <div style="font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px;">DOCUMENT CONTROL ID: ER-REG-2026 &bull; CLASSIFICATION: CORPORATE INTERNAL</div>
+          <div class="print-org-name" id="print-org-name-text">Restaurant Attendance</div>
+          <div class="print-report-title" id="print-period-title">MONTHLY STAFF ATTENDANCE REGISTER</div>
+          <div style="font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px;">OFFICIAL ATTENDANCE RECORD &bull; INTERNAL CONTROL</div>
         </div>
       </div>
       <div class="print-meta-box">
@@ -1203,8 +1204,9 @@
             <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
               <input type="checkbox" id="reminder-input-active" checked> Active Reminder
             </label>
-            <button type="button" class="btn-secondary" id="btn-test-sound" style="padding: 3px 8px; font-size: 9px;">
-              Test Alarm Sound
+            <button type="button" class="btn-secondary" id="btn-test-sound" style="padding: 4px 10px; font-size: 10px; font-weight: 700; color: #1E293B; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              Test Phone Ring & Vibrate
             </button>
           </div>
 
@@ -1213,8 +1215,8 @@
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Scheduled Reminders</span>
-          <button type="button" class="btn-secondary" id="btn-request-web-notif" style="padding: 4px 8px; font-size: 9px;">
-            Enable Desktop Alerts
+          <button type="button" class="btn-secondary" id="btn-request-web-notif" style="padding: 4px 10px; font-size: 10px; font-weight: 700;">
+            🔔 Enable Phone Alerts
           </button>
         </div>
 
@@ -1690,6 +1692,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3.5"></script>
+  <script src="app.js?v=3.7"></script>
 </body>
 </html>

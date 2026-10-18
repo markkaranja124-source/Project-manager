@@ -537,50 +537,128 @@
 
 
   // =========================================================================
-  // MANAGER REMINDERS, ALARM SYSTEM & WEB AUDIO API
+  // MANAGER REMINDERS, PHONE RINGING ALARM SYSTEM, VIBRATION & WEB AUDIO
   // =========================================================================
   let alarmAudioCtx = null;
   let alarmOscInterval = null;
+  let alarmVibrationInterval = null;
   let activeAlarmReminder = null;
+  let audioUnlocked = false;
+
+  // Pre-unlock AudioContext on user interaction so background alarms can sound on mobile
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    try {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        if (!alarmAudioCtx) {
+          alarmAudioCtx = new AudioCtxClass();
+        }
+        if (alarmAudioCtx.state === 'suspended') {
+          alarmAudioCtx.resume().then(() => {
+            audioUnlocked = true;
+          });
+        } else {
+          audioUnlocked = true;
+        }
+      }
+    } catch (e) {
+      console.warn('Audio unlock warning:', e);
+    }
+  }
+
+  ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, unlockAudio, { passive: true });
+  });
+
+  function startPhoneVibration() {
+    stopPhoneVibration();
+    if ('vibrate' in navigator) {
+      try {
+        // High urgency rhythmic alarm vibration pattern: vibrate 600ms, pause 250ms, vibrate 600ms, pause 500ms
+        navigator.vibrate([600, 250, 600, 250, 800, 500]);
+        alarmVibrationInterval = setInterval(() => {
+          if ('vibrate' in navigator) {
+            navigator.vibrate([600, 250, 600, 250, 800, 500]);
+          }
+        }, 2200);
+      } catch (e) {
+        console.warn('Phone vibration error:', e);
+      }
+    }
+  }
+
+  function stopPhoneVibration() {
+    if (alarmVibrationInterval) {
+      clearInterval(alarmVibrationInterval);
+      alarmVibrationInterval = null;
+    }
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate(0); } catch (e) {}
+    }
+  }
 
   function startAlarmSound() {
     stopAlarmSound();
+    
+    // 1. Physically vibrate phone
+    startPhoneVibration();
+
+    // 2. Play audible phone ringing tone via Web Audio API
     try {
       const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtxClass) return;
-      alarmAudioCtx = new AudioCtxClass();
-
-      function playChime() {
-        if (!alarmAudioCtx || alarmAudioCtx.state === 'closed') return;
-        const now = alarmAudioCtx.currentTime;
-
-        const osc1 = alarmAudioCtx.createOscillator();
-        const gain1 = alarmAudioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(880, now); // A5 note
-        gain1.gain.setValueAtTime(0.25, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc1.connect(gain1);
-        gain1.connect(alarmAudioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.35);
-
-        const osc2 = alarmAudioCtx.createOscillator();
-        const gain2 = alarmAudioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1174.66, now + 0.18); // D6 note
-        gain2.gain.setValueAtTime(0.3, now + 0.18);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-        osc2.connect(gain2);
-        gain2.connect(alarmAudioCtx.destination);
-        osc2.start(now + 0.18);
-        osc2.stop(now + 0.6);
+      if (!alarmAudioCtx || alarmAudioCtx.state === 'closed') {
+        alarmAudioCtx = new AudioCtxClass();
+      }
+      if (alarmAudioCtx.state === 'suspended') {
+        alarmAudioCtx.resume();
       }
 
-      playChime();
-      alarmOscInterval = setInterval(playChime, 1600);
+      function playPhoneRingCadence() {
+        if (!alarmAudioCtx || alarmAudioCtx.state === 'closed') return;
+        if (alarmAudioCtx.state === 'suspended') {
+          alarmAudioCtx.resume();
+        }
+        const now = alarmAudioCtx.currentTime;
+
+        // Dual-tone executive telephone ring sequence (853 Hz & 960 Hz standard telephony chime)
+        playDualChime(853, 960, now, 0.38, 0.45);
+        playDualChime(853, 960, now + 0.48, 0.38, 0.45);
+        // Higher harmonic alert ping
+        playDualChime(1175, 1396, now + 0.98, 0.42, 0.35);
+      }
+
+      function playDualChime(freq1, freq2, startTime, duration, vol) {
+        if (!alarmAudioCtx || alarmAudioCtx.state === 'closed') return;
+        
+        const osc1 = alarmAudioCtx.createOscillator();
+        const osc2 = alarmAudioCtx.createOscillator();
+        const gain = alarmAudioCtx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(freq1, startTime);
+        osc2.frequency.setValueAtTime(freq2, startTime);
+
+        gain.gain.setValueAtTime(vol || 0.4, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(alarmAudioCtx.destination);
+
+        osc1.start(startTime);
+        osc2.start(startTime);
+        osc1.stop(startTime + duration);
+        osc2.stop(startTime + duration);
+      }
+
+      playPhoneRingCadence();
+      // Ring repeats continuously every 1.9 seconds until dismissed or snoozed
+      alarmOscInterval = setInterval(playPhoneRingCadence, 1900);
     } catch (err) {
-      console.warn('Web Audio API error:', err);
+      console.warn('Alarm sound error:', err);
     }
   }
 
@@ -589,30 +667,51 @@
       clearInterval(alarmOscInterval);
       alarmOscInterval = null;
     }
-    if (alarmAudioCtx) {
-      try { alarmAudioCtx.close(); } catch (e) {}
-      alarmAudioCtx = null;
-    }
+    stopPhoneVibration();
   }
 
   function playTestChime() {
+    unlockAudio();
     startAlarmSound();
-    showToast('Testing alarm chime sound...');
+    showToast('Testing phone ringtone & vibration...');
     setTimeout(() => {
       stopAlarmSound();
-    }, 3300);
+    }, 4000);
   }
 
-  function triggerManagerNotification(title, body) {
+  function triggerManagerNotification(title, body, reminderId) {
     showToast(`ALARM: ${title}`);
+    
+    // Mobile PWA / Service Worker notification with vibration pattern
+    if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(title, {
+          body: body || 'Executive manager reminder due now.',
+          icon: '/icon-192.png?v=5',
+          badge: '/icon-192.png?v=5',
+          vibrate: [600, 250, 600, 250, 800, 500],
+          tag: 'manager-alarm-' + (reminderId || Date.now()),
+          renotify: true,
+          requireInteraction: true,
+          data: { url: '/' }
+        });
+      }).catch(err => {
+        fallbackDesktopNotification(title, body);
+      });
+    } else {
+      fallbackDesktopNotification(title, body);
+    }
+  }
+
+  function fallbackDesktopNotification(title, body) {
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
         new Notification(title, {
-          body,
-          icon: 'manifest.json'
+          body: body || 'Executive manager reminder due now.',
+          icon: '/icon-192.png?v=5'
         });
       } catch (e) {
-        console.log('Notification trigger error:', e);
+        console.log('Desktop notification skipped:', e);
       }
     }
   }
@@ -621,14 +720,77 @@
     if ('Notification' in window) {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          showToast('Desktop Notifications Enabled!');
-          triggerManagerNotification('Executive Attendance System', 'Desktop notifications are active for manager alerts.');
+          showToast('Phone & Desktop Alerts Enabled!');
+          triggerManagerNotification('Ribhouse Manager Portal', 'Notifications and alarms are enabled for scheduled reminders.');
         } else {
-          showToast('Notification permission denied.');
+          showToast('Alerts permission was not granted.');
         }
       });
     } else {
-      showToast('Notifications not supported in browser.');
+      showToast('Notifications not supported in this browser.');
+    }
+  }
+
+  // Precise Local 1-Second Clock Reminder Trigger
+  function checkLocalReminders() {
+    if (!Array.isArray(AppState.reminders) || AppState.reminders.length === 0) return;
+    const now = new Date();
+    const currentHHMM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const todayStr = formatDateKey(now);
+    const dayOfWeek = now.getDay();
+    const dayOfMonth = now.getDate();
+
+    for (const rem of AppState.reminders) {
+      if (!rem.is_active || rem.completed) continue;
+
+      // If alarm modal is already open for this reminder, do not re-trigger
+      const modal = document.getElementById('alarm-modal-overlay');
+      if (modal && modal.classList.contains('active') && activeAlarmReminder && String(activeAlarmReminder.id) === String(rem.id)) {
+        continue;
+      }
+
+      // Check snooze
+      if (rem.snooze_until) {
+        const snoozeDate = new Date(rem.snooze_until);
+        if (snoozeDate <= now) {
+          activeAlarmReminder = rem;
+          triggerAlarmModal(rem);
+          return;
+        }
+        continue;
+      }
+
+      // Check scheduled time
+      const remTime = (rem.reminder_time || rem.due_time || '').substring(0, 5);
+      if (remTime && remTime === currentHHMM) {
+        const lockKey = currentHHMM + '_' + todayStr;
+        if (rem._lastTriggeredLock === lockKey) continue;
+
+        let shouldTrigger = false;
+        const rep = rem.repeat_type || 'none';
+        if (rep === 'none' || rep === 'one-time') {
+          if (!rem.reminder_date || rem.reminder_date === todayStr) {
+            shouldTrigger = true;
+          }
+        } else if (rep === 'daily') {
+          shouldTrigger = true;
+        } else if (rep === 'weekly') {
+          if (rem.repeat_day === null || rem.repeat_day === undefined || String(rem.repeat_day) === String(dayOfWeek)) {
+            shouldTrigger = true;
+          }
+        } else if (rep === 'monthly') {
+          if (rem.repeat_day === null || rem.repeat_day === undefined || String(rem.repeat_day) === String(dayOfMonth)) {
+            shouldTrigger = true;
+          }
+        }
+
+        if (shouldTrigger) {
+          rem._lastTriggeredLock = lockKey;
+          activeAlarmReminder = rem;
+          triggerAlarmModal(rem);
+          return;
+        }
+      }
     }
   }
 
@@ -637,17 +799,18 @@
       const res = await fetch('/api/reminders/due');
       if (!res.ok) return;
       const data = await res.json();
-      if (data.success && Array.isArray(data.due) && data.due.length > 0) {
-        const topDue = data.due[0];
+      const dueList = data.due || data.dueReminders || [];
+      if (data.success && Array.isArray(dueList) && dueList.length > 0) {
+        const topDue = dueList[0];
         const modal = document.getElementById('alarm-modal-overlay');
-        if (modal && modal.classList.contains('active') && activeAlarmReminder && activeAlarmReminder.id === topDue.id) {
+        if (modal && modal.classList.contains('active') && activeAlarmReminder && String(activeAlarmReminder.id) === String(topDue.id)) {
           return;
         }
         activeAlarmReminder = topDue;
         triggerAlarmModal(topDue);
       }
     } catch (err) {
-      // Backend not reached or offline
+      // Offline / server polling skipped
     }
   }
 
@@ -660,17 +823,18 @@
 
     if (titleEl) titleEl.textContent = reminder.title;
     if (descEl) descEl.textContent = reminder.description || 'Executive manager reminder due for action.';
-    if (timeEl) timeEl.textContent = reminder.reminder_time ? reminder.reminder_time.substring(0, 5) : 'NOW';
+    const dispTime = (reminder.reminder_time || reminder.reminderTime || reminder.due_time || '').substring(0, 5) || 'NOW';
+    if (timeEl) timeEl.textContent = dispTime;
     if (idEl) idEl.value = reminder.id;
 
     if (modal) modal.classList.add('active');
 
-    const notifType = reminder.notification_type || 'both';
+    const notifType = reminder.notification_type || reminder.notificationType || 'both';
     if (notifType === 'both' || notifType === 'sound') {
       startAlarmSound();
     }
     if (notifType === 'both' || notifType === 'desktop') {
-      triggerManagerNotification(`MANAGER ALARM: ${reminder.title}`, reminder.description || 'Scheduled reminder due now.');
+      triggerManagerNotification(`MANAGER ALARM: ${reminder.title}`, reminder.description || 'Scheduled reminder due now.', reminder.id);
     }
   }
 
@@ -1929,8 +2093,11 @@
     const printPeriod = document.getElementById('print-period-title');
     const printDate = document.getElementById('print-date-generated');
 
-    if (printOrg) printOrg.textContent = AppState.settings.businessName.toUpperCase();
-    if (printPeriod) printPeriod.textContent = `MONTHLY WAITER ATTENDANCE REGISTER - ${monthName.toUpperCase()} ${year}`;
+    const displayTitle = (AppState.settings && AppState.settings.businessName && !AppState.settings.businessName.toUpperCase().includes('EXECUTIVE'))
+      ? AppState.settings.businessName
+      : 'Restaurant Attendance';
+    if (printOrg) printOrg.textContent = displayTitle.toUpperCase();
+    if (printPeriod) printPeriod.textContent = `MONTHLY STAFF ATTENDANCE REGISTER - ${monthName.toUpperCase()} ${year}`;
     if (printDate) printDate.textContent = new Date().toLocaleString('en-US');
 
     const printManager = document.getElementById('print-manager-on-duty');
@@ -4926,24 +5093,38 @@ _Dispatched by Ribhouse Restaurant Operations_`;
       });
     }
 
-    // Print Buttons
+    // PDF Download Buttons
     const btnPrintQuick = document.getElementById('btn-print-quick');
     const btnPrintMatrix = document.getElementById('btn-print-matrix-view');
     const btnPrintAbsentee = document.getElementById('btn-print-absentee-report');
 
+    function downloadAttendancePdf(month, year) {
+      const m = month !== undefined ? month : AppState.currentDate.getMonth();
+      const y = year !== undefined ? year : AppState.currentDate.getFullYear();
+      showToast('Downloading Restaurant Attendance PDF...');
+
+      const downloadUrl = `/api/reports/download-monthly-pdf?month=${m}&year=${y}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', `Restaurant_Attendance_${m + 1}_${y}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => link.remove(), 1000);
+    }
+
     if (btnPrintQuick) {
       btnPrintQuick.addEventListener('click', () => {
-        prepareAndPrintRegister(AppState.currentDate.getMonth(), AppState.currentDate.getFullYear());
+        downloadAttendancePdf(AppState.currentDate.getMonth(), AppState.currentDate.getFullYear());
       });
     }
     if (btnPrintMatrix) {
       btnPrintMatrix.addEventListener('click', () => {
-        prepareAndPrintRegister(AppState.matrixMonth, AppState.matrixYear);
+        downloadAttendancePdf(AppState.matrixMonth, AppState.matrixYear);
       });
     }
     if (btnPrintAbsentee) {
       btnPrintAbsentee.addEventListener('click', () => {
-        prepareAndPrintRegister(AppState.absenteeMonth, AppState.absenteeYear);
+        downloadAttendancePdf(AppState.absenteeMonth, AppState.absenteeYear);
       });
     }
 
@@ -5295,7 +5476,7 @@ _Dispatched by Ribhouse Restaurant Operations_`;
     if (btnDropPrint) {
       btnDropPrint.addEventListener('click', () => {
         closeManagerProfileDropdown();
-        prepareAndPrintRegister(AppState.currentDate.getMonth(), AppState.currentDate.getFullYear());
+        downloadAttendancePdf(AppState.currentDate.getMonth(), AppState.currentDate.getFullYear());
       });
     }
 
@@ -5675,9 +5856,10 @@ _Dispatched by Ribhouse Restaurant Operations_`;
       if (fpTab) fpTab.click();
     }
     
-    // Check due reminders every 15s
-    setInterval(pollDueReminders, 15000);
+    // Check due reminders via server polling (every 10s) and high-precision local clock (every 1s)
+    setInterval(pollDueReminders, 10000);
     pollDueReminders();
+    setInterval(checkLocalReminders, 1000);
 
     // Initial server state sync & reminders load
     syncFromDatabase();
