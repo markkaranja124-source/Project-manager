@@ -770,6 +770,14 @@
           <span id="btn-passkey-text">Authenticate With Biometrics</span>
         </button>
 
+        <!-- First-Time Passkey Helper Notice -->
+        <div style="margin-top: 14px; background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 3px solid #3B82F6; padding: 10px 12px; border-radius: 4px; font-size: 11px; color: #1E3A8A; line-height: 1.45;">
+          <strong style="display: block; margin-bottom: 4px; color: #1E40AF;">First time using fingerprint on this device?</strong>
+          1. Tap the <strong>PASSWORD</strong> tab above and log in with your email & password.<br>
+          2. Tap the <strong>Settings</strong> icon (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: -1px;"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line></svg>) in the top header.<br>
+          3. Tap <strong>+ Set Up Passkey</strong> to link your phone's fingerprint sensor.
+        </div>
+
         <div id="passkey-unsupported-msg" style="display: none; margin-top: 12px; font-size: 11px; color: #991B1B; font-weight: 700; background: #FEE2E2; padding: 10px; border-left: 3px solid #DC2626; border-radius: 4px;">
           Hardware Passkeys are not supported on this device/browser context. Please use standard password sign in.
         </div>
@@ -934,7 +942,7 @@
               asseResp = await SimpleWebAuthnBrowser.startAuthentication(optsData.options);
             } catch (authErr) {
               if (authErr.name === 'NotAllowedError') {
-                showFeedback('Biometric authentication cancelled by user.', 'error');
+                showFeedback('No passkey found on this device. Please sign in using your Password first, then tap Settings (top header) to register your fingerprint.', 'info');
               } else {
                 showFeedback('Hardware passkey verification failed: ' + authErr.message, 'error');
               }
