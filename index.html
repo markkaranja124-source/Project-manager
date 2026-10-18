@@ -443,7 +443,7 @@
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Add New Waiter
+            Add Staff Member
           </button>
           <button type="button" class="btn-secondary" id="btn-view-week-attendance" title="View Weekly Attendance Register">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
@@ -973,11 +973,11 @@
        MODALS
        ======================================================== -->
 
-  <!-- Modal 1: Add/Edit Waiter -->
+  <!-- Modal 1: Add/Edit Staff Member -->
   <div class="modal-overlay" id="modal-staff">
     <div class="modal-content">
       <div class="modal-header">
-        <span class="modal-title" id="modal-staff-title">ADD NEW WAITER</span>
+        <span class="modal-title" id="modal-staff-title">ADD NEW STAFF MEMBER</span>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-staff-modal" aria-label="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -988,18 +988,15 @@
       <form id="form-staff">
         <div class="modal-body">
           <input type="hidden" id="staff-form-id">
+          <input type="hidden" id="staff-input-code">
           <div id="staff-form-error" style="display: none; background: #FEE2E2; border-left: 3px solid #DC2626; color: #991B1B; padding: 8px 10px; font-size: 11px; margin-bottom: 12px; font-weight: 600;"></div>
           <div class="form-group">
             <label class="form-label" for="staff-input-name">Full Name *</label>
             <input type="text" class="form-input" id="staff-input-name" required placeholder="e.g. John Doe">
           </div>
           <div class="form-group">
-            <label class="form-label" for="staff-input-code">Staff ID / Employee # *</label>
-            <input type="text" class="form-input" id="staff-input-code" required placeholder="e.g. W-101">
-          </div>
-          <div class="form-group">
             <label class="form-label" for="staff-input-station">Assigned Station / Section</label>
-            <input type="text" class="form-input" id="staff-input-station" placeholder="e.g. Main Dining / Terrace / VIP">
+            <input type="text" class="form-input" id="staff-input-station" placeholder="e.g. Row 1 / Cashier / Front Minishop / Section E">
           </div>
           <div class="form-group">
             <label class="form-label" for="staff-input-shift">Assigned Shift & Schedule *</label>
@@ -1012,7 +1009,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="staff-input-phone">Phone Number</label>
-            <input type="tel" class="form-input" id="staff-input-phone" placeholder="e.g. +1 (555) 019-2831">
+            <input type="tel" class="form-input" id="staff-input-phone" placeholder="e.g. +254 700 000000">
           </div>
         </div>
         <div class="modal-footer">
@@ -1706,6 +1703,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3.2"></script>
+  <script src="app.js?v=3.3"></script>
 </body>
 </html>

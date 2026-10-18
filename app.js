@@ -2084,7 +2084,7 @@
     }
 
     if (staff) {
-      if (title) title.textContent = 'EDIT WAITER RECORD';
+      if (title) title.textContent = 'EDIT STAFF MEMBER';
       if (inputId) inputId.value = staff.id;
       if (inputName) inputName.value = staff.name;
       if (inputCode) inputCode.value = staff.code;
@@ -2092,7 +2092,7 @@
       if (inputShift) inputShift.value = staff.shift || 'Morning';
       if (inputPhone) inputPhone.value = staff.phone || '';
     } else {
-      if (title) title.textContent = 'ADD NEW WAITER';
+      if (title) title.textContent = 'ADD NEW STAFF MEMBER';
       if (inputId) inputId.value = '';
       if (inputName) inputName.value = '';
       if (inputCode) inputCode.value = getNextStaffCode();
@@ -5026,7 +5026,8 @@ _Dispatched by Ribhouse Restaurant Operations_`;
         e.preventDefault();
         const id = document.getElementById('staff-form-id').value.trim();
         const name = document.getElementById('staff-input-name').value.trim();
-        const code = document.getElementById('staff-input-code').value.trim();
+        const codeInput = document.getElementById('staff-input-code');
+        const code = (codeInput && codeInput.value ? codeInput.value.trim() : '') || getNextStaffCode();
         const station = document.getElementById('staff-input-station').value.trim();
         const shift = document.getElementById('staff-input-shift').value;
         const phone = document.getElementById('staff-input-phone').value.trim();
@@ -5106,7 +5107,7 @@ _Dispatched by Ribhouse Restaurant Operations_`;
             renderStaffDirectory();
             renderMonthlyMatrix();
             renderAbsenteeReport();
-            showToast(`New staff "${name}" (${data.staff.code}) created in database!`);
+            showToast(`Staff member "${name}" added successfully!`);
           }
         } catch (err) {
           console.error('Error saving staff:', err);

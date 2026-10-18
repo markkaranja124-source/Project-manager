@@ -913,7 +913,12 @@ app.put('/api/staff/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Full name is required.' });
     }
     if (!code) {
-      return res.status(400).json({ success: false, message: 'Staff code is required.' });
+      const [existingRow] = await dbPool.execute('SELECT code FROM `staff` WHERE id = ?', [staffId]);
+      if (existingRow.length > 0 && existingRow[0].code) {
+        code = existingRow[0].code;
+      } else {
+        code = 'W-' + Date.now().toString().slice(-4);
+      }
     }
 
     // Check if code is taken by another staff member
@@ -1200,10 +1205,15 @@ app.post('/api/floorplan/assign', requireAuth, async (req, res) => {
     shift = (shift || 'Morning').trim();
     station_id = (station_id || '').trim();
     staff_id = staff_id && staff_id !== 'none' && staff_id !== 'unassigned' ? staff_id.trim() : null;
-    notes = (notes || '').trim();
-
     if (!station_id) {
       return res.status(400).json({ success: false, message: 'Station ID is required.' });
+    }
+
+    if (staff_id) {
+      const [staffExists] = await dbPool.execute('SELECT id FROM `staff` WHERE id = ?', [staff_id]);
+      if (staffExists.length === 0) {
+        staff_id = null;
+      }
     }
 
     const assignmentId = `asgn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;

@@ -1,11 +1,11 @@
 // Service Worker for offline capability - Network First
-const CACHE_NAME = 'waiter-register-v3.2';
+const CACHE_NAME = 'waiter-register-v3.3';
 const ASSETS = [
   './',
   './index.html',
   './login.html',
   './styles.css?v=2.5',
-  './app.js?v=3.2',
+  './app.js?v=3.3',
   './manifest.json'
 ];
 
