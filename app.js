@@ -2203,8 +2203,8 @@
     const modal = document.getElementById('modal-shift-handover');
     if (!modal) return;
 
-    // Generate formal audit reference ID if needed
-    currentCertificationDocRef = `ER-CERT-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // Generate shift handover reference ID if needed
+    currentCertificationDocRef = `HO-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const docRefEl = document.getElementById('cert-doc-ref');
     if (docRefEl) docRefEl.textContent = currentCertificationDocRef;
 
@@ -2318,10 +2318,10 @@
       }
     }
 
-    // Timestamp seal
+    // Handover timestamp
     const sealTime = document.getElementById('cert-timestamp-seal');
     if (sealTime) {
-      sealTime.textContent = `CERT-HASH: ${new Date().toISOString().replace(/\\.\\d+Z$/, 'Z')}-${(AppState.manager.id || 'MGR01').substring(0, 6)}`;
+      sealTime.textContent = `Prepared by ${AppState.manager.name || 'Duty Manager'} at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 
     modal.classList.add('active');
@@ -2359,13 +2359,13 @@
 
     const lines = [
       '*Ribhouse Restaurant Floor & Service Duty Roster*',
-      '*Shift Handover & Attendance Certification*',
-      `Document Ref: ${currentCertificationDocRef}`,
+      '*Shift Handover Report*',
+      `Reference: ${currentCertificationDocRef}`,
       `Date: ${dateKey}`,
       `Shift: ${currentShift} Shift`,
       `Duty Manager: ${mgrName}`,
       '',
-      '*STAFF ATTENDANCE AUDIT*',
+      '*STAFF ATTENDANCE*',
       `- Present Staff: ${presentCount} of ${activeStaff.length}`,
       `- Absent Staff: ${absentCount}`,
       `- Turnout Rate: ${turnoutPct}%`,
@@ -2377,8 +2377,7 @@
       '*DUTY MANAGER HANDOVER NOTES*',
       notes,
       '',
-      'Status: CERTIFIED & DIGITALLY VERIFIED',
-      `Audit Timestamp: ${new Date().toISOString()}`
+      `_Shift handover submitted by ${mgrName}_`
     ];
 
     return lines.join('\n');
@@ -5360,20 +5359,20 @@ _Dispatched by Ribhouse Restaurant Operations_`;
           navigator.clipboard.writeText(msg).catch(() => {});
         }
         window.open(waUrl, '_blank');
-        showToast('Shift certification copied & opening WhatsApp...');
+        showToast('Shift handover report copied & opening WhatsApp...');
       });
     }
     if (btnCertifyComplete) {
       btnCertifyComplete.addEventListener('click', () => {
         const badge = document.getElementById('cert-stamp-badge');
         if (badge) {
-          badge.textContent = 'CERTIFIED & SIGNED';
+          badge.textContent = 'COMPLETED';
           badge.style.background = '#0284C7';
         }
-        showToast(`Shift Handover Certified · Signed by ${AppState.manager.name || 'Duty Manager'}`);
+        showToast(`Shift Handover completed by ${AppState.manager.name || 'Duty Manager'}`);
         setTimeout(() => {
           closeShiftHandoverModal();
-        }, 700);
+        }, 600);
       });
     }
 
