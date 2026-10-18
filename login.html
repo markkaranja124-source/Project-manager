@@ -957,20 +957,19 @@
               return;
             }
 
-            btnPasskeyText.textContent = 'Verifying Signature...';
+            btnPasskeyText.textContent = 'Verifying Fingerprint...';
 
             const verifyRes = await fetch('/api/auth/passkey/login-verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(asseResp)
+              body: JSON.stringify({ response: asseResp })
             });
 
             const verifyData = await verifyRes.json();
             if (verifyRes.ok && verifyData.success) {
-              showFeedback('Biometrics verified! Launching Executive Dashboard...', 'success');
-              setTimeout(() => {
-                window.location.replace('/');
-              }, 500);
+              // Open app immediately upon fingerprint match!
+              window.location.replace('/');
+              return;
             } else {
               showFeedback(verifyData.message || 'Passkey verification failed.', 'error');
             }

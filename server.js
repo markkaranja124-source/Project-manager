@@ -613,9 +613,14 @@ app.post('/api/auth/passkey/login-options', async (req, res) => {
 app.post('/api/auth/passkey/login-verify', async (req, res) => {
   try {
     const expectedChallenge = req.session.currentWebAuthnChallenge;
-    const { response } = req.body;
+    // Robustly extract full WebAuthn response and credentialId
+    const authPayload = (req.body && req.body.response && req.body.response.id) 
+      ? req.body.response 
+      : (req.body && req.body.id ? req.body : req.body.response || req.body);
 
-    if (!response || !expectedChallenge) {
+    const credentialId = (authPayload && authPayload.id) || (req.body && req.body.id);
+
+    if (!authPayload || !credentialId || !expectedChallenge) {
       return res.status(400).json({ success: false, message: 'Invalid authentication response or missing challenge session.' });
     }
 
@@ -626,7 +631,7 @@ app.post('/api/auth/passkey/login-verify', async (req, res) => {
        FROM \`manager_passkeys\` pk
        INNER JOIN \`managers\` m ON m.id = pk.manager_id
        WHERE pk.credential_id = ? LIMIT 1`,
-      [response.id]
+      [credentialId]
     );
 
     if (!rows || rows.length === 0) {
@@ -644,7 +649,7 @@ app.post('/api/auth/passkey/login-verify', async (req, res) => {
     const publicKeyBuffer = Buffer.from(passkey.public_key, 'base64');
 
     const verification = await verifyAuthenticationResponse({
-      response,
+      response: authPayload,
       expectedChallenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
