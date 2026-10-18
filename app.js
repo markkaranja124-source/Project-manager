@@ -198,7 +198,7 @@
     staff: [],
     attendance: {},
     settings: {
-      businessName: 'EXECUTIVE RESTAURANT & BAR',
+      businessName: 'Ribhouse Restaurant',
       branch: 'Main Service Operations'
     },
     currentDate: new Date(),
@@ -2358,8 +2358,8 @@
     const mini2 = shiftAssignments['station_minishop_2'] ? (AppState.staff.find(s => s.id === shiftAssignments['station_minishop_2'].staff_id)?.name || 'Assigned') : 'Unassigned';
 
     const lines = [
-      '*EXECUTIVE RESTAURANT & HOSPITALITY GROUP*',
-      '*OFFICIAL SHIFT HANDOVER & ATTENDANCE CERTIFICATION*',
+      '*Ribhouse Restaurant Floor & Service Duty Roster*',
+      '*Shift Handover & Attendance Certification*',
       `Document Ref: ${currentCertificationDocRef}`,
       `Date: ${dateKey}`,
       `Shift: ${currentShift} Shift`,
@@ -4447,7 +4447,7 @@
       dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
     } catch (e) {}
 
-    const business = (AppState.settings && AppState.settings.businessName) || 'EXECUTIVE RESTAURANT & BAR';
+    const business = (AppState.settings && AppState.settings.businessName) || 'Ribhouse Restaurant';
 
     const stationMap = {};
     const serviceStations = [];
@@ -4591,8 +4591,7 @@
     const eSectionLine = formatESection();
 
     const message = 
-`*${business.toUpperCase()}*
-*DAILY FLOOR PLAN & SERVICE DUTY ROSTER*
+`*Ribhouse Restaurant Floor & Service Duty Roster*
 ----------------------------------------
 *Date*: ${dateLabel}
 *Shift*: ${shiftVal} Shift
@@ -4609,7 +4608,7 @@ ${formatServiceStations(serviceStations)}
 
 ----------------------------------------
 *Supervisor Notice*: Please ensure all staff check in with attendance upon arrival. Station reassignments must be logged in the system.
-_Dispatched by Restaurant Management Operations_`;
+_Dispatched by Ribhouse Restaurant Operations_`;
 
     return message;
   }

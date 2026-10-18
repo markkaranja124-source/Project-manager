@@ -65,14 +65,14 @@ async function getBusinessSettings(dbPool) {
   try {
     const [rows] = await dbPool.execute('SELECT setting_key, setting_value FROM settings');
     const settings = {
-      businessName: 'EXECUTIVE RESTAURANT & BAR',
+      businessName: 'Ribhouse Restaurant',
       branch: 'Main Service Operations'
     };
     rows.forEach(r => { settings[r.setting_key] = r.setting_value; });
     return settings;
   } catch (e) {
     return {
-      businessName: 'EXECUTIVE RESTAURANT & BAR',
+      businessName: 'Ribhouse Restaurant',
       branch: 'Main Service Operations'
     };
   }

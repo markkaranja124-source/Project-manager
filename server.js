@@ -1371,7 +1371,7 @@ app.get('/api/state', requireAuth, async (req, res) => {
     // 4. Fetch Settings
     const [setRows] = await dbPool.execute('SELECT setting_key, setting_value FROM `settings`');
     const settings = {
-      businessName: 'EXECUTIVE RESTAURANT & BAR',
+      businessName: 'Ribhouse Restaurant',
       branch: 'Main Service Operations'
     };
     setRows.forEach(s => {
