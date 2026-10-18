@@ -1,12 +1,15 @@
 // Service Worker for offline capability - Network First
-const CACHE_NAME = 'waiter-register-v3.3';
+const CACHE_NAME = 'waiter-register-v3.4';
 const ASSETS = [
   './',
   './index.html',
   './login.html',
   './styles.css?v=2.5',
-  './app.js?v=3.3',
-  './manifest.json'
+  './app.js?v=3.4',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
