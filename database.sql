@@ -12,11 +12,32 @@ CREATE DATABASE IF NOT EXISTS `waiter_attendance_db`
 USE `waiter_attendance_db`;
 
 -- =======================================================
--- 2. Table: staff
--- Stores individual waiter and waitstaff profiles
+-- =======================================================
+-- 2. Table: accounts
+-- Stores organizational, client, branch, or manager accounts
+-- =======================================================
+CREATE TABLE IF NOT EXISTS `accounts` (
+  `id` VARCHAR(64) NOT NULL,
+  `name` VARCHAR(128) NOT NULL,
+  `manager_id` VARCHAR(64) NULL,
+  `email` VARCHAR(191) NULL,
+  `phone` VARCHAR(64) DEFAULT '',
+  `branch` VARCHAR(128) DEFAULT 'Main Branch',
+  `description` TEXT NULL,
+  `status` VARCHAR(32) DEFAULT 'Active',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_account_manager` (`manager_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================================
+-- 3. Table: staff
+-- Stores individual waiter and waitstaff profiles linked to an account
 -- =======================================================
 CREATE TABLE IF NOT EXISTS `staff` (
   `id` VARCHAR(64) NOT NULL,
+  `account_id` VARCHAR(64) DEFAULT 'ACC-001',
   `code` VARCHAR(32) NOT NULL,
   `name` VARCHAR(128) NOT NULL,
   `station` VARCHAR(128) DEFAULT '',
@@ -26,7 +47,8 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_staff_code` (`code`)
+  UNIQUE KEY `idx_staff_code` (`code`),
+  KEY `idx_staff_account` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =======================================================
@@ -200,16 +222,22 @@ CREATE TABLE IF NOT EXISTS `table_assignments` (
 -- Populates default staff, settings, security, & reminders
 -- =======================================================
 
+-- Insert Initial Accounts
+INSERT INTO `accounts` (`id`, `name`, `branch`, `email`, `phone`, `description`, `status`) VALUES
+  ('ACC-001', 'Mark Karanja (Main Floor)', 'Executive Main Lounge', 'markkaranja124@gmail.com', '+254 700 000001', 'Primary restaurant dining floor and main service station', 'Active'),
+  ('ACC-002', 'George Wanyoike (VIP & Terrace)', 'Terrace & VIP Section', 'maigogeorge20@gmail.com', '+254 700 000002', 'Exclusive terrace dining and private VIP executive suite', 'Active')
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
 -- Insert Initial Staff
-INSERT INTO `staff` (`id`, `code`, `name`, `station`, `shift`, `phone`, `active`) VALUES
-  ('st_101', 'W-101', 'Marcus Vance', 'Section A - Front', 'Morning', '+1 (555) 012-8811', 1),
-  ('st_102', 'W-102', 'Elena Rostova', 'Main Dining Floor', 'Morning', '+1 (555) 014-9922', 1),
-  ('st_103', 'W-103', 'David Kim', 'VIP Lounge / Private', 'Evening', '+1 (555) 017-3344', 1),
-  ('st_104', 'W-104', 'Sophie Laurent', 'Terrace & Patio', 'Evening', '+1 (555) 019-5566', 1),
-  ('st_105', 'W-105', 'Tariq Al-Mansoor', 'Main Dining Floor', 'Night', '+1 (555) 011-7788', 1),
-  ('st_106', 'W-106', 'Chloe Bennett', 'Bar & Cocktail Area', 'Night', '+1 (555) 013-4411', 1),
-  ('st_107', 'W-107', 'Lucas Silva', 'Section B Floor', 'Double', '+1 (555) 016-2233', 1),
-  ('st_108', 'W-108', 'Maya Patel', 'Section C Floor', 'Morning', '+1 (555) 018-6677', 1)
+INSERT INTO `staff` (`id`, `account_id`, `code`, `name`, `station`, `shift`, `phone`, `active`) VALUES
+  ('st_101', 'ACC-001', 'W-101', 'Marcus Vance', 'Section A - Front', 'Morning', '+1 (555) 012-8811', 1),
+  ('st_102', 'ACC-001', 'W-102', 'Elena Rostova', 'Main Dining Floor', 'Morning', '+1 (555) 014-9922', 1),
+  ('st_103', 'ACC-001', 'W-103', 'David Kim', 'VIP Lounge / Private', 'Evening', '+1 (555) 017-3344', 1),
+  ('st_104', 'ACC-001', 'W-104', 'Sophie Laurent', 'Terrace & Patio', 'Evening', '+1 (555) 019-5566', 1),
+  ('st_105', 'ACC-002', 'W-105', 'Tariq Al-Mansoor', 'Main Dining Floor', 'Night', '+1 (555) 011-7788', 1),
+  ('st_106', 'ACC-002', 'W-106', 'Chloe Bennett', 'Bar & Cocktail Area', 'Night', '+1 (555) 013-4411', 1),
+  ('st_107', 'ACC-002', 'W-107', 'Lucas Silva', 'Section B Floor', 'Double', '+1 (555) 016-2233', 1),
+  ('st_108', 'ACC-002', 'W-108', 'Maya Patel', 'Section C Floor', 'Morning', '+1 (555) 018-6677', 1)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 -- Insert Initial Settings

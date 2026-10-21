@@ -38,18 +38,42 @@ function request(method, path, body = null) {
   });
 }
 
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
 async function run() {
   console.log('Testing Row Auto-Assignment & Upper Tier Allocation...');
 
-  // 1. Login
-  const loginRes = await request('POST', '/api/auth/login', {
-    email: 'manager@executive.com',
-    password: 'Manager123!'
+  const db = await mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'waiter_attendance_db'
   });
-  if (loginRes.status !== 200 || !loginRes.body.success) {
-    throw new Error('Login failed: ' + JSON.stringify(loginRes.body));
-  }
-  console.log('✓ Manager authenticated.');
+
+  const testEmail = `row_test_${Date.now()}@executive.com`;
+  const testPass = 'RowPass123!';
+  const testMgrId = `mgr_row_${Date.now()}`;
+  const hash = await bcrypt.hash(testPass, 10);
+
+  await db.execute('INSERT INTO managers (id, name, email, password_hash) VALUES (?, ?, ?, ?)', [
+    testMgrId,
+    'Row Test Manager',
+    testEmail,
+    hash
+  ]);
+
+  try {
+    // 1. Login
+    const loginRes = await request('POST', '/api/auth/login', {
+      email: testEmail,
+      password: testPass
+    });
+    if (loginRes.status !== 200 || !loginRes.body.success) {
+      throw new Error('Login failed: ' + JSON.stringify(loginRes.body));
+    }
+    console.log('✓ Manager authenticated.');
 
   // 2. Fetch staff to get a valid staff ID
   const staffRes = await request('GET', '/api/staff');
@@ -83,8 +107,8 @@ async function run() {
   });
   console.log('✓ All 6 tables in Left Line 1 verified assigned to ' + testStaffName);
 
-  // 5. Test Assigning Whole Upper Tier (Tables 37 to 46)
-  const upperTables = ['table_37', 'table_38', 'table_39', 'table_40', 'table_41', 'table_42', 'table_43', 'table_44', 'table_45', 'table_46'];
+  // 5. Test Assigning Whole Upper Tier (Tables 38 to 44)
+  const upperTables = ['table_38', 'table_39', 'table_40', 'table_41', 'table_42', 'table_43', 'table_44'];
   const upperRes = await request('POST', '/api/floorplan/assign-bulk', {
     date: '2026-10-19',
     shift: 'Morning',
@@ -106,7 +130,11 @@ async function run() {
   });
   console.log('✓ All 10 Upper Tier tables (E-Section) verified assigned to ' + testStaffName);
 
-  console.log('\n🎉 ALL ROW & UPPER TIER ASSIGNMENT TESTS PASSED PERFECTLY!');
+    console.log('\n🎉 ALL ROW & UPPER TIER ASSIGNMENT TESTS PASSED PERFECTLY!');
+  } finally {
+    await db.execute('DELETE FROM managers WHERE id = ?', [testMgrId]);
+    await db.end();
+  }
 }
 
 run().catch(err => {

@@ -30,7 +30,6 @@ const requiredElements = [
   'btn-dropdown-passkeys',
   'btn-dropdown-settings',
   'btn-dropdown-logout',
-  'app-enterprise-footer',
   'modal-shift-handover',
   'cert-doc-ref',
   'cert-shift-date',

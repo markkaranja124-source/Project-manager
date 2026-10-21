@@ -120,28 +120,13 @@
     }, 100);
   }
 
-  // Initial Accounts
-  const INITIAL_ACCOUNTS = [
-    { id: 'ACC-001', name: 'Mark Karanja (Main Floor)', branch: 'Executive Main Lounge', email: 'markkaranja124@gmail.com', phone: '+254 700 000001', status: 'Active', description: 'Primary restaurant service and main dining operations' },
-    { id: 'ACC-002', name: 'George Wanyoike (VIP & Terrace)', branch: 'Terrace & VIP Section', email: 'maigogeorge20@gmail.com', phone: '+254 700 000002', status: 'Active', description: 'Executive private lounge and outdoor terrace' }
-  ];
+  // Initial Accounts (Empty by default; dynamically loaded for authenticated manager)
+  const INITIAL_ACCOUNTS = [];
 
-  // Initial Sample Data for Instant Ready-to-Use Experience
-  const INITIAL_STAFF = [
-    { id: 'st_101', accountId: 'ACC-001', code: 'W-101', name: 'Marcus Vance', station: 'Section A - Front', shift: 'Morning', phone: '+1 (555) 012-8811', active: true },
-    { id: 'st_102', accountId: 'ACC-001', code: 'W-102', name: 'Elena Rostova', station: 'Main Dining Floor', shift: 'Morning', phone: '+1 (555) 014-9922', active: true },
-    { id: 'st_103', accountId: 'ACC-001', code: 'W-103', name: 'David Kim', station: 'VIP Lounge / Private', shift: 'Evening', phone: '+1 (555) 017-3344', active: true },
-    { id: 'st_104', accountId: 'ACC-001', code: 'W-104', name: 'Sophie Laurent', station: 'Terrace & Patio', shift: 'Evening', phone: '+1 (555) 019-5566', active: true },
-    { id: 'st_105', accountId: 'ACC-002', code: 'W-105', name: 'Tariq Al-Mansoor', station: 'Main Dining Floor', shift: 'Night', phone: '+1 (555) 011-7788', active: true },
-    { id: 'st_106', accountId: 'ACC-002', code: 'W-106', name: 'Chloe Bennett', station: 'Bar & Cocktail Area', shift: 'Night', phone: '+1 (555) 013-4411', active: true },
-    { id: 'st_107', accountId: 'ACC-002', code: 'W-107', name: 'Lucas Silva', station: 'Section B Floor', shift: 'Double', phone: '+1 (555) 016-2233', active: true },
-    { id: 'st_108', accountId: 'ACC-002', code: 'W-108', name: 'Maya Patel', station: 'Section C Floor', shift: 'Morning', phone: '+1 (555) 018-6677', active: true }
-  ];
+  // Initial Staff (Empty by default: all new accounts start completely clean with 0 records)
+  const INITIAL_STAFF = [];
 
-  const INITIAL_REMINDERS = [
-    { id: 'rem_101', title: 'Review Morning Shift Turnout & Unmarked Waiters', dueTime: '10:00', priority: 'HIGH', completed: false, createdAt: new Date().toISOString() },
-    { id: 'rem_102', title: 'Audit End-of-Month Absentee Report Sheet', dueTime: '17:00', priority: 'MEDIUM', completed: false, createdAt: new Date().toISOString() }
-  ];
+  const INITIAL_REMINDERS = [];
 
   // Helper to format Date to YYYY-MM-DD
   function formatDateKey(date) {
@@ -151,53 +136,11 @@
     return `${y}-${m}-${d}`;
   }
 
-  // Generate realistic initial month records
+  // Clean empty initial attendance ledger
   function generateInitialAttendance() {
-    const records = {};
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-    // Fill records up to today
-    for (let day = 1; day <= Math.min(today.getDate(), daysInMonth); day++) {
-      const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      records[dateKey] = {};
-
-      INITIAL_STAFF.forEach((staff, index) => {
-        // Deterministic realistic patterns for testing absences
-        let status = 'P';
-        let note = '';
-
-        if (index === 0 && (day === 4 || day === 12)) {
-          status = 'A';
-          note = 'Sick Leave';
-        } else if (index === 1 && (day === 7 || day === 18 || day === 19)) {
-          status = 'A';
-          note = 'Family Emergency';
-        } else if (index === 2 && day === 10) {
-          status = 'L';
-          note = 'Late 30m - Traffic';
-        } else if (index === 3 && (day === 2 || day === 15)) {
-          status = 'A';
-          note = 'Unexcused';
-        } else if (index === 4 && day === 8) {
-          status = 'O';
-          note = 'Scheduled Rest Day';
-        } else if (index === 6 && (day === 5 || day === 14)) {
-          status = 'A';
-          note = 'Medical Appointment';
-        } else if (day % 7 === (index % 7)) {
-          status = 'O';
-          note = 'Roster Day Off';
-        }
-
-        records[dateKey][staff.id] = { status, note };
-      });
-    }
-
-    return records;
+    return {};
   }
+
 
   // Application State
   const AppState = {
@@ -249,26 +192,24 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        AppState.accounts = parsed.accounts || INITIAL_ACCOUNTS;
-        AppState.staff = parsed.staff || INITIAL_STAFF;
+        AppState.accounts = Array.isArray(parsed.accounts) ? parsed.accounts : [];
+        AppState.staff = Array.isArray(parsed.staff) ? parsed.staff : [];
         AppState.staff.forEach(s => {
           if (!s.shift) s.shift = 'Morning';
-          if (!s.accountId && !s.account_id) s.accountId = 'ACC-001';
-          else if (s.account_id && !s.accountId) s.accountId = s.account_id;
+          if (!s.accountId && s.account_id) s.accountId = s.account_id;
         });
-        AppState.attendance = parsed.attendance || {};
+        AppState.attendance = (parsed.attendance && typeof parsed.attendance === 'object') ? parsed.attendance : {};
         AppState.settings = parsed.settings || AppState.settings;
-        AppState.reminders = parsed.reminders || INITIAL_REMINDERS;
+        AppState.reminders = Array.isArray(parsed.reminders) ? parsed.reminders : [];
         if (parsed.security) {
           AppState.security.pin = parsed.security.pin || '1234';
           AppState.security.autoLockMinutes = parsed.security.autoLockMinutes !== undefined ? parsed.security.autoLockMinutes : 5;
         }
       } else {
-        AppState.accounts = INITIAL_ACCOUNTS;
-        AppState.staff = INITIAL_STAFF;
-        AppState.attendance = generateInitialAttendance();
-        AppState.reminders = INITIAL_REMINDERS;
-        saveState();
+        AppState.accounts = [];
+        AppState.staff = [];
+        AppState.attendance = {};
+        AppState.reminders = [];
       }
 
       // Restore cached manager profile & avatar
@@ -294,8 +235,10 @@
       } catch (err) {}
     } catch (e) {
       console.error('Error loading state from cache:', e);
-      AppState.staff = INITIAL_STAFF;
-      AppState.attendance = generateInitialAttendance();
+      AppState.accounts = [];
+      AppState.staff = [];
+      AppState.attendance = {};
+      AppState.reminders = [];
     }
   }
 
@@ -310,22 +253,14 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.state) {
-          if (Array.isArray(data.state.accounts) && data.state.accounts.length > 0) {
-            AppState.accounts = data.state.accounts;
-          }
-          if (Array.isArray(data.state.staff) && data.state.staff.length > 0) {
-            AppState.staff = data.state.staff;
-          }
+          AppState.accounts = Array.isArray(data.state.accounts) ? data.state.accounts : [];
+          AppState.staff = Array.isArray(data.state.staff) ? data.state.staff : [];
           AppState.staff.forEach(s => {
             if (!s.accountId && s.account_id) s.accountId = s.account_id;
-            if (!s.accountId) s.accountId = 'ACC-001';
+            if (!s.accountId && data.manager?.accountId) s.accountId = data.manager.accountId;
           });
-          if (data.state.attendance) {
-            AppState.attendance = data.state.attendance;
-          }
-          if (Array.isArray(data.state.reminders)) {
-            AppState.reminders = data.state.reminders;
-          }
+          AppState.attendance = (data.state.attendance && typeof data.state.attendance === 'object') ? data.state.attendance : {};
+          AppState.reminders = Array.isArray(data.state.reminders) ? data.state.reminders : [];
           if (data.state.settings) {
             AppState.settings = Object.assign(AppState.settings, data.state.settings);
             updateHeaderForActiveTab(AppState.activeTab || 'view-daily');
@@ -440,7 +375,7 @@
     const summarySel = document.getElementById('select-summary-account-filter');
     const formStaffSel = document.getElementById('staff-input-account');
 
-    const accounts = (AppState.accounts && AppState.accounts.length > 0) ? AppState.accounts : INITIAL_ACCOUNTS;
+    const accounts = Array.isArray(AppState.accounts) ? AppState.accounts : [];
 
     // 1. Build filter options: "ALL" + each account
     let filterOptionsHtml = '<option value="ALL">All Accounts (All Staff)</option>';
@@ -515,8 +450,7 @@
     const countLabel = document.getElementById('accounts-modal-count-label');
     if (!container) return;
 
-    const query = (AppState.accountSearchQuery || '').toLowerCase().trim();
-    const accounts = (AppState.accounts && AppState.accounts.length > 0) ? AppState.accounts : INITIAL_ACCOUNTS;
+    const accounts = Array.isArray(AppState.accounts) ? AppState.accounts : [];
 
     const filtered = accounts.filter(a =>
       a.id.toLowerCase().includes(query) ||
@@ -714,7 +648,7 @@
     const modal = document.getElementById('modal-account-details');
     if (!modal) return;
 
-    const acc = AppState.accounts.find(a => a.id === accId) || INITIAL_ACCOUNTS.find(a => a.id === accId) || {
+    const acc = (AppState.accounts || []).find(a => a.id === accId) || {
       id: accId,
       name: 'Account ' + accId,
       branch: 'Main Operations',
@@ -1782,6 +1716,14 @@
       return true;
     });
 
+    if (activeStaff.length === 0) {
+      container.innerHTML = `
+        <div style="background:#fff; border:1px solid var(--c-gray-border); padding:32px; text-align:center; color:var(--c-gray-dark); font-weight:700; font-size:12px; text-transform:uppercase;">
+          No staff records registered for this account. Add waitstaff in the Roster tab.
+        </div>`;
+      return;
+    }
+
     let html = `
       <table class="matrix-table">
         <thead>
@@ -2123,6 +2065,14 @@
     const activeStaff = AppState.staff.filter(s => s.active);
 
     container.innerHTML = '';
+
+    if (activeStaff.length === 0) {
+      container.innerHTML = `
+        <div style="background:#fff; border:1px solid var(--c-gray-border); padding:32px; text-align:center; color:var(--c-gray-dark); font-weight:700; font-size:12px; text-transform:uppercase;">
+          No staff records registered for this account.
+        </div>`;
+      return;
+    }
 
     // Calculate absentee metrics for each staff
     const reportData = activeStaff.map(staff => {
@@ -6310,16 +6260,16 @@ _Dispatched by Ribhouse Restaurant Operations_`;
     if (inputRestore) inputRestore.addEventListener('change', handleRestoreBackup);
     if (btnResetDemo) {
       btnResetDemo.addEventListener('click', () => {
-        if (confirm('Load fresh sample roster and attendance records? This will replace current records.')) {
-          AppState.staff = INITIAL_STAFF;
-          AppState.attendance = generateInitialAttendance();
+        if (confirm('Clear roster and reset current view?')) {
+          AppState.staff = [];
+          AppState.attendance = {};
           saveState();
           renderDailyView();
           renderMonthlyMatrix();
           renderAbsenteeReport();
           renderStaffDirectory();
           closeSettingsModal();
-          showToast('Sample roster loaded.');
+          showToast('Roster reset.');
         }
       });
     }

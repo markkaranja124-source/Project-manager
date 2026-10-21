@@ -225,9 +225,52 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+/**
+ * Resolves the manager's assigned account ID or creates a dedicated new one if none exists.
+ * Guarantees every new manager starts with their own isolated workspace with 0 initial staff.
+ */
+async function getOrCreateManagerAccountId(managerId, managerName, managerEmail) {
+  try {
+    const [accRows] = await dbPool.execute(
+      'SELECT id FROM `accounts` WHERE manager_id = ? OR (email IS NOT NULL AND LOWER(email) = LOWER(?)) LIMIT 1',
+      [managerId, managerEmail]
+    );
+    if (accRows && accRows.length > 0) {
+      return accRows[0].id;
+    }
+    // Auto-provision brand new clean account for this manager
+    const [allAcc] = await dbPool.execute('SELECT id FROM `accounts`');
+    let maxAccNum = 2;
+    allAcc.forEach(a => {
+      const m = a.id ? a.id.match(/\d+/) : null;
+      if (m) {
+        const n = parseInt(m[0], 10);
+        if (n > maxAccNum) maxAccNum = n;
+      }
+    });
+    const newAccountId = `ACC-${String(maxAccNum + 1).padStart(3, '0')}`;
+    await dbPool.execute(
+      'INSERT INTO `accounts` (id, name, manager_id, email, branch, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [newAccountId, `${managerName || 'Manager'} (Operations)`, managerId, managerEmail, 'Main Branch', 'Active']
+    );
+    console.log(`[AUTH] Auto-provisioned dedicated clean account ${newAccountId} for manager ${managerEmail}`);
+    return newAccountId;
+  } catch (err) {
+    console.error('[AUTH] Error resolving account for manager:', err.message);
+    return `ACC-${(managerId || 'MGR').replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase()}`;
+  }
+}
+
 // Server-Side Auth Verification Middleware
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   if (req.session && req.session.manager) {
+    if (!req.session.manager.accountId) {
+      req.session.manager.accountId = await getOrCreateManagerAccountId(
+        req.session.manager.id,
+        req.session.manager.name,
+        req.session.manager.email
+      );
+    }
     return next();
   }
   return res.status(401).json({
@@ -344,19 +387,8 @@ app.post('/api/auth/login', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Session error. Please try again.' });
       }
 
-      // Query assigned account for this manager
-      let userAccountId = 'ACC-001';
-      try {
-        const [accRows] = await dbPool.execute(
-          'SELECT id FROM `accounts` WHERE manager_id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
-          [manager.id, manager.email]
-        );
-        if (accRows && accRows.length > 0) {
-          userAccountId = accRows[0].id;
-        }
-      } catch (e) {
-        console.warn('[AUTH] Error resolving account for manager:', e.message);
-      }
+      // Query assigned account for this manager or auto-provision unique clean account
+      const userAccountId = await getOrCreateManagerAccountId(manager.id, manager.name, manager.email);
 
       // Store authenticated manager state in session
       req.session.manager = {
@@ -394,8 +426,15 @@ app.post('/api/auth/login', async (req, res) => {
  * GET /api/auth/me
  * Checks current session state
  */
-app.get('/api/auth/me', (req, res) => {
+app.get('/api/auth/me', async (req, res) => {
   if (req.session && req.session.manager) {
+    if (!req.session.manager.accountId) {
+      req.session.manager.accountId = await getOrCreateManagerAccountId(
+        req.session.manager.id,
+        req.session.manager.name,
+        req.session.manager.email
+      );
+    }
     return res.json({
       authenticated: true,
       manager: {
@@ -403,7 +442,7 @@ app.get('/api/auth/me', (req, res) => {
         name: req.session.manager.name,
         email: req.session.manager.email,
         avatar: req.session.manager.avatar || null,
-        accountId: req.session.manager.accountId || 'ACC-001'
+        accountId: req.session.manager.accountId
       }
     });
   }
@@ -498,7 +537,10 @@ app.post('/api/auth/signup', async (req, res) => {
       [managerId, cleanName, cleanEmail, passwordHash]
     );
 
-    console.log(`[AUTH] New manager registered: ${cleanEmail}`);
+    // Automatically create a dedicated, clean, isolated account for the new manager
+    const newAccountId = await getOrCreateManagerAccountId(managerId, cleanName, cleanEmail);
+
+    console.log(`[AUTH] New manager registered: ${cleanEmail} with dedicated clean account: ${newAccountId}`);
 
     return res.status(201).json({
       success: true,
@@ -1046,16 +1088,11 @@ app.post('/api/auth/passkey/login-verify', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Session error. Please try again.' });
       }
 
-      let userAccountId = 'ACC-001';
-      try {
-        const [accRows] = await dbPool.execute(
-          'SELECT id FROM `accounts` WHERE manager_id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
-          [passkey.manager_id, passkey.manager_email]
-        );
-        if (accRows && accRows.length > 0) {
-          userAccountId = accRows[0].id;
-        }
-      } catch (e) {}
+      const userAccountId = await getOrCreateManagerAccountId(
+        passkey.manager_id,
+        passkey.manager_name,
+        passkey.manager_email
+      );
 
       req.session.manager = {
         id: passkey.manager_id,
@@ -1167,25 +1204,27 @@ app.post('/api/auth/passkeys/:id/rename', requireAuth, async (req, res) => {
  */
 app.get('/api/accounts', requireAuth, async (req, res) => {
   try {
+    const managerAccountId = req.session.manager.accountId;
     const [accounts] = await dbPool.execute(`
       SELECT a.*, 
              COUNT(s.id) AS total_staff,
              SUM(CASE WHEN s.active = 1 THEN 1 ELSE 0 END) AS active_staff
       FROM \`accounts\` a
       LEFT JOIN \`staff\` s ON a.id = s.account_id
+      WHERE a.id = ?
       GROUP BY a.id
       ORDER BY a.id ASC
-    `);
+    `, [managerAccountId]);
 
-    // Fetch today's attendance turnout for each account
+    // Fetch today's attendance turnout for manager's account
     const todayStr = new Date().toISOString().split('T')[0];
     const [attRows] = await dbPool.execute(`
       SELECT s.account_id, att.status, COUNT(*) AS count
       FROM \`attendance\` att
       JOIN \`staff\` s ON att.staff_id = s.id
-      WHERE att.date = ?
+      WHERE att.date = ? AND s.account_id = ?
       GROUP BY s.account_id, att.status
-    `, [todayStr]);
+    `, [todayStr, managerAccountId]);
 
     const statsByAcc = {};
     attRows.forEach(r => {
@@ -1424,7 +1463,7 @@ app.delete('/api/accounts/:id', requireAuth, async (req, res) => {
  */
 app.get('/api/staff', requireAuth, async (req, res) => {
   try {
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
     const query = 'SELECT id, account_id, code, name, station, shift, phone, active, created_at FROM `staff` WHERE account_id = ? ORDER BY code ASC';
 
     const [rows] = await dbPool.execute(query, [managerAccountId]);
@@ -1483,7 +1522,7 @@ app.post('/api/staff', requireAuth, async (req, res) => {
     phone = (phone || '').trim();
 
     // Automatically assign to authenticated manager's account
-    const finalAccountId = req.session.manager?.accountId || 'ACC-001';
+    const finalAccountId = req.session.manager.accountId;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Full name is required.' });
@@ -1552,7 +1591,7 @@ app.post('/api/staff', requireAuth, async (req, res) => {
 app.put('/api/staff/:id', requireAuth, async (req, res) => {
   try {
     const staffId = req.params.id;
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
 
     // Verify ownership: Target staff must belong to this manager's account
     const [targetStaff] = await dbPool.execute('SELECT id, account_id FROM `staff` WHERE id = ?', [staffId]);
@@ -1634,7 +1673,7 @@ app.put('/api/staff/:id', requireAuth, async (req, res) => {
 app.delete('/api/staff/:id', requireAuth, async (req, res) => {
   try {
     const staffId = req.params.id;
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
 
     // Verify ownership: Target staff must belong to this manager's account
     const [targetStaff] = await dbPool.execute('SELECT id, account_id FROM `staff` WHERE id = ?', [staffId]);
@@ -1766,7 +1805,7 @@ app.get('/api/floorplan/assignments', requireAuth, async (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const date = (req.query.date || todayStr).trim();
     const shift = (req.query.shift || 'Morning').trim();
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
 
     // 1. Fetch active staff belonging to this manager's account
     const [staffRows] = await dbPool.execute(
@@ -2021,17 +2060,13 @@ app.post('/api/floorplan/send-whatsapp', requireAuth, async (req, res) => {
 app.get('/api/state', requireAuth, async (req, res) => {
   try {
     let currentManager = req.session.manager || null;
-    let userAccId = currentManager?.accountId || 'ACC-001';
+    let userAccId = currentManager?.accountId;
 
     if (currentManager && currentManager.id) {
       try {
         const [mRows] = await dbPool.execute('SELECT id, name, email, avatar FROM `managers` WHERE id = ? LIMIT 1', [currentManager.id]);
         if (mRows.length > 0) {
-          const [mAccRows] = await dbPool.execute(
-            'SELECT id FROM `accounts` WHERE manager_id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
-            [mRows[0].id, mRows[0].email]
-          );
-          userAccId = (mAccRows && mAccRows.length > 0) ? mAccRows[0].id : (currentManager.accountId || 'ACC-001');
+          userAccId = await getOrCreateManagerAccountId(mRows[0].id, mRows[0].name, mRows[0].email);
           currentManager = {
             ...currentManager,
             name: mRows[0].name,
@@ -2185,33 +2220,21 @@ app.post('/api/manager/avatar', requireAuth, async (req, res) => {
 app.post('/api/save', requireAuth, async (req, res) => {
   const connection = await dbPool.getConnection();
   try {
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
     const { staff, attendance, settings, reminders } = req.body;
     await connection.beginTransaction();
 
-    // 1. Sync Staff (Strictly scoped to manager's account, never modifying other accounts)
+    // 1. Sync Staff (Strictly scoped to manager's account, only updating this manager's staff)
     if (Array.isArray(staff)) {
       for (const s of staff) {
         if (!s || !s.id) continue;
         const [existing] = await connection.execute('SELECT id, account_id FROM `staff` WHERE id = ?', [s.id]);
-        if (existing.length > 0) {
-          // Strictly only update if it belongs to this manager's account
-          if (existing[0].account_id === managerAccountId) {
-            await connection.execute(`
-              UPDATE \`staff\`
-              SET code = ?, name = ?, station = ?, shift = ?, phone = ?, active = ?
-              WHERE id = ? AND account_id = ?
-            `, [s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0, s.id, managerAccountId]);
-          }
-        } else {
-          // Check if code doesn't exist before inserting new
-          const [codeCheck] = await connection.execute('SELECT id FROM `staff` WHERE code = ?', [s.code]);
-          if (codeCheck.length === 0) {
-            await connection.execute(`
-              INSERT INTO \`staff\` (id, account_id, code, name, station, shift, phone, active)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `, [s.id, managerAccountId, s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0]);
-          }
+        if (existing.length > 0 && existing[0].account_id === managerAccountId) {
+          await connection.execute(`
+            UPDATE \`staff\`
+            SET code = ?, name = ?, station = ?, shift = ?, phone = ?, active = ?
+            WHERE id = ? AND account_id = ?
+          `, [s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0, s.id, managerAccountId]);
         }
       }
     }
@@ -2469,7 +2492,7 @@ app.post('/api/reports/generate', requireAuth, async (req, res) => {
     const { type, referenceDate } = req.body;
     const reportType = (type || 'WEEKLY').toUpperCase();
     const ref = referenceDate ? new Date(referenceDate) : new Date();
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
 
     let result = null;
     if (reportType === 'WEEKLY') {
@@ -2551,7 +2574,7 @@ app.get('/api/reports/download-monthly-pdf', requireAuth, async (req, res) => {
     const today = new Date();
     const year = req.query.year ? parseInt(req.query.year, 10) : today.getFullYear();
     const month = req.query.month !== undefined ? parseInt(req.query.month, 10) : today.getMonth();
-    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const managerAccountId = req.session.manager.accountId;
 
     const report = await generateMonthlyReport(dbPool, year, month, managerAccountId);
 
