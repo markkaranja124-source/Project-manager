@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -16,10 +17,13 @@
   <link rel="manifest" href="/manifest.json?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=2.6">
   <script src="/js/simplewebauthn-browser.js"></script>
 </head>
+
 <body>
 
   <!-- Main Mobile App Shell -->
@@ -31,59 +35,75 @@
 
 
         <!-- Manager Photo / Initials Box -->
-        <div class="brand-icon-box" id="manager-brand-avatar" title="Manager Photo / Initials (Click for menu)" role="button" tabindex="0" aria-label="Manager Profile Photo">
-          <span id="manager-initials-text">G</span>
-          <img id="manager-avatar-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+        <div class="brand-icon-box" id="manager-brand-avatar" title="Manager Photo / Initials (Click for menu)"
+          role="button" tabindex="0" aria-label="Manager Profile Photo">
+          <span id="manager-initials-text">MK</span>
+          <img id="manager-avatar-img" src="" alt="Manager Avatar"
+            style="display: none; width: 100%; height: 100%; object-fit: cover;">
           <input type="file" id="manager-avatar-file-input" accept="image/*" style="display: none;">
         </div>
 
         <div class="brand-titles">
           <span class="brand-title" id="display-business-name">Daily Attendance Register</span>
           <!-- Interactive Manager Session Pill -->
-          <button type="button" class="manager-session-pill" id="btn-manager-session-menu" title="Click to view Manager Profile, Shift Handover & Security">
+          <button type="button" class="manager-session-pill" id="btn-manager-session-menu"
+            title="Click to view Manager Profile, Shift Handover & Security">
             <span class="manager-session-dot"></span>
             <span id="manager-session-indicator">Duty Manager: Mark</span>
             <span class="manager-role-tag">General Manager</span>
-            <svg class="pill-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <svg class="pill-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
           </button>
         </div>
       </div>
 
       <div class="header-actions">
-        <!-- Live Real-Time Telemetry Badge -->
-        <div class="header-telemetry-badge" title="Enterprise Database Synchronized & 256-Bit SSL/TLS Encrypted">
+        <!-- Live Real-Time Telemetry Badge (Hidden) -->
+        <div class="header-telemetry-badge" style="display: none !important;" title="Enterprise Database Synchronized & 256-Bit SSL/TLS Encrypted">
           <span class="telemetry-live-dot"></span>
           <span>SSL · Live</span>
         </div>
 
         <div class="header-badge-wrapper">
-          <button type="button" class="icon-btn" id="btn-reminders-open" title="Manager Reminders & Tasks" aria-label="Reminders">
+          <button type="button" class="icon-btn" id="btn-reminders-open" title="Manager Reminders & Tasks"
+            aria-label="Reminders">
             <!-- Bell Vector Icon -->
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="square">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
           </button>
           <span class="header-badge" id="reminders-badge-count">2</span>
         </div>
-        <button type="button" class="icon-btn" id="btn-print-quick" title="Download Restaurant Attendance PDF" aria-label="Download Attendance PDF">
+        <button type="button" class="icon-btn" id="btn-print-quick" title="Download Restaurant Attendance PDF"
+          aria-label="Download Attendance PDF">
           <!-- Download Vector Icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
         </button>
-        <button type="button" class="icon-btn" id="btn-settings-open" title="Settings & Passkey Setup" aria-label="Settings">
+        <button type="button" class="icon-btn" id="btn-settings-open" title="Settings & Passkey Setup"
+          aria-label="Settings">
           <!-- Standard Settings Gear Cog Vector Icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
           </svg>
         </button>
-        <button type="button" class="icon-btn" id="btn-logout-header" title="Logout Manager Session" aria-label="Logout" style="color: #F87171;">
+        <button type="button" class="icon-btn" id="btn-logout-header" title="Logout Manager Session" aria-label="Logout"
+          style="color: #F87171;">
           <!-- Logout Exit Vector Icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="square">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -96,11 +116,12 @@
     <div class="manager-profile-dropdown" id="manager-profile-dropdown" style="display: none;">
       <div class="mp-dropdown-header">
         <div class="mp-dropdown-avatar" id="mp-dropdown-avatar-circle">
-          <span id="mp-dropdown-initials">G</span>
-          <img id="mp-dropdown-avatar-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+          <span id="mp-dropdown-initials">MK</span>
+          <img id="mp-dropdown-avatar-img" src="" alt="Manager Avatar"
+            style="display: none; width: 100%; height: 100%; object-fit: cover;">
         </div>
         <div class="mp-dropdown-user-info">
-          <div class="mp-dropdown-name" id="mp-dropdown-name">Mark Kamau</div>
+          <div class="mp-dropdown-name" id="mp-dropdown-name">Mark Karanja</div>
           <div class="mp-dropdown-email" id="mp-dropdown-email"></div>
           <div class="mp-dropdown-role">
             <span class="badge-role">Duty General Manager</span>
@@ -126,7 +147,13 @@
 
       <div class="mp-dropdown-menu">
         <button type="button" class="mp-menu-item" id="btn-dropdown-handover">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
           <div class="mp-menu-text">
             <span class="mp-menu-title">Shift Handover Report</span>
             <span class="mp-menu-desc">Review and pass floor roster to incoming manager</span>
@@ -134,7 +161,11 @@
         </button>
 
         <button type="button" class="mp-menu-item" id="btn-dropdown-print">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
           <div class="mp-menu-text">
             <span class="mp-menu-title">Download Attendance PDF</span>
             <span class="mp-menu-desc">Save official Restaurant Attendance PDF</span>
@@ -142,17 +173,25 @@
         </button>
 
         <button type="button" class="mp-menu-item" id="btn-dropdown-passkeys" style="background: #EFF6FF !important;">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2">
+            <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
           <div class="mp-menu-text">
-            <span class="mp-menu-title" style="color: #1D4ED8 !important; font-weight: 800;">Set Up Phone Fingerprint (Passkey)</span>
-            <span class="mp-menu-desc" style="color: #3B82F6 !important;">Register this phone for 1-touch fingerprint login</span>
+            <span class="mp-menu-title" style="color: #1D4ED8 !important; font-weight: 800;">Set Up Phone Fingerprint
+              (Passkey)</span>
+            <span class="mp-menu-desc" style="color: #3B82F6 !important;">Register this phone for 1-touch fingerprint
+              login</span>
           </div>
         </button>
 
         <button type="button" class="mp-menu-item" id="btn-dropdown-settings">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
           </svg>
           <div class="mp-menu-text">
             <span class="mp-menu-title">System Settings & Backups</span>
@@ -163,7 +202,11 @@
         <div class="mp-menu-divider"></div>
 
         <button type="button" class="mp-menu-item mp-menu-logout" id="btn-dropdown-logout">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
           <div class="mp-menu-text">
             <span class="mp-menu-title">Lock Workstation & Sign Out</span>
             <span class="mp-menu-desc">Terminate active session token</span>
@@ -179,16 +222,17 @@
            VIEW 1: DAILY ATTENDANCE REGISTER
            ======================================================== -->
       <section class="view-section active" id="view-daily">
-        
+
         <!-- Date Selector Navigation Bar -->
         <div class="date-strip">
           <button type="button" class="date-nav-btn" id="btn-prev-day">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+              stroke-linecap="square">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
             Prev
           </button>
-          
+
           <div class="date-display-center date-picker-wrapper" title="Click to choose custom date">
             <span class="current-date-text" id="daily-date-label">Today</span>
             <span class="current-day-text" id="daily-day-label">Monday</span>
@@ -197,7 +241,8 @@
 
           <button type="button" class="date-nav-btn" id="btn-next-day">
             Next
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+              stroke-linecap="square">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
@@ -235,13 +280,16 @@
         <!-- Quick Batch Actions Toolbar -->
         <div class="toolbar-strip">
           <button type="button" class="btn-primary" id="btn-mark-all-present" title="Mark all active staff as present">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="square">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             Mark All Present
           </button>
-          <button type="button" class="btn-save-records" id="btn-save-daily-records" title="Save and commit today's shift records to database">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+          <button type="button" class="btn-save-records" id="btn-save-daily-records"
+            title="Save and commit today's shift records to database">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="square">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
@@ -249,7 +297,8 @@
             <span id="btn-save-daily-text">Save Shift</span>
           </button>
           <button type="button" class="btn-secondary" id="btn-add-waiter-quick" title="Register new waitstaff">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="square">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
@@ -265,9 +314,9 @@
         <!-- Shift Filter Toolbar Bar -->
         <div class="shift-filter-bar" id="shift-filter-bar">
           <button type="button" class="shift-filter-btn active" data-shift-filter="ALL">ALL SHIFTS</button>
-          <button type="button" class="shift-filter-btn" data-shift-filter="Morning">MORNING (07:00-15:00)</button>
-          <button type="button" class="shift-filter-btn" data-shift-filter="Evening">EVENING (15:00-23:00)</button>
-          <button type="button" class="shift-filter-btn" data-shift-filter="Night">NIGHT (23:00-07:00)</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Morning">MORNING (05:30-15:00)</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Evening">EVENING (11:00-23:00)</button>
+          <button type="button" class="shift-filter-btn" data-shift-filter="Night">NIGHT (22:00-06:30)</button>
           <button type="button" class="shift-filter-btn" data-shift-filter="Double">DOUBLE SHIFT</button>
         </div>
 
@@ -283,7 +332,7 @@
            VIEW 2: MONTHLY ATTENDANCE MATRIX
            ======================================================== -->
       <section class="view-section" id="view-monthly">
-        
+
         <div class="section-box">
           <div class="section-box-header">
             <span class="section-title">Monthly Calendar Register</span>
@@ -311,12 +360,13 @@
                 <option value="2027">2027</option>
               </select>
             </div>
-            
-            <p style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">
-              Legend: 
-              <span style="color: var(--c-navy-primary);">[P] Present</span> | 
-              <span style="color: var(--c-status-absent-bg);">[A] Absent</span> | 
-              <span style="color: var(--c-status-late-bg);">[L] Late</span> | 
+
+            <p
+              style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">
+              Legend:
+              <span style="color: var(--c-navy-primary);">[P] Present</span> |
+              <span style="color: var(--c-status-absent-bg);">[A] Absent</span> |
+              <span style="color: var(--c-status-late-bg);">[L] Late</span> |
               <span style="color: var(--c-status-off-bg);">[O] Off</span>
             </p>
           </div>
@@ -327,8 +377,13 @@
           <!-- Dynamically Generated Matrix Grid -->
         </div>
 
-        <button type="button" class="btn-black" id="btn-print-matrix-view" style="width: 100%; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <button type="button" class="btn-black" id="btn-print-matrix-view"
+          style="width: 100%; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
           Download Monthly Attendance PDF
         </button>
 
@@ -339,20 +394,24 @@
            VIEW 3: WAITER ATTENDANCE SUMMARY & ABSENTEE AUDIT
            ======================================================== -->
       <section class="view-section" id="view-absentee">
-        
+
         <div class="section-box" style="margin-bottom: 12px;">
-          <div class="section-box-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div class="section-box-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <span class="section-title">Waiter Attendance Summary & Roster Audit</span>
-            <span id="summary-active-period-label" style="font-size: 11px; font-weight: 700; color: var(--c-navy-primary);"></span>
+            <span id="summary-active-period-label"
+              style="font-size: 11px; font-weight: 700; color: var(--c-navy-primary);"></span>
           </div>
           <div class="section-box-body">
             <!-- Filter Bar: Period, Scope & Shift -->
             <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
-              <select class="select-control" id="select-summary-scope" style="max-width: 130px; font-weight: 700;" aria-label="Summary Scope">
+              <select class="select-control" id="select-summary-scope" style="max-width: 130px; font-weight: 700;"
+                aria-label="Summary Scope">
                 <option value="MONTH" selected>Monthly View</option>
                 <option value="WEEK">Current Week</option>
               </select>
-              <select class="select-control" id="select-month-absentee" style="flex: 1;" aria-label="Select Report Month">
+              <select class="select-control" id="select-month-absentee" style="flex: 1;"
+                aria-label="Select Report Month">
                 <option value="0">January</option>
                 <option value="1">February</option>
                 <option value="2">March</option>
@@ -366,23 +425,27 @@
                 <option value="10">November</option>
                 <option value="11">December</option>
               </select>
-              <select class="select-control" id="select-year-absentee" style="max-width: 90px;" aria-label="Select Report Year">
+              <select class="select-control" id="select-year-absentee" style="max-width: 90px;"
+                aria-label="Select Report Year">
                 <option value="2025">2025</option>
                 <option value="2026" selected>2026</option>
                 <option value="2027">2027</option>
               </select>
-              <select class="select-control" id="select-summary-shift-filter" style="max-width: 120px;" aria-label="Filter Shift">
+              <select class="select-control" id="select-summary-shift-filter" style="max-width: 120px;"
+                aria-label="Filter Shift">
                 <option value="ALL">All Shifts</option>
-                <option value="Morning">Morning</option>
-                <option value="Evening">Evening</option>
-                <option value="Night">Night</option>
+                <option value="Morning">Morning (05:30-15:00)</option>
+                <option value="Evening">Evening (11:00 - 23:00)</option>
+                <option value="Night">Night (22:00-06:30)</option>
                 <option value="Double">Double</option>
               </select>
             </div>
 
             <!-- Download Action Buttons -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-              <button type="button" class="btn-save-records" id="btn-download-attendance-csv" style="padding: 9px 14px; font-size: 11px; font-weight: 800;" title="Download Excel-compatible CSV summary sheet">
+              <button type="button" class="btn-save-records" id="btn-download-attendance-csv"
+                style="padding: 9px 14px; font-size: 11px; font-weight: 800;"
+                title="Download Excel-compatible CSV summary sheet">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
@@ -390,7 +453,8 @@
                 </svg>
                 <span>Download CSV / Excel</span>
               </button>
-              <button type="button" class="btn-primary" id="btn-print-absentee-report" style="padding: 9px 14px; font-size: 11px;" title="Download Restaurant Attendance PDF">
+              <button type="button" class="btn-primary" id="btn-print-absentee-report"
+                style="padding: 9px 14px; font-size: 11px;" title="Download Restaurant Attendance PDF">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
@@ -401,15 +465,17 @@
             </div>
 
             <!-- Roster Attendance Summary Table Container -->
-            <div class="matrix-scroll-wrapper" id="attendance-summary-table-container" style="max-height: 440px; overflow: auto; border: 1px solid var(--c-gray-border); margin-bottom: 10px;">
+            <div class="matrix-scroll-wrapper" id="attendance-summary-table-container"
+              style="max-height: 440px; overflow: auto; border: 1px solid var(--c-gray-border); margin-bottom: 10px;">
               <!-- Dynamically populated attendance summary table -->
             </div>
 
-            <p style="font-size: 10px; color: var(--c-gray-dark); margin: 0; text-transform: uppercase; font-weight: 700;">
-              Legend: 
-              <span style="color: #065F46;">[P] Present</span> | 
-              <span style="color: #991B1B;">[A] Absent</span> | 
-              <span style="color: #92400E;">[L] Late</span> | 
+            <p
+              style="font-size: 10px; color: var(--c-gray-dark); margin: 0; text-transform: uppercase; font-weight: 700;">
+              Legend:
+              <span style="color: #065F46;">[P] Present</span> |
+              <span style="color: #991B1B;">[A] Absent</span> |
+              <span style="color: #92400E;">[L] Late</span> |
               <span style="color: #475569;">[O] Off</span>
             </p>
           </div>
@@ -432,17 +498,20 @@
            VIEW 4: STAFF DIRECTORY & ROSTER
            ======================================================== -->
       <section class="view-section" id="view-staff">
-        
+
         <div class="toolbar-strip" style="flex-wrap: wrap; gap: 8px;">
           <button type="button" class="btn-primary" id="btn-add-staff-modal">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="square">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
             Add Staff Member
           </button>
-          <button type="button" class="btn-secondary" id="btn-view-week-attendance" title="View Weekly Attendance Register">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <button type="button" class="btn-secondary" id="btn-view-week-attendance"
+            title="View Weekly Attendance Register">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="square">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
               <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -450,8 +519,10 @@
             </svg>
             View Week's Attendance
           </button>
-          <button type="button" class="btn-secondary" id="btn-view-month-attendance" title="View Monthly Attendance Register">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <button type="button" class="btn-secondary" id="btn-view-month-attendance"
+            title="View Monthly Attendance Register">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="square">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
               <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -460,7 +531,8 @@
             </svg>
             View Monthly Attendance
           </button>
-          <button type="button" class="btn-secondary" id="btn-view-summary-table" title="View Full Waiter Attendance Summary Sheet & Downloads">
+          <button type="button" class="btn-secondary" id="btn-view-summary-table"
+            title="View Full Waiter Attendance Summary Sheet & Downloads">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="8" y1="6" x2="21" y2="6"></line>
               <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -487,11 +559,12 @@
            VIEW 5: ATTENDANCE REPORTS & WHATSAPP DISPATCH
            ======================================================== -->
       <section class="view-section" id="view-reports">
-        
+
         <!-- Header Banner -->
         <div class="section-box" style="margin-bottom: 12px; border-left: 4px solid var(--c-navy-primary);">
           <div style="padding: 12px 14px;">
-            <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); letter-spacing: 0.5px;">
+            <div
+              style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); letter-spacing: 0.5px;">
               Official Attendance Reports & Dispatch
             </div>
             <div style="font-size: 11px; color: var(--c-gray-dark); margin-top: 2px;">
@@ -506,21 +579,25 @@
             <span class="section-title">On-Demand Report Generation</span>
           </div>
           <div class="section-box-body">
-            
+
             <!-- Weekly Card -->
-            <div style="border: 1px solid var(--c-gray-border); padding: 12px; margin-bottom: 10px; background: var(--c-gray-light);">
-              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
+            <div
+              style="border: 1px solid var(--c-gray-border); padding: 12px; margin-bottom: 10px; background: var(--c-gray-light);">
+              <div
+                style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
                 Weekly Attendance Report (Monday – Sunday)
               </div>
               <div style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px;">
                 Calculates complete weekly metrics, individual waiter turnout %, and exact absent dates.
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <select class="select-control" id="select-weekly-period" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+                <select class="select-control" id="select-weekly-period"
+                  style="flex: 1; padding: 6px 8px; font-size: 11px;">
                   <option value="current">Current Week (Mon - Today)</option>
                   <option value="previous">Previous Week (Full Mon - Sun)</option>
                 </select>
-                <button type="button" class="btn-primary" id="btn-generate-weekly-ondemand" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
+                <button type="button" class="btn-primary" id="btn-generate-weekly-ondemand"
+                  style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
                   Generate Weekly PDF
                 </button>
               </div>
@@ -528,7 +605,8 @@
 
             <!-- Monthly Card -->
             <div style="border: 1px solid var(--c-gray-border); padding: 12px; background: var(--c-gray-light);">
-              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
+              <div
+                style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 4px;">
                 Monthly Attendance Register (Full Calendar Month)
               </div>
               <div style="font-size: 10px; color: var(--c-gray-dark); margin-bottom: 8px;">
@@ -554,7 +632,8 @@
                   <option value="2026" selected>2026</option>
                   <option value="2027">2027</option>
                 </select>
-                <button type="button" class="btn-primary" id="btn-generate-monthly-ondemand" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
+                <button type="button" class="btn-primary" id="btn-generate-monthly-ondemand"
+                  style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
                   Generate Monthly PDF
                 </button>
               </div>
@@ -571,19 +650,21 @@
           </div>
           <div class="section-box-body" id="report-settings-body">
             <form id="form-report-settings">
-              
+
               <!-- Weekly Schedule -->
               <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--c-gray-border);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                   <label class="form-label" style="margin-bottom: 0;">Weekly Auto-Generation</label>
-                  <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <label
+                    style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
                     <input type="checkbox" id="setting-weekly-enabled"> Active
                   </label>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                   <div>
                     <label class="form-label" for="setting-weekly-day" style="font-size: 9px;">Trigger Day</label>
-                    <select class="select-control" id="setting-weekly-day" style="width: 100%; padding: 6px; font-size: 11px;">
+                    <select class="select-control" id="setting-weekly-day"
+                      style="width: 100%; padding: 6px; font-size: 11px;">
                       <option value="0">Sunday (End of Week)</option>
                       <option value="1">Monday (Start of Week)</option>
                       <option value="5">Friday</option>
@@ -592,7 +673,8 @@
                   </div>
                   <div>
                     <label class="form-label" for="setting-weekly-time" style="font-size: 9px;">Trigger Time</label>
-                    <input type="time" class="form-input" id="setting-weekly-time" value="18:00" style="padding: 5px; font-size: 11px;">
+                    <input type="time" class="form-input" id="setting-weekly-time" value="18:00"
+                      style="padding: 5px; font-size: 11px;">
                   </div>
                 </div>
               </div>
@@ -601,14 +683,16 @@
               <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--c-gray-border);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                   <label class="form-label" style="margin-bottom: 0;">Monthly Auto-Generation</label>
-                  <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <label
+                    style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
                     <input type="checkbox" id="setting-monthly-enabled"> Active
                   </label>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                   <div>
                     <label class="form-label" for="setting-monthly-day" style="font-size: 9px;">Day of Month</label>
-                    <select class="select-control" id="setting-monthly-day" style="width: 100%; padding: 6px; font-size: 11px;">
+                    <select class="select-control" id="setting-monthly-day"
+                      style="width: 100%; padding: 6px; font-size: 11px;">
                       <option value="1">1st of Month (Prior Month Report)</option>
                       <option value="28">28th of Month</option>
                       <option value="30">30th of Month</option>
@@ -617,7 +701,8 @@
                   </div>
                   <div>
                     <label class="form-label" for="setting-monthly-time" style="font-size: 9px;">Trigger Time</label>
-                    <input type="time" class="form-input" id="setting-monthly-time" value="09:00" style="padding: 5px; font-size: 11px;">
+                    <input type="time" class="form-input" id="setting-monthly-time" value="09:00"
+                      style="padding: 5px; font-size: 11px;">
                   </div>
                 </div>
               </div>
@@ -628,36 +713,46 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                   <div>
                     <label class="form-label" for="setting-whatsapp-provider" style="font-size: 9px;">Provider</label>
-                    <select class="select-control" id="setting-whatsapp-provider" style="width: 100%; padding: 6px; font-size: 11px;">
+                    <select class="select-control" id="setting-whatsapp-provider"
+                      style="width: 100%; padding: 6px; font-size: 11px;">
                       <option value="disabled">Disabled (Local PDF Only)</option>
                       <option value="twilio">Twilio WhatsApp API</option>
                       <option value="meta">Meta WhatsApp Cloud API</option>
                     </select>
                   </div>
                   <div>
-                    <label class="form-label" for="setting-whatsapp-phone" style="font-size: 9px;">Manager Recipient Phone</label>
-                    <input type="tel" class="form-input" id="setting-whatsapp-phone" placeholder="e.g. +254712345678" style="padding: 5px; font-size: 11px;">
+                    <label class="form-label" for="setting-whatsapp-phone" style="font-size: 9px;">Manager Recipient
+                      Phone</label>
+                    <input type="tel" class="form-input" id="setting-whatsapp-phone" placeholder="e.g. +254712345678"
+                      style="padding: 5px; font-size: 11px;">
                   </div>
                 </div>
 
                 <div style="margin-bottom: 8px;">
-                  <label class="form-label" for="setting-whatsapp-sid" style="font-size: 9px;">Twilio Account SID / Meta Bearer Token</label>
-                  <input type="password" class="form-input" id="setting-whatsapp-sid" placeholder="Account SID or Access Token" style="padding: 5px; font-size: 11px;">
+                  <label class="form-label" for="setting-whatsapp-sid" style="font-size: 9px;">Twilio Account SID / Meta
+                    Bearer Token</label>
+                  <input type="password" class="form-input" id="setting-whatsapp-sid"
+                    placeholder="Account SID or Access Token" style="padding: 5px; font-size: 11px;">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                   <div>
-                    <label class="form-label" for="setting-whatsapp-token" style="font-size: 9px;">Auth Token / Phone ID</label>
-                    <input type="password" class="form-input" id="setting-whatsapp-token" placeholder="Twilio Auth Token or Meta Phone ID" style="padding: 5px; font-size: 11px;">
+                    <label class="form-label" for="setting-whatsapp-token" style="font-size: 9px;">Auth Token / Phone
+                      ID</label>
+                    <input type="password" class="form-input" id="setting-whatsapp-token"
+                      placeholder="Twilio Auth Token or Meta Phone ID" style="padding: 5px; font-size: 11px;">
                   </div>
                   <div>
-                    <label class="form-label" for="setting-whatsapp-from" style="font-size: 9px;">Sender WhatsApp Number</label>
-                    <input type="text" class="form-input" id="setting-whatsapp-from" placeholder="e.g. +14155238886" style="padding: 5px; font-size: 11px;">
+                    <label class="form-label" for="setting-whatsapp-from" style="font-size: 9px;">Sender WhatsApp
+                      Number</label>
+                    <input type="text" class="form-input" id="setting-whatsapp-from" placeholder="e.g. +14155238886"
+                      style="padding: 5px; font-size: 11px;">
                   </div>
                 </div>
               </div>
 
-              <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">Save Schedule & WhatsApp Configuration</button>
+              <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">Save Schedule & WhatsApp
+                Configuration</button>
             </form>
           </div>
         </div>
@@ -666,7 +761,8 @@
         <div class="section-box">
           <div class="section-box-header" style="display: flex; justify-content: space-between; align-items: center;">
             <span class="section-title">Generated PDF Report Archive</span>
-            <button type="button" class="btn-small btn-secondary" id="btn-refresh-reports" style="color: #fff; border-color: rgba(255,255,255,0.4);">
+            <button type="button" class="btn-small btn-secondary" id="btn-refresh-reports"
+              style="color: #fff; border-color: rgba(255,255,255,0.4);">
               Refresh List
             </button>
           </div>
@@ -683,7 +779,7 @@
            VIEW 6: RESTAURANT FLOOR PLAN & STAFF ASSIGNMENT BLUEPRINT
            ======================================================== -->
       <section class="view-section" id="view-floorplan">
-        
+
         <div class="floorplan-container">
           <!-- Top Control Header Matching Blueprint Reference -->
           <div class="fp-header-bar">
@@ -706,16 +802,18 @@
               <div class="fp-control-box">
                 <label for="fp-shift-selector">Shift</label>
                 <select id="fp-shift-selector" aria-label="Floor Plan Shift">
-                  <option value="Morning">Morning (8:00 AM - 4:00 PM)</option>
-                  <option value="Evening">Evening (4:00 PM - 12:00 AM)</option>
-                  <option value="Night">Night (12:00 AM - 8:00 AM)</option>
+                  <option value="Morning">Morning (05:30 - 15:00)</option>
+                  <option value="Evening">Evening (11:00 - 23:00)</option>
+                  <option value="Night">Night (22:00 - 06:30)</option>
                   <option value="Double">Double Shift (Full Day)</option>
                 </select>
               </div>
 
-              <button type="button" class="fp-btn-whatsapp" id="btn-open-wa-floorplan" title="Send Floor Plan to Supervisor via WhatsApp">
+              <button type="button" class="fp-btn-whatsapp" id="btn-open-wa-floorplan"
+                title="Send Floor Plan to Supervisor via WhatsApp">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  <path
+                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
                 <span>Send to Supervisor (WhatsApp)</span>
               </button>
@@ -739,15 +837,17 @@
                 </div>
                 <div class="fp-strip-right">
                   <div class="fp-zoom-controls">
-                    <button type="button" class="fp-zoom-btn" id="fp-zoom-out" title="Zoom Out" aria-label="Zoom Out">−</button>
+                    <button type="button" class="fp-zoom-btn" id="fp-zoom-out" title="Zoom Out"
+                      aria-label="Zoom Out">−</button>
                     <span id="fp-zoom-level">100%</span>
-                    <button type="button" class="fp-zoom-btn" id="fp-zoom-in" title="Zoom In" aria-label="Zoom In">+</button>
+                    <button type="button" class="fp-zoom-btn" id="fp-zoom-in" title="Zoom In"
+                      aria-label="Zoom In">+</button>
                     <button type="button" class="fp-zoom-btn" id="fp-zoom-reset" title="Fit to View">Fit</button>
                   </div>
                   <span id="fp-summary-stats">0 / 61 Assigned</span>
                 </div>
               </div>
-              
+
               <div class="fp-blueprint-card" id="floorplan-blueprint-card">
                 <div id="fp-svg-container"></div>
               </div>
@@ -757,7 +857,8 @@
             <aside class="fp-sidebar" id="floorplan-sidebar">
               <div class="fp-sidebar-header">Employees</div>
               <div class="fp-sidebar-search">
-                <input type="text" id="fp-staff-search" placeholder="Filter staff by name or code..." aria-label="Search employees">
+                <input type="text" id="fp-staff-search" placeholder="Filter staff by name or code..."
+                  aria-label="Search employees">
               </div>
               <ul class="fp-employees-list" id="fp-employees-list">
                 <!-- Dynamically populated employees -->
@@ -790,10 +891,14 @@
               </div>
 
               <div class="fp-sidebar-actions">
-                <button type="button" class="btn-primary" id="btn-open-manage-assignments" style="width: 100%; font-size: 11px; padding: 8px;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                <button type="button" class="btn-primary" id="btn-open-manage-assignments"
+                  style="width: 100%; font-size: 11px; padding: 8px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="margin-right: 4px;">
                     <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
                   </svg>
                   Manage Assignments
                 </button>
@@ -805,17 +910,6 @@
       </section>
 
     </main>
-
-    <!-- Enterprise Workstation Footer -->
-    <footer class="app-enterprise-footer">
-      <div class="aef-left">
-        <span class="aef-brand">Executive Hospitality Group &bull; Operations Command v3.2</span>
-        <span class="aef-sub">Workstation: POS-MGR-01 &bull; Shift Security: 256-Bit SSL/TLS</span>
-      </div>
-      <div class="aef-right">
-        <span class="aef-badge"><span class="aef-dot"></span> Cluster Online</span>
-      </div>
-    </footer>
 
     <!-- Bottom Navigation Bar (Phone Touch Bar) -->
     <nav class="bottom-nav" id="bottom-nav">
@@ -897,13 +991,15 @@
   <div class="print-sheet-container" id="print-sheet-container">
     <div class="print-header">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 44px; height: 44px; border: 1.5px solid #0A2540; background: #0A2540; color: #F59E0B; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; letter-spacing: 1px;">
+        <div
+          style="width: 44px; height: 44px; border: 1.5px solid #0A2540; background: #0A2540; color: #F59E0B; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; letter-spacing: 1px;">
           G
         </div>
         <div>
           <div class="print-org-name" id="print-org-name-text">Restaurant Attendance</div>
           <div class="print-report-title" id="print-period-title">MONTHLY STAFF ATTENDANCE REGISTER</div>
-          <div style="font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px;">OFFICIAL ATTENDANCE RECORD &bull; INTERNAL CONTROL</div>
+          <div style="font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px;">OFFICIAL ATTENDANCE RECORD
+            &bull; INTERNAL CONTROL</div>
         </div>
       </div>
       <div class="print-meta-box">
@@ -941,7 +1037,8 @@
     <div class="print-signoff-section">
       <div class="signoff-box">
         <div><strong>DUTY MANAGER SIGN-OFF</strong></div>
-        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">I hereby verify that staff attendance and station allocations are verified.</div>
+        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">I hereby verify that staff attendance and station
+          allocations are verified.</div>
         <div class="signoff-line"></div>
         <div style="margin-top: 6px; display: flex; justify-content: space-between;">
           <span>Signature: __________________________</span>
@@ -950,7 +1047,8 @@
       </div>
       <div class="signoff-box">
         <div><strong>GENERAL SUPERVISOR / AUDIT VERIFICATION</strong></div>
-        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">Corporate administrative verification and payroll audit.</div>
+        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">Corporate administrative verification and payroll
+          audit.</div>
         <div class="signoff-line"></div>
         <div style="margin-top: 6px; display: flex; justify-content: space-between;">
           <span>Signature: __________________________</span>
@@ -958,7 +1056,8 @@
         </div>
       </div>
     </div>
-    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #64748B; border-top: 1px solid #CCCCCC; padding-top: 8px;">
+    <div
+      style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #64748B; border-top: 1px solid #CCCCCC; padding-top: 8px;">
       <span>Executive Hospitality Systems v3.2 &bull; Confidential Official Register</span>
       <span>Page 1 of 1 &bull; Certified Authentic Roster Record</span>
     </div>
@@ -975,7 +1074,8 @@
       <div class="modal-header">
         <span class="modal-title" id="modal-staff-title">ADD NEW STAFF MEMBER</span>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-staff-modal" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -985,21 +1085,25 @@
         <div class="modal-body">
           <input type="hidden" id="staff-form-id">
           <input type="hidden" id="staff-input-code">
-          <div id="staff-form-error" style="display: none; background: #FEE2E2; border-left: 3px solid #DC2626; color: #991B1B; padding: 8px 10px; font-size: 11px; margin-bottom: 12px; font-weight: 600;"></div>
+          <div id="staff-form-error"
+            style="display: none; background: #FEE2E2; border-left: 3px solid #DC2626; color: #991B1B; padding: 8px 10px; font-size: 11px; margin-bottom: 12px; font-weight: 600;">
+          </div>
           <div class="form-group">
             <label class="form-label" for="staff-input-name">Full Name *</label>
             <input type="text" class="form-input" id="staff-input-name" required placeholder="e.g. John Doe">
           </div>
           <div class="form-group">
             <label class="form-label" for="staff-input-station">Assigned Station / Section</label>
-            <input type="text" class="form-input" id="staff-input-station" placeholder="e.g. Row 1 / Cashier / Front Minishop / Section E">
+            <input type="text" class="form-input" id="staff-input-station"
+              placeholder="e.g. Row 1 / Cashier / Front Minishop / Section E">
           </div>
           <div class="form-group">
             <label class="form-label" for="staff-input-shift">Assigned Shift & Schedule *</label>
-            <select class="select-control" id="staff-input-shift" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 8px;">
-              <option value="Morning">Morning Shift (07:00 - 15:00)</option>
-              <option value="Evening">Evening Shift (15:00 - 23:00)</option>
-              <option value="Night">Night Shift (23:00 - 07:00)</option>
+            <select class="select-control" id="staff-input-shift"
+              style="width: 100%; border: 1px solid var(--c-gray-border); padding: 8px;">
+              <option value="Morning">Morning Shift (05:30 - 15:00)</option>
+              <option value="Evening">Evening Shift (11:00 - 23:00)</option>
+              <option value="Night">Night Shift (22:00 - 06:30)</option>
               <option value="Double">Double Shift (Full Day)</option>
             </select>
           </div>
@@ -1022,7 +1126,8 @@
       <div class="modal-header">
         <span class="modal-title">SETTINGS & DATA BACKUP</span>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-settings-modal" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -1038,25 +1143,36 @@
         <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-label" style="margin-bottom: 0;">Manager Profile Photo & Avatar</label>
-            <span style="font-size: 9px; font-weight: 800; background: #E0F2FE; color: #0369A1; padding: 2px 6px; border: 1px solid #BAE6FD;">CUSTOM PHOTO</span>
+            <span
+              style="font-size: 9px; font-weight: 800; background: #E0F2FE; color: #0369A1; padding: 2px 6px; border: 1px solid #BAE6FD;">CUSTOM
+              PHOTO</span>
           </div>
           <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 10px;">
             Personalize your header icon with your profile photo or your automatic 2-letter initials.
           </p>
 
-          <div style="display: flex; align-items: center; gap: 14px; background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 12px;">
-            <div id="settings-avatar-preview-box" style="width: 52px; height: 52px; background: #FFFFFF; border: 1.5px solid var(--c-navy-primary); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: var(--c-navy-primary); overflow: hidden; flex-shrink: 0; position: relative;">
-              <span id="settings-avatar-preview-initials">G</span>
-              <img id="settings-avatar-preview-img" src="" alt="Manager Avatar" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+          <div
+            style="display: flex; align-items: center; gap: 14px; background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 12px;">
+            <div id="settings-avatar-preview-box"
+              style="width: 52px; height: 52px; background: #FFFFFF; border: 1.5px solid var(--c-navy-primary); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: var(--c-navy-primary); overflow: hidden; flex-shrink: 0; position: relative;">
+              <span id="settings-avatar-preview-initials">MK</span>
+              <img id="settings-avatar-preview-img" src="" alt="Manager Avatar"
+                style="display: none; width: 100%; height: 100%; object-fit: cover;">
             </div>
             <div style="flex: 1; min-width: 0;">
-              <div id="settings-manager-name" style="font-size: 13px; font-weight: 800; color: var(--c-navy-primary); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Executive Manager</div>
-              <div id="settings-manager-email" style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+              <div id="settings-manager-name"
+                style="font-size: 13px; font-weight: 800; color: var(--c-navy-primary); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Executive Manager</div>
+              <div id="settings-manager-email"
+                style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button type="button" class="btn-primary" id="btn-upload-avatar-settings" style="padding: 5px 10px; font-size: 10px; text-transform: uppercase;">
+                <button type="button" class="btn-primary" id="btn-upload-avatar-settings"
+                  style="padding: 5px 10px; font-size: 10px; text-transform: uppercase;">
                   Upload Photo
                 </button>
-                <button type="button" class="btn-secondary" id="btn-remove-avatar" style="padding: 5px 10px; font-size: 10px; text-transform: uppercase; display: none;">
+                <button type="button" class="btn-secondary" id="btn-remove-avatar"
+                  style="padding: 5px 10px; font-size: 10px; text-transform: uppercase; display: none;">
                   Use Initials
                 </button>
               </div>
@@ -1067,20 +1183,26 @@
         <div style="margin-top: 16px; border-top: 1px solid var(--c-gray-border); padding-top: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-label" style="margin-bottom: 0;">Security / Login Methods (Passkeys)</label>
-            <span style="font-size: 9px; font-weight: 800; background: #DCFCE7; color: #166534; padding: 2px 6px; border: 1px solid #86EFAC;">FIDO2 / WEBAUTHN</span>
+            <span
+              style="font-size: 9px; font-weight: 800; background: #DCFCE7; color: #166534; padding: 2px 6px; border: 1px solid #86EFAC;">FIDO2
+              / WEBAUTHN</span>
           </div>
           <p style="font-size: 11px; color: var(--c-gray-dark); margin-bottom: 10px;">
             Log in instantly using your phone or computer's fingerprint, Face ID, or screen lock.
           </p>
 
           <!-- Register Device Card -->
-          <div style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 10px; margin-bottom: 12px;">
-            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 6px;">
+          <div
+            style="background: var(--c-gray-light); border: 1px solid var(--c-gray-border); padding: 10px; margin-bottom: 12px;">
+            <div
+              style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 6px;">
               Register This Device as a Passkey
             </div>
             <div style="display: flex; gap: 8px;">
-              <input type="text" class="form-input" id="input-passkey-device-name" placeholder="e.g. Manager Phone, Office Laptop" style="flex: 1; padding: 6px 8px; font-size: 11px;">
-              <button type="button" class="btn-primary" id="btn-register-passkey" style="padding: 6px 12px; font-size: 11px; white-space: nowrap;">
+              <input type="text" class="form-input" id="input-passkey-device-name"
+                placeholder="e.g. Manager Phone, Office Laptop" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+              <button type="button" class="btn-primary" id="btn-register-passkey"
+                style="padding: 6px 12px; font-size: 11px; white-space: nowrap;">
                 + Set Up Passkey
               </button>
             </div>
@@ -1088,7 +1210,8 @@
 
           <!-- Registered Passkeys List -->
           <div>
-            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 6px;">
+            <div
+              style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 6px;">
               Registered Passkeys
             </div>
             <div id="passkeys-list-container">
@@ -1097,8 +1220,10 @@
           </div>
 
           <!-- Privacy Security Notice -->
-          <div style="margin-top: 10px; font-size: 9px; color: var(--c-gray-dark); line-height: 1.3; background: #F8FAFC; padding: 6px 8px; border-left: 2px solid var(--c-navy-primary);">
-            <strong>Strict Biometric Privacy:</strong> Your actual biometrics (fingerprint/face geometry) remain strictly on your device and are never sent or stored in MySQL.
+          <div
+            style="margin-top: 10px; font-size: 9px; color: var(--c-gray-dark); line-height: 1.3; background: #F8FAFC; padding: 6px 8px; border-left: 2px solid var(--c-navy-primary);">
+            <strong>Strict Biometric Privacy:</strong> Your actual biometrics (fingerprint/face geometry) remain
+            strictly on your device and are never sent or stored in MySQL.
           </div>
         </div>
 
@@ -1140,44 +1265,53 @@
       <div class="modal-header">
         <span class="modal-title">MANAGER REMINDERS & ALARMS</span>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-reminders-modal" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
       <div class="modal-body" style="overflow-y: auto; flex: 1;">
-        
-        <form id="form-reminder" style="margin-bottom: 16px; background: var(--c-gray-light); padding: 12px; border: 1px solid var(--c-gray-border);">
-          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: var(--c-navy-primary);">
+
+        <form id="form-reminder"
+          style="margin-bottom: 16px; background: var(--c-gray-light); padding: 12px; border: 1px solid var(--c-gray-border);">
+          <div
+            style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: var(--c-navy-primary);">
             Create Reminder / Set Alarm
           </div>
-          
+
           <div class="form-group" style="margin-bottom: 8px;">
             <label class="form-label" for="reminder-input-title" style="font-size: 9px;">Reminder Title *</label>
-            <input type="text" class="form-input" id="reminder-input-title" required placeholder="e.g. Audit Friday Evening Shift Turnout" style="padding: 6px 8px; font-size: 12px;">
+            <input type="text" class="form-input" id="reminder-input-title" required
+              placeholder="e.g. Audit Friday Evening Shift Turnout" style="padding: 6px 8px; font-size: 12px;">
           </div>
 
           <div class="form-group" style="margin-bottom: 8px;">
             <label class="form-label" for="reminder-input-desc" style="font-size: 9px;">Description / Notes</label>
-            <input type="text" class="form-input" id="reminder-input-desc" placeholder="e.g. Check floor stations, sign-offs, and absentee ledger" style="padding: 6px 8px; font-size: 12px;">
+            <input type="text" class="form-input" id="reminder-input-desc"
+              placeholder="e.g. Check floor stations, sign-offs, and absentee ledger"
+              style="padding: 6px 8px; font-size: 12px;">
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div>
               <label class="form-label" for="reminder-input-date" style="font-size: 9px;">Date *</label>
-              <input type="date" class="form-input" id="reminder-input-date" required style="padding: 5px; font-size: 11px;">
+              <input type="date" class="form-input" id="reminder-input-date" required
+                style="padding: 5px; font-size: 11px;">
             </div>
             <div>
               <label class="form-label" for="reminder-input-time" style="font-size: 9px;">Time *</label>
-              <input type="time" class="form-input" id="reminder-input-time" required style="padding: 5px; font-size: 11px;">
+              <input type="time" class="form-input" id="reminder-input-time" required
+                style="padding: 5px; font-size: 11px;">
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div>
               <label class="form-label" for="reminder-input-repeat" style="font-size: 9px;">Repeat Option</label>
-              <select class="select-control" id="reminder-input-repeat" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
+              <select class="select-control" id="reminder-input-repeat"
+                style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
                 <option value="none">One-time Only</option>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly (Specific Day)</option>
@@ -1185,14 +1319,18 @@
               </select>
             </div>
             <div id="repeat-day-wrapper" style="display: none;">
-              <label class="form-label" for="reminder-input-repeat-day" id="repeat-day-label" style="font-size: 9px;">Repeat On</label>
-              <select class="select-control" id="reminder-input-repeat-day" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
+              <label class="form-label" for="reminder-input-repeat-day" id="repeat-day-label"
+                style="font-size: 9px;">Repeat On</label>
+              <select class="select-control" id="reminder-input-repeat-day"
+                style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
                 <!-- Dynamically populated for weekly (days) or monthly (dates 1-31) -->
               </select>
             </div>
             <div id="notification-type-wrapper">
-              <label class="form-label" for="reminder-input-notif-type" style="font-size: 9px;">Notification Type</label>
-              <select class="select-control" id="reminder-input-notif-type" style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
+              <label class="form-label" for="reminder-input-notif-type" style="font-size: 9px;">Notification
+                Type</label>
+              <select class="select-control" id="reminder-input-notif-type"
+                style="width: 100%; border: 1px solid var(--c-gray-border); padding: 5px; font-size: 11px;">
                 <option value="both" selected>Sound Alarm & Desktop</option>
                 <option value="sound">Sound Alarm Only</option>
                 <option value="desktop">Desktop Notification Only</option>
@@ -1201,21 +1339,28 @@
           </div>
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <label
+              style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
               <input type="checkbox" id="reminder-input-active" checked> Active Reminder
             </label>
-            <button type="button" class="btn-secondary" id="btn-test-sound" style="padding: 4px 10px; font-size: 10px; font-weight: 700; color: #1E293B; display: inline-flex; align-items: center; gap: 4px;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <button type="button" class="btn-secondary" id="btn-test-sound"
+              style="padding: 4px 10px; font-size: 10px; font-weight: 700; color: #1E293B; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
               Test Phone Ring & Vibrate
             </button>
           </div>
 
-          <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">+ Save Reminder & Schedule</button>
+          <button type="submit" class="btn-primary" style="width: 100%; padding: 8px;">+ Save Reminder &
+            Schedule</button>
         </form>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Scheduled Reminders</span>
-          <button type="button" class="btn-secondary" id="btn-request-web-notif" style="padding: 4px 10px; font-size: 10px; font-weight: 700;">
+          <button type="button" class="btn-secondary" id="btn-request-web-notif"
+            style="padding: 4px 10px; font-size: 10px; font-weight: 700;">
             🔔 Enable Phone Alerts
           </button>
         </div>
@@ -1234,40 +1379,48 @@
   <!-- Modal 4: Active Alarm / Due Reminder Overlay -->
   <div class="modal-overlay" id="alarm-modal-overlay" style="z-index: 9999;">
     <div class="modal-content" style="border: 3px solid #991B1B; box-shadow: 0 0 40px rgba(153, 27, 27, 0.6);">
-      <div class="modal-header" style="background-color: #991B1B; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between;">
+      <div class="modal-header"
+        style="background-color: #991B1B; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="alarm-pulsing-dot"></span>
           <span class="modal-title" style="letter-spacing: 1px;">URGENT MANAGER REMINDER DUE</span>
         </div>
-        <span id="alarm-due-time" style="font-size: 11px; font-weight: 800; background: rgba(0,0,0,0.3); padding: 2px 6px;">12:00</span>
+        <span id="alarm-due-time"
+          style="font-size: 11px; font-weight: 800; background: rgba(0,0,0,0.3); padding: 2px 6px;">12:00</span>
       </div>
       <div class="modal-body" style="padding: 20px 16px; background-color: #FFF;">
         <input type="hidden" id="active-alarm-id" value="">
-        <div id="alarm-display-title" style="font-size: 16px; font-weight: 800; color: #061527; margin-bottom: 6px; text-transform: uppercase;">
+        <div id="alarm-display-title"
+          style="font-size: 16px; font-weight: 800; color: #061527; margin-bottom: 6px; text-transform: uppercase;">
           Reminder Title
         </div>
         <div id="alarm-display-desc" style="font-size: 12px; color: #475569; margin-bottom: 16px; line-height: 1.4;">
           Reminder notes and details
         </div>
-        <div style="font-size: 10px; font-weight: 700; color: #991B1B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+        <div
+          style="font-size: 10px; font-weight: 700; color: #991B1B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
           Alarm is sounding. Choose an action below:
         </div>
-        
+
         <!-- Snooze Options -->
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
-          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="5" style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
+          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="5"
+            style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
             Snooze 5 Min
           </button>
-          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="10" style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
+          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="10"
+            style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
             Snooze 10 Min
           </button>
-          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="30" style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
+          <button type="button" class="btn-secondary btn-snooze-action" data-minutes="30"
+            style="padding: 8px 4px; font-size: 10px; font-weight: 800;">
             Snooze 30 Min
           </button>
         </div>
 
         <!-- Dismiss Button -->
-        <button type="button" class="btn-danger" id="btn-dismiss-alarm-modal" style="width: 100%; padding: 10px; font-size: 12px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
+        <button type="button" class="btn-danger" id="btn-dismiss-alarm-modal"
+          style="width: 100%; padding: 10px; font-size: 12px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
           DISMISS REMINDER
         </button>
       </div>
@@ -1285,10 +1438,13 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span class="modal-title" id="modal-table-assign-title" style="color: #FFFFFF;">ASSIGN WAITER TO SECTION</span>
+          <span class="modal-title" id="modal-table-assign-title" style="color: #FFFFFF;">ASSIGN WAITER TO
+            SECTION</span>
         </div>
-        <button type="button" class="icon-btn btn-modal-close" id="btn-close-table-assign" aria-label="Close" style="color: #FFFFFF;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-table-assign" aria-label="Close"
+          style="color: #FFFFFF;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -1299,29 +1455,38 @@
         <input type="hidden" id="assign-modal-station-id" value="">
 
         <!-- Detected Row / Section Banner -->
-        <div class="assign-section-banner" id="assign-section-banner" style="background: #F0F9FF; border: 1.5px solid #0284C7; border-radius: 4px; padding: 10px 12px; margin-bottom: 12px;">
+        <div class="assign-section-banner" id="assign-section-banner"
+          style="background: #F0F9FF; border: 1.5px solid #0284C7; border-radius: 4px; padding: 10px 12px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-              <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #0369A1; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
+              <span
+                style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #0369A1; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
                 ⚡ Automatic Row / Zone Detection
               </span>
-              <div style="font-size: 14px; font-weight: 900; color: #0C4A6E;" id="assign-modal-station-name">Table 1</div>
+              <div style="font-size: 14px; font-weight: 900; color: #0C4A6E;" id="assign-modal-station-name">Table 1
+              </div>
             </div>
-            <span id="assign-badge-count" style="background: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">6 Tables</span>
+            <span id="assign-badge-count"
+              style="background: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">6
+              Tables</span>
           </div>
-          <div style="font-size: 11.5px; color: #0369A1; margin-top: 4px; font-weight: 600;" id="assign-modal-section-info">
+          <div style="font-size: 11.5px; color: #0369A1; margin-top: 4px; font-weight: 600;"
+            id="assign-modal-section-info">
             Left Dining · Line 1 (Tables 1, 4, 7, 10, 13, 16)
           </div>
         </div>
 
         <!-- Scope Toggle: Row vs Single Table -->
         <div class="form-group" id="assign-scope-wrapper" style="margin-bottom: 14px;">
-          <label class="form-label" style="font-size: 11px; font-weight: 800; margin-bottom: 6px;">Assignment Scope</label>
+          <label class="form-label" style="font-size: 11px; font-weight: 800; margin-bottom: 6px;">Assignment
+            Scope</label>
           <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn-secondary assign-scope-btn active" id="btn-scope-row" style="flex: 1; font-size: 11.5px; font-weight: 800; padding: 8px; border: 1.5px solid #0284C7; background: #F0F9FF; color: #0369A1;">
+            <button type="button" class="btn-secondary assign-scope-btn active" id="btn-scope-row"
+              style="flex: 1; font-size: 11.5px; font-weight: 800; padding: 8px; border: 1.5px solid #0284C7; background: #F0F9FF; color: #0369A1;">
               👥 Entire Row / Section (<span id="scope-row-count">6</span> Tables)
             </button>
-            <button type="button" class="btn-secondary assign-scope-btn" id="btn-scope-single" style="flex: 1; font-size: 11.5px; font-weight: 700; padding: 8px;">
+            <button type="button" class="btn-secondary assign-scope-btn" id="btn-scope-single"
+              style="flex: 1; font-size: 11.5px; font-weight: 700; padding: 8px;">
               🪑 Only <span id="scope-single-name">Table 1</span>
             </button>
           </div>
@@ -1330,11 +1495,13 @@
         <!-- Interactive Waiter Card Grid (1-Click Assignment) -->
         <div class="form-group" style="margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label class="form-label" style="font-size: 11px; font-weight: 800; margin: 0;">Click Any Waiter to Assign Instantly</label>
+            <label class="form-label" style="font-size: 11px; font-weight: 800; margin: 0;">Click Any Waiter to Assign
+              Instantly</label>
             <span style="font-size: 10px; color: #0284C7; font-weight: 700;">⚡ 1-Click Assignment</span>
           </div>
-          
-          <div id="assign-waiter-cards-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; padding-right: 2px;">
+
+          <div id="assign-waiter-cards-list"
+            style="display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; padding-right: 2px;">
             <!-- Dynamically populated waiter cards -->
           </div>
 
@@ -1346,18 +1513,23 @@
 
         <!-- Optional Notes -->
         <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label" for="input-assign-notes" style="font-size: 10px; color: var(--c-gray-dark);">Shift Notes / Reservation (Optional)</label>
-          <input type="text" class="form-input" id="input-assign-notes" placeholder="e.g. VIP Reservation at 19:30" style="font-size: 11px; padding: 6px 10px;">
+          <label class="form-label" for="input-assign-notes" style="font-size: 10px; color: var(--c-gray-dark);">Shift
+            Notes / Reservation (Optional)</label>
+          <input type="text" class="form-input" id="input-assign-notes" placeholder="e.g. VIP Reservation at 19:30"
+            style="font-size: 11px; padding: 6px 10px;">
         </div>
       </div>
 
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
-        <button type="button" class="btn-danger" id="btn-unassign-table" style="font-size: 11px; padding: 7px 12px; font-weight: 700;">
+      <div class="modal-footer"
+        style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
+        <button type="button" class="btn-danger" id="btn-unassign-table"
+          style="font-size: 11px; padding: 7px 12px; font-weight: 700;">
           🗑️ Clear / Unassign
         </button>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn-secondary" id="btn-cancel-table-assign">Cancel</button>
-          <button type="button" class="btn-primary" id="btn-save-table-assign" style="font-size: 11px; padding: 7px 14px; font-weight: 800;">
+          <button type="button" class="btn-primary" id="btn-save-table-assign"
+            style="font-size: 11px; padding: 7px 14px; font-weight: 800;">
             Save Assignment
           </button>
         </div>
@@ -1371,7 +1543,8 @@
       <div class="modal-header">
         <span class="modal-title">MANAGE ALL STATION ASSIGNMENTS</span>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-bulk-assign" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -1386,7 +1559,8 @@
         </div>
       </div>
       <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-        <button type="button" class="btn-secondary" id="btn-auto-assign-roster" style="font-size: 11px;">Auto-Fill from Roster</button>
+        <button type="button" class="btn-secondary" id="btn-auto-assign-roster" style="font-size: 11px;">Auto-Fill from
+          Roster</button>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn-secondary" id="btn-cancel-bulk-assign">Cancel</button>
           <button type="button" class="btn-primary" id="btn-save-bulk-assign">Save All Assignments</button>
@@ -1401,11 +1575,13 @@
       <div class="modal-header" style="background: #075E54; color: #FFFFFF;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
           </svg>
           <span class="modal-title" style="color: #FFFFFF;">SEND FLOOR PLAN TO SUPERVISOR (WHATSAPP)</span>
         </div>
-        <button type="button" class="icon-btn btn-modal-close" id="btn-close-wa-floorplan" aria-label="Close" style="color: #FFFFFF;">
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-wa-floorplan" aria-label="Close"
+          style="color: #FFFFFF;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1416,10 +1592,12 @@
       <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 14px;">
         <!-- Quick Day Selector Buttons -->
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <button type="button" class="btn-secondary" id="btn-wa-select-tomorrow" style="flex: 1; font-weight: 800; font-size: 11px; padding: 8px; border: 1.5px solid #25D366; background: #F0FDF4; color: #166534;">
+          <button type="button" class="btn-secondary" id="btn-wa-select-tomorrow"
+            style="flex: 1; font-weight: 800; font-size: 11px; padding: 8px; border: 1.5px solid #25D366; background: #F0FDF4; color: #166534;">
             📅 Tomorrow (Following Day)
           </button>
-          <button type="button" class="btn-secondary" id="btn-wa-select-today" style="flex: 1; font-weight: 700; font-size: 11px; padding: 8px;">
+          <button type="button" class="btn-secondary" id="btn-wa-select-today"
+            style="flex: 1; font-weight: 700; font-size: 11px; padding: 8px;">
             Today's Plan
           </button>
         </div>
@@ -1432,9 +1610,9 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label" for="wa-floorplan-shift">Shift</label>
             <select class="select-control" id="wa-floorplan-shift">
-              <option value="Morning">Morning (8:00 AM - 4:00 PM)</option>
-              <option value="Evening">Evening (4:00 PM - 12:00 AM)</option>
-              <option value="Night">Night (12:00 AM - 8:00 AM)</option>
+              <option value="Morning">Morning (05:30 - 15:00)</option>
+              <option value="Evening">Evening (11:00 - 23:00)</option>
+              <option value="Night">Night (22:00 - 06:30)</option>
               <option value="Double">Double Shift (Full Day)</option>
             </select>
           </div>
@@ -1442,30 +1620,39 @@
 
         <div class="form-group">
           <label class="form-label" for="wa-supervisor-phone">Supervisor WhatsApp Phone Number</label>
-          <input type="tel" class="form-input" id="wa-supervisor-phone" placeholder="e.g. +254712345678 or 0712345678" style="font-weight: 700;">
-          <span style="font-size: 10px; color: var(--c-gray-dark); margin-top: 2px; display: block;">Saved automatically for next time. Standard or international (+254...) format accepted.</span>
+          <input type="tel" class="form-input" id="wa-supervisor-phone" placeholder="e.g. +254712345678 or 0712345678"
+            style="font-weight: 700;">
+          <span style="font-size: 10px; color: var(--c-gray-dark); margin-top: 2px; display: block;">Saved automatically
+            for next time. Standard or international (+254...) format accepted.</span>
         </div>
 
         <div class="form-group" style="margin-bottom: 0;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <label class="form-label" style="margin: 0;" for="wa-floorplan-preview">Message Preview (Formatted for WhatsApp)</label>
-            <button type="button" class="btn-small btn-secondary" id="btn-wa-copy-text" style="font-size: 10px; padding: 3px 8px;">
+            <label class="form-label" style="margin: 0;" for="wa-floorplan-preview">Message Preview (Formatted for
+              WhatsApp)</label>
+            <button type="button" class="btn-small btn-secondary" id="btn-wa-copy-text"
+              style="font-size: 10px; padding: 3px 8px;">
               📋 Copy Text
             </button>
           </div>
-          <textarea class="form-input" id="wa-floorplan-preview" rows="11" style="font-family: monospace; font-size: 11px; line-height: 1.4; background: #F8FAFC; resize: vertical;" readonly></textarea>
+          <textarea class="form-input" id="wa-floorplan-preview" rows="11"
+            style="font-family: monospace; font-size: 11px; line-height: 1.4; background: #F8FAFC; resize: vertical;"
+            readonly></textarea>
         </div>
       </div>
 
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
+      <div class="modal-footer"
+        style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
         <button type="button" class="btn-secondary" id="btn-cancel-wa-floorplan">Cancel</button>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn-secondary" id="btn-send-wa-api" style="font-size: 11px;">
             🚀 Send via API
           </button>
-          <a href="#" target="_blank" class="btn-primary" id="btn-open-wa-direct" style="background: #25D366; border-color: #128C7E; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+          <a href="#" target="_blank" class="btn-primary" id="btn-open-wa-direct"
+            style="background: #25D366; border-color: #128C7E; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              <path
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
             </svg>
             Open in WhatsApp
           </a>
@@ -1476,7 +1663,8 @@
 
   <!-- Modal 7: Weekly Attendance Register -->
   <div class="modal-overlay" id="modal-week-attendance">
-    <div class="modal-content" style="max-width: 760px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-content"
+      style="max-width: 760px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1488,7 +1676,8 @@
           <span class="modal-title" id="week-modal-title">WEEKLY ATTENDANCE REGISTER</span>
         </div>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-week-attendance-modal" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -1497,13 +1686,15 @@
 
       <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 14px;">
         <!-- Week Navigation Strip -->
-        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--c-navy-primary); color: #fff; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--c-black);">
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; background: var(--c-navy-primary); color: #fff; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--c-black);">
           <button type="button" class="date-nav-btn" id="btn-prev-week" style="padding: 5px 10px; font-size: 11px;">
             &larr; Prev Week
           </button>
           <div style="text-align: center;">
             <div id="week-range-label" style="font-size: 13px; font-weight: 800; letter-spacing: 0.5px;">Week</div>
-            <div style="font-size: 9px; color: var(--c-gray-mid); text-transform: uppercase;">Monday &ndash; Sunday Shift Summary</div>
+            <div style="font-size: 9px; color: var(--c-gray-mid); text-transform: uppercase;">Monday &ndash; Sunday
+              Shift Summary</div>
           </div>
           <button type="button" class="date-nav-btn" id="btn-next-week" style="padding: 5px 10px; font-size: 11px;">
             Next Week &rarr;
@@ -1512,10 +1703,12 @@
 
         <!-- Filter bar in modal -->
         <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
-          <select id="select-week-staff-filter" class="select-control" style="flex: 1; font-size: 11px; padding: 6px 8px;" aria-label="Filter Employee">
+          <select id="select-week-staff-filter" class="select-control"
+            style="flex: 1; font-size: 11px; padding: 6px 8px;" aria-label="Filter Employee">
             <option value="ALL">ALL EMPLOYEES (FULL ROSTER)</option>
           </select>
-          <button type="button" class="btn-small btn-secondary" id="btn-today-week" style="white-space: nowrap; font-size: 10px; font-weight: 800; padding: 6px 10px;">
+          <button type="button" class="btn-small btn-secondary" id="btn-today-week"
+            style="white-space: nowrap; font-size: 10px; font-weight: 800; padding: 6px 10px;">
             Current Week
           </button>
         </div>
@@ -1541,21 +1734,25 @@
         </div>
 
         <!-- Table Container -->
-        <div class="matrix-scroll-wrapper" id="week-attendance-table-container" style="max-height: 420px; overflow: auto; border: 1px solid var(--c-gray-border);">
+        <div class="matrix-scroll-wrapper" id="week-attendance-table-container"
+          style="max-height: 420px; overflow: auto; border: 1px solid var(--c-gray-border);">
           <!-- Dynamically populated weekly matrix table -->
         </div>
 
-        <p style="font-size: 10px; color: var(--c-gray-dark); margin-top: 8px; text-transform: uppercase; font-weight: 700;">
-          Legend: 
-          <span style="color: var(--c-navy-primary);">[P] Present</span> | 
-          <span style="color: var(--c-status-absent-bg);">[A] Absent</span> | 
-          <span style="color: var(--c-status-late-bg);">[L] Late</span> | 
+        <p
+          style="font-size: 10px; color: var(--c-gray-dark); margin-top: 8px; text-transform: uppercase; font-weight: 700;">
+          Legend:
+          <span style="color: var(--c-navy-primary);">[P] Present</span> |
+          <span style="color: var(--c-status-absent-bg);">[A] Absent</span> |
+          <span style="color: var(--c-status-late-bg);">[L] Late</span> |
           <span style="color: var(--c-status-off-bg);">[O] Off</span>
         </p>
       </div>
 
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--c-gray-light); border-top: 1px solid var(--c-gray-border);">
-        <button type="button" class="btn-secondary" id="btn-jump-to-monthly" style="font-size: 11px; padding: 8px 12px;">
+      <div class="modal-footer"
+        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--c-gray-light); border-top: 1px solid var(--c-gray-border);">
+        <button type="button" class="btn-secondary" id="btn-jump-to-monthly"
+          style="font-size: 11px; padding: 8px 12px;">
           🗓️ Open Full Monthly Register
         </button>
         <button type="button" class="btn-primary" id="btn-print-week-modal" style="font-size: 11px; padding: 8px 14px;">
@@ -1567,19 +1764,31 @@
 
   <!-- Modal 8: Shift Handover Report -->
   <div class="modal-overlay" id="modal-shift-handover">
-    <div class="modal-content" style="max-width: 680px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
-      <div class="modal-header" style="background: linear-gradient(135deg, #0A2540 0%, #061527 100%); border-bottom: 2px solid #F59E0B; padding: 14px 16px;">
+    <div class="modal-content"
+      style="max-width: 680px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header"
+        style="background: linear-gradient(135deg, #0A2540 0%, #061527 100%); border-bottom: 2px solid #F59E0B; padding: 14px 16px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center; border-radius: 4px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <div
+            style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
           </div>
           <div>
-            <span class="modal-title" style="font-size: 13.5px; font-weight: 800; letter-spacing: 0.8px; color: #FFFFFF; text-transform: uppercase;">SHIFT HANDOVER REPORT</span>
-            <div style="font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 0.5px;">RIBHOUSE RESTAURANT &bull; REF: <span id="cert-doc-ref">HO-2026-X89</span></div>
+            <span class="modal-title"
+              style="font-size: 13.5px; font-weight: 800; letter-spacing: 0.8px; color: #FFFFFF; text-transform: uppercase;">SHIFT
+              HANDOVER REPORT</span>
+            <div style="font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 0.5px;">RIBHOUSE RESTAURANT
+              &bull; REF: <span id="cert-doc-ref">HO-2026-X89</span></div>
           </div>
         </div>
         <button type="button" class="icon-btn btn-modal-close" id="btn-close-shift-handover" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="square">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -1588,7 +1797,8 @@
 
       <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 16px;">
         <!-- Shift Handover Metadata Strip -->
-        <div class="cert-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px;">
+        <div class="cert-meta-grid"
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px;">
           <div>
             <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Shift Date</div>
             <div id="cert-shift-date" style="font-size: 12px; font-weight: 800; color: #0A2540;">Today</div>
@@ -1598,7 +1808,8 @@
             <div id="cert-shift-name" style="font-size: 12px; font-weight: 800; color: #0A2540;">Morning Shift</div>
           </div>
           <div>
-            <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Handover Manager</div>
+            <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">Handover Manager
+            </div>
             <div id="cert-manager-name" style="font-size: 12px; font-weight: 800; color: #0A2540;">Duty Manager</div>
           </div>
           <div>
@@ -1609,9 +1820,12 @@
 
         <!-- Attendance Summary -->
         <div style="margin-bottom: 14px;">
-          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0A2540; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+          <div
+            style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0A2540; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
             <span>Staff Attendance Summary</span>
-            <span id="cert-turnout-pill" style="background: #0A2540; color: #fff; font-size: 10px; padding: 2px 6px; font-weight: 800;">Turnout: 0%</span>
+            <span id="cert-turnout-pill"
+              style="background: #0A2540; color: #fff; font-size: 10px; padding: 2px 6px; font-weight: 800;">Turnout:
+              0%</span>
           </div>
           <div class="metrics-strip" style="margin-bottom: 0;">
             <div class="metric-card present">
@@ -1635,7 +1849,8 @@
 
         <!-- Station Allocation Checklist -->
         <div style="margin-bottom: 14px; border: 1px solid #E2E8F0; padding: 10px; background: #FFFFFF;">
-          <div style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0A2540; margin-bottom: 8px;">
+          <div
+            style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0A2540; margin-bottom: 8px;">
             Key Department Staffing Coverage Checklist
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
@@ -1656,35 +1871,51 @@
 
         <!-- Handover Notes -->
         <div style="margin-bottom: 14px;">
-          <label for="cert-handover-notes" style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: #0A2540; display: block; margin-bottom: 4px;">
+          <label for="cert-handover-notes"
+            style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: #0A2540; display: block; margin-bottom: 4px;">
             Duty Manager Handover Notes & Shift Log
           </label>
-          <textarea id="cert-handover-notes" class="form-input" rows="3" placeholder="Enter handover notes for incoming manager (e.g. VIP booking at Table 12 at 7pm, cash drawer balanced, stock replenishment status)..." style="width: 100%; font-family: var(--font-family); font-size: 11.5px; line-height: 1.4; resize: vertical;"></textarea>
+          <textarea id="cert-handover-notes" class="form-input" rows="3"
+            placeholder="Enter handover notes for incoming manager (e.g. VIP booking at Table 12 at 7pm, cash drawer balanced, stock replenishment status)..."
+            style="width: 100%; font-family: var(--font-family); font-size: 11.5px; line-height: 1.4; resize: vertical;"></textarea>
         </div>
 
         <!-- Handover Confirmation Footer Strip -->
-        <div class="cert-seal-block" style="border: 1px solid #E2E8F0; background: #F8FAFC; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <div class="cert-seal-block"
+          style="border: 1px solid #E2E8F0; background: #F8FAFC; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
           <div>
             <div style="font-size: 11px; font-weight: 700; color: #0F172A;">Shift Handover Record</div>
             <div id="cert-timestamp-seal" style="font-size: 10px; color: #64748B;">Ready for next shift supervisor</div>
           </div>
-          <div id="cert-stamp-badge" style="background: #059669; color: #fff; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 3px;">
+          <div id="cert-stamp-badge"
+            style="background: #059669; color: #fff; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 3px;">
             READY
           </div>
         </div>
       </div>
 
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #F8FAFC; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 8px;">
-        <button type="button" class="btn-secondary" id="btn-certify-print" style="font-size: 11px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 5px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      <div class="modal-footer"
+        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #F8FAFC; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 8px;">
+        <button type="button" class="btn-secondary" id="btn-certify-print"
+          style="font-size: 11px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
           Print Handover Summary
         </button>
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn-secondary" id="btn-certify-whatsapp" style="font-size: 11px; padding: 8px 12px; background: #25D366; color: #fff; border-color: #128C7E; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <button type="button" class="btn-secondary" id="btn-certify-whatsapp"
+            style="font-size: 11px; padding: 8px 12px; background: #25D366; color: #fff; border-color: #128C7E; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
             Send via WhatsApp
           </button>
-          <button type="button" class="btn-primary" id="btn-certify-complete" style="font-size: 11px; padding: 8px 16px;">
+          <button type="button" class="btn-primary" id="btn-certify-complete"
+            style="font-size: 11px; padding: 8px 16px;">
             Complete Handover
           </button>
         </div>
@@ -1692,6 +1923,187 @@
     </div>
   </div>
 
-  <script src="app.js?v=3.7"></script>
+  <!-- Modal: Registered Accounts Directory & Multi-Account Management -->
+  <div class="modal-overlay" id="modal-accounts">
+    <div class="modal-content" style="max-width: 680px;">
+      <div class="modal-header" style="background: var(--c-navy-primary); color: #FFFFFF;">
+        <div>
+          <span class="modal-title" style="color: #FFFFFF;">ACCOUNTS DIRECTORY & DETAILS</span>
+          <div style="font-size: 10px; opacity: 0.8; margin-top: 2px;">Manage accounts, branch divisions, and staff roster assignments</div>
+        </div>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-accounts-modal" aria-label="Close" style="color: #FFFFFF;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 14px; max-height: 75vh; overflow-y: auto;">
+        
+        <!-- Top Action & Search Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+          <input type="text" class="form-input" id="search-accounts-input" placeholder="Search accounts by ID, name, or branch..." style="flex: 1; min-width: 200px;">
+          <button type="button" class="btn-primary" id="btn-toggle-add-account" style="white-space: nowrap; font-size: 11px;">
+            + Register New Account
+          </button>
+        </div>
+
+        <!-- Inline Add / Edit Account Form (Hidden by default) -->
+        <form id="form-account-upsert" style="display: none; background: var(--c-gray-light); border: 1.5px solid var(--c-navy-primary); padding: 14px; margin-bottom: 14px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); margin-bottom: 10px;" id="account-form-header-title">
+            Register New Account
+          </div>
+          <div id="account-form-error" style="display: none; background: #FEE2E2; border-left: 3px solid #DC2626; color: #991B1B; padding: 6px 10px; font-size: 11px; margin-bottom: 10px; font-weight: 700;"></div>
+          <input type="hidden" id="account-form-mode" value="create">
+          
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 8px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="account-input-id">Account ID *</label>
+              <input type="text" class="form-input" id="account-input-id" placeholder="e.g. ACC-003" style="font-weight: 800;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="account-input-name">Account / Business Name *</label>
+              <input type="text" class="form-input" id="account-input-name" required placeholder="e.g. Banquets & Private Dining">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="account-input-branch">Branch / Service Section</label>
+              <input type="text" class="form-input" id="account-input-branch" placeholder="e.g. West Wing Terrace">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="account-input-status">Status</label>
+              <select class="select-control" id="account-input-status" style="width: 100%;">
+                <option value="Active" selected>Active</option>
+                <option value="Inactive">Inactive / Suspended</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="account-input-email">Contact Email</label>
+              <input type="email" class="form-input" id="account-input-email" placeholder="manager@account.com">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="account-input-phone">Contact Phone</label>
+              <input type="tel" class="form-input" id="account-input-phone" placeholder="+254 700 000000">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" for="account-input-desc">Description / Operational Notes</label>
+            <input type="text" class="form-input" id="account-input-desc" placeholder="Special requirements, station responsibilities, or coverage terms">
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn-secondary" id="btn-cancel-account-form">Cancel</button>
+            <button type="submit" class="btn-primary" id="btn-save-account-record">Save Account</button>
+          </div>
+        </form>
+
+        <!-- Accounts Overview Cards List -->
+        <div id="accounts-cards-list">
+          <!-- Populated dynamically with account cards -->
+        </div>
+
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
+        <span style="font-size: 11px; color: var(--c-gray-dark); font-weight: 700;" id="accounts-modal-count-label">Loading accounts...</span>
+        <button type="button" class="btn-secondary btn-modal-close" id="btn-dismiss-accounts-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Specific Account Details & Assigned Staff Roster -->
+  <div class="modal-overlay" id="modal-account-details">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header" style="background: var(--c-navy-primary); color: #FFFFFF;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="modal-title" id="account-details-modal-title" style="color: #FFFFFF;">ACCOUNT DETAILS</span>
+          <span class="account-id-badge" id="account-details-badge" style="background: #FFFFFF; color: var(--c-navy-primary);">ACC-001</span>
+        </div>
+        <button type="button" class="icon-btn btn-modal-close" id="btn-close-account-details" aria-label="Close" style="color: #FFFFFF;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 14px; max-height: 75vh; overflow-y: auto;">
+
+        <!-- Account Profile Details Grid -->
+        <div class="account-detail-grid" id="account-detail-grid">
+          <div class="account-detail-item">
+            <span class="account-detail-label">Account Name</span>
+            <span class="account-detail-val" id="ad-name">--</span>
+          </div>
+          <div class="account-detail-item">
+            <span class="account-detail-label">Branch / Division</span>
+            <span class="account-detail-val" id="ad-branch">--</span>
+          </div>
+          <div class="account-detail-item">
+            <span class="account-detail-label">Contact Email</span>
+            <span class="account-detail-val" id="ad-email">--</span>
+          </div>
+          <div class="account-detail-item">
+            <span class="account-detail-label">Contact Phone</span>
+            <span class="account-detail-val" id="ad-phone">--</span>
+          </div>
+          <div class="account-detail-item">
+            <span class="account-detail-label">Total Assigned Staff</span>
+            <span class="account-detail-val" id="ad-staff-count" style="color: #2563EB;">0 Staff</span>
+          </div>
+          <div class="account-detail-item">
+            <span class="account-detail-label">Status</span>
+            <span class="account-detail-val" id="ad-status">Active</span>
+          </div>
+          <div class="account-detail-item" style="grid-column: 1 / -1;">
+            <span class="account-detail-label">Operational Notes</span>
+            <span class="account-detail-val" id="ad-desc" style="font-weight: 500; font-size: 11px;">--</span>
+          </div>
+        </div>
+
+        <!-- Assigned Staff List Header & Table -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: var(--c-navy-primary); letter-spacing: 0.5px;">
+            Assigned Waitstaff for this Account
+          </span>
+          <button type="button" class="btn-small btn-primary" id="btn-add-staff-to-this-account" style="font-size: 10px;">
+            + Add Staff to this Account
+          </button>
+        </div>
+
+        <div style="border: 1px solid var(--c-gray-border); max-height: 260px; overflow-y: auto; margin-bottom: 10px;">
+          <table class="matrix-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>CODE</th>
+                <th>WAITER NAME</th>
+                <th>STATION</th>
+                <th>SHIFT</th>
+                <th>PHONE</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="account-details-staff-tbody">
+              <!-- Populated dynamically with staff rows -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-top: 1px solid var(--c-gray-border); padding: 10px 14px;">
+        <button type="button" class="btn-primary" id="btn-filter-directory-by-this-account" style="font-size: 11px; background: #2563EB; border-color: #1D4ED8;">
+          📋 View in Staff Directory (Filter This Account)
+        </button>
+        <button type="button" class="btn-secondary" id="btn-dismiss-account-details">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=3.8"></script>
 </body>
+
 </html>

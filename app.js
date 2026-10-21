@@ -120,16 +120,22 @@
     }, 100);
   }
 
+  // Initial Accounts
+  const INITIAL_ACCOUNTS = [
+    { id: 'ACC-001', name: 'Mark Karanja (Main Floor)', branch: 'Executive Main Lounge', email: 'markkaranja124@gmail.com', phone: '+254 700 000001', status: 'Active', description: 'Primary restaurant service and main dining operations' },
+    { id: 'ACC-002', name: 'George Wanyoike (VIP & Terrace)', branch: 'Terrace & VIP Section', email: 'maigogeorge20@gmail.com', phone: '+254 700 000002', status: 'Active', description: 'Executive private lounge and outdoor terrace' }
+  ];
+
   // Initial Sample Data for Instant Ready-to-Use Experience
   const INITIAL_STAFF = [
-    { id: 'st_101', code: 'W-101', name: 'Marcus Vance', station: 'Section A - Front', shift: 'Morning', phone: '+1 (555) 012-8811', active: true },
-    { id: 'st_102', code: 'W-102', name: 'Elena Rostova', station: 'Main Dining Floor', shift: 'Morning', phone: '+1 (555) 014-9922', active: true },
-    { id: 'st_103', code: 'W-103', name: 'David Kim', station: 'VIP Lounge / Private', shift: 'Evening', phone: '+1 (555) 017-3344', active: true },
-    { id: 'st_104', code: 'W-104', name: 'Sophie Laurent', station: 'Terrace & Patio', shift: 'Evening', phone: '+1 (555) 019-5566', active: true },
-    { id: 'st_105', code: 'W-105', name: 'Tariq Al-Mansoor', station: 'Main Dining Floor', shift: 'Night', phone: '+1 (555) 011-7788', active: true },
-    { id: 'st_106', code: 'W-106', name: 'Chloe Bennett', station: 'Bar & Cocktail Area', shift: 'Night', phone: '+1 (555) 013-4411', active: true },
-    { id: 'st_107', code: 'W-107', name: 'Lucas Silva', station: 'Section B Floor', shift: 'Double', phone: '+1 (555) 016-2233', active: true },
-    { id: 'st_108', code: 'W-108', name: 'Maya Patel', station: 'Section C Floor', shift: 'Morning', phone: '+1 (555) 018-6677', active: true }
+    { id: 'st_101', accountId: 'ACC-001', code: 'W-101', name: 'Marcus Vance', station: 'Section A - Front', shift: 'Morning', phone: '+1 (555) 012-8811', active: true },
+    { id: 'st_102', accountId: 'ACC-001', code: 'W-102', name: 'Elena Rostova', station: 'Main Dining Floor', shift: 'Morning', phone: '+1 (555) 014-9922', active: true },
+    { id: 'st_103', accountId: 'ACC-001', code: 'W-103', name: 'David Kim', station: 'VIP Lounge / Private', shift: 'Evening', phone: '+1 (555) 017-3344', active: true },
+    { id: 'st_104', accountId: 'ACC-001', code: 'W-104', name: 'Sophie Laurent', station: 'Terrace & Patio', shift: 'Evening', phone: '+1 (555) 019-5566', active: true },
+    { id: 'st_105', accountId: 'ACC-002', code: 'W-105', name: 'Tariq Al-Mansoor', station: 'Main Dining Floor', shift: 'Night', phone: '+1 (555) 011-7788', active: true },
+    { id: 'st_106', accountId: 'ACC-002', code: 'W-106', name: 'Chloe Bennett', station: 'Bar & Cocktail Area', shift: 'Night', phone: '+1 (555) 013-4411', active: true },
+    { id: 'st_107', accountId: 'ACC-002', code: 'W-107', name: 'Lucas Silva', station: 'Section B Floor', shift: 'Double', phone: '+1 (555) 016-2233', active: true },
+    { id: 'st_108', accountId: 'ACC-002', code: 'W-108', name: 'Maya Patel', station: 'Section C Floor', shift: 'Morning', phone: '+1 (555) 018-6677', active: true }
   ];
 
   const INITIAL_REMINDERS = [
@@ -195,6 +201,9 @@
 
   // Application State
   const AppState = {
+    accounts: [],
+    selectedAccountFilter: 'ALL',
+    accountSearchQuery: '',
     staff: [],
     attendance: {},
     settings: {
@@ -222,7 +231,8 @@
       id: '',
       name: 'Manager',
       email: '',
-      initials: 'G',
+      initials: 'MK',
+      accountId: 'ACC-001',
       avatar: null
     },
     floorPlanDate: new Date().toISOString().split('T')[0],
@@ -239,9 +249,12 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
+        AppState.accounts = parsed.accounts || INITIAL_ACCOUNTS;
         AppState.staff = parsed.staff || INITIAL_STAFF;
         AppState.staff.forEach(s => {
           if (!s.shift) s.shift = 'Morning';
+          if (!s.accountId && !s.account_id) s.accountId = 'ACC-001';
+          else if (s.account_id && !s.accountId) s.accountId = s.account_id;
         });
         AppState.attendance = parsed.attendance || {};
         AppState.settings = parsed.settings || AppState.settings;
@@ -251,6 +264,7 @@
           AppState.security.autoLockMinutes = parsed.security.autoLockMinutes !== undefined ? parsed.security.autoLockMinutes : 5;
         }
       } else {
+        AppState.accounts = INITIAL_ACCOUNTS;
         AppState.staff = INITIAL_STAFF;
         AppState.attendance = generateInitialAttendance();
         AppState.reminders = INITIAL_REMINDERS;
@@ -262,6 +276,9 @@
         const rawMgr = localStorage.getItem(MANAGER_INFO_KEY);
         if (rawMgr) {
           AppState.manager = Object.assign(AppState.manager, JSON.parse(rawMgr));
+          if (AppState.manager.accountId) {
+            AppState.selectedAccountFilter = AppState.manager.accountId;
+          }
         }
         const cachedAvatar = localStorage.getItem(AVATAR_KEY);
         if (cachedAvatar) {
@@ -271,7 +288,8 @@
 
         const managerIndicator = document.getElementById('manager-session-indicator');
         if (managerIndicator && AppState.manager.email) {
-          managerIndicator.textContent = `Manager: ${AppState.manager.email}`;
+          const displayName = AppState.manager.name || AppState.manager.email.split('@')[0];
+          managerIndicator.textContent = `Duty Manager: ${displayName}`;
         }
       } catch (err) {}
     } catch (e) {
@@ -292,9 +310,16 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.state) {
+          if (Array.isArray(data.state.accounts) && data.state.accounts.length > 0) {
+            AppState.accounts = data.state.accounts;
+          }
           if (Array.isArray(data.state.staff) && data.state.staff.length > 0) {
             AppState.staff = data.state.staff;
           }
+          AppState.staff.forEach(s => {
+            if (!s.accountId && s.account_id) s.accountId = s.account_id;
+            if (!s.accountId) s.accountId = 'ACC-001';
+          });
           if (data.state.attendance) {
             AppState.attendance = data.state.attendance;
           }
@@ -315,14 +340,27 @@
               name: data.manager.name || 'Manager',
               email: data.manager.email || '',
               initials: initials,
+              accountId: data.manager.accountId || '',
               avatar: avatar
             };
+
+            // Set account filter to manager's assigned account if specified
+            if (data.manager.accountId) {
+              AppState.selectedAccountFilter = data.manager.accountId;
+            } else if (AppState.manager.id && Array.isArray(AppState.accounts)) {
+              const matchedAcc = AppState.accounts.find(a => a.manager_id === AppState.manager.id || a.managerId === AppState.manager.id);
+              if (matchedAcc) {
+                AppState.selectedAccountFilter = matchedAcc.id;
+                AppState.manager.accountId = matchedAcc.id;
+              }
+            }
 
             localStorage.setItem(MANAGER_INFO_KEY, JSON.stringify({
               id: AppState.manager.id,
               name: AppState.manager.name,
               email: AppState.manager.email,
-              initials: AppState.manager.initials
+              initials: AppState.manager.initials,
+              accountId: AppState.manager.accountId
             }));
 
             if (avatar) {
@@ -343,12 +381,22 @@
             const emailEl = document.getElementById('settings-manager-email');
             if (nameEl) nameEl.textContent = AppState.manager.name;
             if (emailEl) emailEl.textContent = AppState.manager.email;
+
+            // Also update executive dropdown elements
+            const dpNameEl = document.getElementById('mp-dropdown-name');
+            const dpEmailEl = document.getElementById('mp-dropdown-email');
+            const dpInitialsEl = document.getElementById('mp-dropdown-initials');
+            if (dpNameEl) dpNameEl.textContent = AppState.manager.name;
+            if (dpEmailEl) dpEmailEl.textContent = AppState.manager.email;
+            if (dpInitialsEl) dpInitialsEl.textContent = AppState.manager.initials;
           }
 
           cleanOrphanAttendance();
+          updateAccountSelectors();
 
           // Persist to local cache and re-render views
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            accounts: AppState.accounts,
             staff: AppState.staff,
             attendance: AppState.attendance,
             settings: AppState.settings,
@@ -379,6 +427,385 @@
         });
       }
     });
+  }
+
+  // =========================================================================
+  // ACCOUNTS & MULTI-ACCOUNT MANAGEMENT
+  // =========================================================================
+
+  // Synchronize all account dropdown filters and select controls
+  function updateAccountSelectors() {
+    const dailySel = document.getElementById('select-daily-account-filter');
+    const staffSel = document.getElementById('select-staff-account-filter');
+    const summarySel = document.getElementById('select-summary-account-filter');
+    const formStaffSel = document.getElementById('staff-input-account');
+
+    const accounts = (AppState.accounts && AppState.accounts.length > 0) ? AppState.accounts : INITIAL_ACCOUNTS;
+
+    // 1. Build filter options: "ALL" + each account
+    let filterOptionsHtml = '<option value="ALL">All Accounts (All Staff)</option>';
+    accounts.forEach(a => {
+      const isSel = AppState.selectedAccountFilter === a.id ? 'selected' : '';
+      filterOptionsHtml += `<option value="${escapeHtml(a.id)}" ${isSel}>${escapeHtml(a.id)} · ${escapeHtml(a.name)}</option>`;
+    });
+
+    if (dailySel) {
+      dailySel.innerHTML = filterOptionsHtml;
+      dailySel.value = AppState.selectedAccountFilter;
+    }
+    if (staffSel) {
+      staffSel.innerHTML = filterOptionsHtml;
+      staffSel.value = AppState.selectedAccountFilter;
+    }
+    if (summarySel) {
+      summarySel.innerHTML = filterOptionsHtml;
+      summarySel.value = AppState.selectedAccountFilter;
+    }
+
+    // 2. Build form select options (must be a valid account ID, cannot be ALL)
+    if (formStaffSel) {
+      const curFormVal = formStaffSel.value;
+      let formOptionsHtml = '';
+      accounts.forEach((a, idx) => {
+        const isSel = (curFormVal === a.id || (!curFormVal && idx === 0)) ? 'selected' : '';
+        formOptionsHtml += `<option value="${escapeHtml(a.id)}" ${isSel}>${escapeHtml(a.id)} · ${escapeHtml(a.name)} (${escapeHtml(a.branch || 'Main')})</option>`;
+      });
+      formStaffSel.innerHTML = formOptionsHtml;
+    }
+  }
+
+  // Update global account filter and re-render all views
+  function setAccountFilter(accountId) {
+    AppState.selectedAccountFilter = accountId || 'ALL';
+    updateAccountSelectors();
+
+    renderDailyView();
+    renderStaffDirectory();
+    renderMonthlyMatrix();
+    renderAbsenteeReport();
+
+    if (AppState.selectedAccountFilter === 'ALL') {
+      showToast('Viewing staff across all accounts.');
+    } else {
+      const found = AppState.accounts.find(a => a.id === AppState.selectedAccountFilter);
+      const accName = found ? found.name : AppState.selectedAccountFilter;
+      showToast(`Filtered to Account: ${AppState.selectedAccountFilter} (${accName})`);
+    }
+  }
+
+  // Fetch accounts from API
+  async function fetchAccounts() {
+    try {
+      const res = await fetch('/api/accounts');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.accounts)) {
+          AppState.accounts = data.accounts;
+          updateAccountSelectors();
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch accounts from server:', e);
+    }
+  }
+
+  // Render accounts list in Accounts Directory Modal
+  function renderAccountsModalList() {
+    const container = document.getElementById('accounts-cards-list');
+    const countLabel = document.getElementById('accounts-modal-count-label');
+    if (!container) return;
+
+    const query = (AppState.accountSearchQuery || '').toLowerCase().trim();
+    const accounts = (AppState.accounts && AppState.accounts.length > 0) ? AppState.accounts : INITIAL_ACCOUNTS;
+
+    const filtered = accounts.filter(a =>
+      a.id.toLowerCase().includes(query) ||
+      a.name.toLowerCase().includes(query) ||
+      (a.branch && a.branch.toLowerCase().includes(query)) ||
+      (a.email && a.email.toLowerCase().includes(query))
+    );
+
+    if (countLabel) {
+      countLabel.textContent = `Showing ${filtered.length} of ${accounts.length} registered accounts`;
+    }
+
+    container.innerHTML = '';
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="background:#fff; border:1px solid var(--c-gray-border); padding:24px; text-align:center; color:var(--c-gray-dark); font-weight:700; font-size:12px; text-transform:uppercase;">
+          No accounts found matching search.
+        </div>`;
+      return;
+    }
+
+    filtered.forEach(acc => {
+      // Calculate dynamic staff metrics for this account
+      const staffForAcc = AppState.staff.filter(s => (s.accountId || s.account_id || 'ACC-001') === acc.id);
+      const totalStaff = staffForAcc.length;
+      const activeStaff = staffForAcc.filter(s => s.active).length;
+
+      const dateKey = formatDateKey(AppState.currentDate);
+      let presentCount = 0;
+      staffForAcc.filter(s => s.active).forEach(s => {
+        const rec = getStaffAttendance(dateKey, s.id);
+        if (rec.status === 'P') presentCount++;
+      });
+      const turnoutRate = activeStaff > 0 ? Math.round((presentCount / activeStaff) * 100) : 0;
+
+      const card = document.createElement('div');
+      card.className = 'account-card';
+      const isFilteredActive = AppState.selectedAccountFilter === acc.id;
+
+      card.innerHTML = `
+        <div class="account-card-header">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="account-id-badge" style="background:var(--c-navy-primary); color:#FFFFFF; border-color:var(--c-navy-dark);">${escapeHtml(acc.id)}</span>
+              <span class="account-card-title">${escapeHtml(acc.name)}</span>
+              <span class="${acc.status === 'Inactive' ? 'account-status-inactive' : 'account-status-active'}">${escapeHtml(acc.status || 'Active')}</span>
+              ${isFilteredActive ? '<span style="background:#2563EB; color:#fff; font-size:9px; font-weight:800; padding:2px 6px;">CURRENT FILTER</span>' : ''}
+            </div>
+            <div class="account-card-branch">Branch / Station: <strong>${escapeHtml(acc.branch || 'Main Branch')}</strong></div>
+          </div>
+          <div style="font-size:11px; color:var(--c-gray-dark); text-align:right;">
+            <div>${escapeHtml(acc.email || '')}</div>
+            <div style="font-weight:600;">${escapeHtml(acc.phone || '')}</div>
+          </div>
+        </div>
+
+        <div class="account-card-metrics">
+          <div class="account-metric-item">
+            <div class="account-metric-val">${totalStaff}</div>
+            <div class="account-metric-lbl">Total Staff</div>
+          </div>
+          <div class="account-metric-item">
+            <div class="account-metric-val" style="color:#059669;">${activeStaff}</div>
+            <div class="account-metric-lbl">Active Roster</div>
+          </div>
+          <div class="account-metric-item">
+            <div class="account-metric-val" style="color:#2563EB;">${turnoutRate}%</div>
+            <div class="account-metric-lbl">Today's Turnout</div>
+          </div>
+        </div>
+
+        ${acc.description ? `<p style="font-size:11px; color:var(--c-gray-dark); margin-bottom:10px; line-height:1.3;">${escapeHtml(acc.description)}</p>` : ''}
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-top:1px solid #E2E8F0; padding-top:8px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-small btn-primary btn-inspect-account" data-id="${acc.id}">
+              🔍 View Details & Staff Roster
+            </button>
+            <button type="button" class="btn-small btn-secondary btn-apply-account-filter" data-id="${acc.id}" style="${isFilteredActive ? 'background:#DBEAFE; color:#1D4ED8; font-weight:800;' : ''}">
+              📋 ${isFilteredActive ? '✓ Currently Filtered' : 'Filter Staff to this Account'}
+            </button>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn-small btn-secondary btn-edit-account" data-id="${acc.id}">✏️ Edit</button>
+            ${acc.id !== 'ACC-001' ? `<button type="button" class="btn-small btn-danger btn-delete-account" data-id="${acc.id}">Delete</button>` : ''}
+          </div>
+        </div>
+      `;
+
+      // Event: View details
+      card.querySelector('.btn-inspect-account').addEventListener('click', () => {
+        openAccountDetailsModal(acc.id);
+      });
+
+      // Event: Apply filter
+      card.querySelector('.btn-apply-account-filter').addEventListener('click', () => {
+        setAccountFilter(acc.id);
+        closeAccountsModal();
+        navigateToTab('view-staff');
+      });
+
+      // Event: Edit account
+      card.querySelector('.btn-edit-account').addEventListener('click', () => {
+        populateAccountFormForEdit(acc);
+      });
+
+      // Event: Delete account
+      const btnDel = card.querySelector('.btn-delete-account');
+      if (btnDel) {
+        btnDel.addEventListener('click', async () => {
+          if (confirm(`Delete account "${acc.name}" (${acc.id})? Any staff assigned will be reassigned to ACC-001.`)) {
+            try {
+              const res = await fetch(`/api/accounts/${encodeURIComponent(acc.id)}`, { method: 'DELETE' });
+              const data = await res.json();
+              if (data.success) {
+                // Update local state
+                AppState.accounts = AppState.accounts.filter(a => a.id !== acc.id);
+                AppState.staff.forEach(s => {
+                  if ((s.accountId || s.account_id) === acc.id) {
+                    s.accountId = 'ACC-001';
+                    s.account_id = 'ACC-001';
+                  }
+                });
+                if (AppState.selectedAccountFilter === acc.id) {
+                  AppState.selectedAccountFilter = 'ALL';
+                }
+                saveState();
+                updateAccountSelectors();
+                renderAccountsModalList();
+                renderStaffDirectory();
+                renderDailyView();
+                showToast(data.message || 'Account deleted.');
+              } else {
+                showToast(data.message || 'Could not delete account.');
+              }
+            } catch (err) {
+              showToast('Network error deleting account.');
+            }
+          }
+        });
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  function openAccountsModal() {
+    const modal = document.getElementById('modal-accounts');
+    if (!modal) return;
+    fetchAccounts().then(() => {
+      renderAccountsModalList();
+    });
+    modal.classList.add('active');
+  }
+
+  function closeAccountsModal() {
+    const modal = document.getElementById('modal-accounts');
+    if (modal) modal.classList.remove('active');
+  }
+
+  // Populate Add/Edit Account form
+  function populateAccountFormForEdit(acc) {
+    const form = document.getElementById('form-account-upsert');
+    const headerTitle = document.getElementById('account-form-header-title');
+    const modeInput = document.getElementById('account-form-mode');
+    const idInput = document.getElementById('account-input-id');
+    const nameInput = document.getElementById('account-input-name');
+    const branchInput = document.getElementById('account-input-branch');
+    const statusInput = document.getElementById('account-input-status');
+    const emailInput = document.getElementById('account-input-email');
+    const phoneInput = document.getElementById('account-input-phone');
+    const descInput = document.getElementById('account-input-desc');
+
+    if (!form) return;
+    form.style.display = 'block';
+    if (headerTitle) headerTitle.textContent = `Edit Account: ${acc.name} (${acc.id})`;
+    if (modeInput) modeInput.value = 'edit';
+    if (idInput) {
+      idInput.value = acc.id;
+      idInput.readOnly = true;
+    }
+    if (nameInput) nameInput.value = acc.name || '';
+    if (branchInput) branchInput.value = acc.branch || '';
+    if (statusInput) statusInput.value = acc.status || 'Active';
+    if (emailInput) emailInput.value = acc.email || '';
+    if (phoneInput) phoneInput.value = acc.phone || '';
+    if (descInput) descInput.value = acc.description || '';
+
+    form.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // Open Detailed Modal for a single account with its staff roster
+  function openAccountDetailsModal(accId) {
+    const modal = document.getElementById('modal-account-details');
+    if (!modal) return;
+
+    const acc = AppState.accounts.find(a => a.id === accId) || INITIAL_ACCOUNTS.find(a => a.id === accId) || {
+      id: accId,
+      name: 'Account ' + accId,
+      branch: 'Main Operations',
+      email: '',
+      phone: '',
+      status: 'Active',
+      description: ''
+    };
+
+    const titleEl = document.getElementById('account-details-modal-title');
+    const badgeEl = document.getElementById('account-details-badge');
+    const nameEl = document.getElementById('ad-name');
+    const branchEl = document.getElementById('ad-branch');
+    const emailEl = document.getElementById('ad-email');
+    const phoneEl = document.getElementById('ad-phone');
+    const staffCountEl = document.getElementById('ad-staff-count');
+    const statusEl = document.getElementById('ad-status');
+    const descEl = document.getElementById('ad-desc');
+    const tbody = document.getElementById('account-details-staff-tbody');
+    const btnFilterThis = document.getElementById('btn-filter-directory-by-this-account');
+    const btnAddStaffToAcc = document.getElementById('btn-add-staff-to-this-account');
+
+    if (titleEl) titleEl.textContent = `ACCOUNT: ${acc.name.toUpperCase()}`;
+    if (badgeEl) badgeEl.textContent = acc.id;
+    if (nameEl) nameEl.textContent = acc.name;
+    if (branchEl) branchEl.textContent = acc.branch || 'Main Branch';
+    if (emailEl) emailEl.textContent = acc.email || 'N/A';
+    if (phoneEl) phoneEl.textContent = acc.phone || 'N/A';
+    if (statusEl) statusEl.textContent = acc.status || 'Active';
+    if (descEl) descEl.textContent = acc.description || 'No special operational instructions recorded.';
+
+    // Populate staff roster belonging to this account
+    const staffForAcc = AppState.staff.filter(s => (s.accountId || s.account_id || 'ACC-001') === acc.id);
+    if (staffCountEl) {
+      const activeCount = staffForAcc.filter(s => s.active).length;
+      staffCountEl.textContent = `${staffForAcc.length} Total (${activeCount} Active)`;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = '';
+      if (staffForAcc.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:18px; color:var(--c-gray-dark); font-weight:700; font-size:11px;">
+              No waitstaff currently assigned to this account. Click "+ Add Staff to this Account" below to register one.
+            </td>
+          </tr>
+        `;
+      } else {
+        staffForAcc.forEach(s => {
+          const shiftName = s.shift || 'Morning';
+          const shiftClass = shiftName.toLowerCase();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong style="color:var(--c-navy-primary);">${escapeHtml(s.code)}</strong></td>
+            <td><strong>${escapeHtml(s.name)}</strong></td>
+            <td>${escapeHtml(s.station || 'General')}</td>
+            <td><span class="shift-tag shift-${shiftClass}">${escapeHtml(shiftName)}</span></td>
+            <td>${escapeHtml(s.phone || '-')}</td>
+            <td>${s.active ? '<span style="color:#059669; font-weight:800; font-size:10px;">ACTIVE</span>' : '<span style="color:#64748B; font-weight:800; font-size:10px;">INACTIVE</span>'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    if (btnFilterThis) {
+      btnFilterThis.onclick = () => {
+        closeAccountDetailsModal();
+        closeAccountsModal();
+        setAccountFilter(acc.id);
+        navigateToTab('view-staff');
+      };
+    }
+
+    if (btnAddStaffToAcc) {
+      btnAddStaffToAcc.onclick = () => {
+        closeAccountDetailsModal();
+        closeAccountsModal();
+        openStaffModal();
+        const selAcc = document.getElementById('staff-input-account');
+        if (selAcc) selAcc.value = acc.id;
+      };
+    }
+
+    modal.classList.add('active');
+  }
+
+  function closeAccountDetailsModal() {
+    const modal = document.getElementById('modal-account-details');
+    if (modal) modal.classList.remove('active');
   }
 
   function updateSyncStatusUI(status, customTime = null) {
@@ -1167,10 +1594,20 @@
     if (!container) return;
 
     const query = AppState.searchQuery.toLowerCase().trim();
-    const activeStaff = AppState.staff.filter(s => s.active);
+    const activeStaff = AppState.staff.filter(s => {
+      if (!s.active) return false;
+      if (AppState.selectedAccountFilter && AppState.selectedAccountFilter !== 'ALL') {
+        const staffAcc = s.accountId || s.account_id || 'ACC-001';
+        if (staffAcc !== AppState.selectedAccountFilter) return false;
+      }
+      return true;
+    });
+
     const filteredStaff = activeStaff.filter(s => {
+      const staffAcc = s.accountId || s.account_id || 'ACC-001';
       const matchesSearch = s.name.toLowerCase().includes(query) || 
         s.code.toLowerCase().includes(query) ||
+        staffAcc.toLowerCase().includes(query) ||
         (s.station && s.station.toLowerCase().includes(query));
       const matchesShift = AppState.shiftFilter === 'ALL' || (s.shift || 'Morning') === AppState.shiftFilter;
       return matchesSearch && matchesShift;
@@ -1228,19 +1665,20 @@
       else if (record.status === 'O') statusBadgeHtml = '<span class="current-status-badge badge-off">OFF</span>';
 
       const shiftName = staff.shift || 'Morning';
-      const shiftClass = shiftName.toLowerCase();
-      let shiftTimeText = '07:00-15:00';
-      if (shiftName === 'Evening') shiftTimeText = '15:00-23:00';
-      else if (shiftName === 'Night') shiftTimeText = '23:00-07:00';
+      const shiftClass = (shiftName === 'Second' || shiftName === 'Evening') ? 'evening' : shiftName.toLowerCase();
+      let shiftTimeText = '05:30-15:00';
+      if (shiftName === 'Evening' || shiftName === 'Second') shiftTimeText = '11:00-23:00';
+      else if (shiftName === 'Night') shiftTimeText = '22:00-06:30';
       else if (shiftName === 'Double') shiftTimeText = 'FULL DAY';
 
+      const displayShiftName = (shiftName === 'Evening' || shiftName === 'Second') ? 'Evening' : shiftName;
       card.innerHTML = `
         <div class="waiter-card-header">
           <div class="waiter-info">
             <div class="waiter-name-row">
               <span class="waiter-name">${escapeHtml(staff.name)}</span>
               <span class="waiter-id-tag">${escapeHtml(staff.code)}</span>
-              <span class="shift-tag shift-${shiftClass}">${escapeHtml(shiftName).toUpperCase()} (${shiftTimeText})</span>
+              <span class="shift-tag shift-${shiftClass}">${escapeHtml(displayShiftName).toUpperCase()} (${shiftTimeText})</span>
             </div>
             <div class="waiter-meta">${escapeHtml(staff.station || 'General Floor')}</div>
           </div>
@@ -1290,7 +1728,14 @@
   // Mark all active staff present
   function markAllPresent() {
     const dateKey = formatDateKey(AppState.currentDate);
-    const activeStaff = AppState.staff.filter(s => s.active);
+    const activeStaff = AppState.staff.filter(s => {
+      if (!s.active) return false;
+      if (AppState.selectedAccountFilter && AppState.selectedAccountFilter !== 'ALL') {
+        const staffAcc = s.accountId || s.account_id || 'ACC-001';
+        if (staffAcc !== AppState.selectedAccountFilter) return false;
+      }
+      return true;
+    });
 
     if (!AppState.attendance[dateKey]) {
       AppState.attendance[dateKey] = {};
@@ -1328,7 +1773,14 @@
     if (labelPeriod) labelPeriod.textContent = `${monthNames[monthIndex]} ${year}`.toUpperCase();
 
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const activeStaff = AppState.staff.filter(s => s.active);
+    const activeStaff = AppState.staff.filter(s => {
+      if (!s.active) return false;
+      if (AppState.selectedAccountFilter && AppState.selectedAccountFilter !== 'ALL') {
+        const staffAcc = s.accountId || s.account_id || 'ACC-001';
+        if (staffAcc !== AppState.selectedAccountFilter) return false;
+      }
+      return true;
+    });
 
     let html = `
       <table class="matrix-table">
@@ -1359,12 +1811,13 @@
       let countA = 0;
       let countL = 0;
       let countO = 0;
-
       html += `
         <tr>
           <td class="sticky-col">
             <div style="font-size:12px; font-weight:700; color:var(--c-navy-primary);">${escapeHtml(staff.name)}</div>
-            <div style="font-size:9px; color:var(--c-gray-dark);">${escapeHtml(staff.code)}</div>
+            <div style="font-size:9px; color:var(--c-gray-dark); display:flex; gap:6px; align-items:center; margin-top:2px;">
+              <span>${escapeHtml(staff.code)}</span>
+            </div>
           </td>
       `;
 
@@ -1405,6 +1858,15 @@
     `;
 
     container.innerHTML = html;
+
+    // Attach click listeners to account badges
+    container.querySelectorAll('.account-badge-clickable').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const accId = badge.getAttribute('data-account-id');
+        if (accId) openAccountDetailsModal(accId);
+      });
+    });
   }
 
   // =========================================================================
@@ -1414,7 +1876,15 @@
   let summaryShiftFilter = 'ALL';
 
   function calculateAttendanceSummaryData() {
-    const activeStaff = AppState.staff.filter(s => s.active);
+    const activeStaff = AppState.staff.filter(s => {
+      if (!s.active) return false;
+      if (AppState.selectedAccountFilter && AppState.selectedAccountFilter !== 'ALL') {
+        const staffAcc = s.accountId || s.account_id || 'ACC-001';
+        if (staffAcc !== AppState.selectedAccountFilter) return false;
+      }
+      return true;
+    });
+
     const filteredStaff = (summaryShiftFilter === 'ALL')
       ? activeStaff
       : activeStaff.filter(s => (s.shift || 'Morning') === summaryShiftFilter);
@@ -1983,19 +2453,26 @@
     if (!container) return;
 
     const query = AppState.staffSearchQuery.toLowerCase().trim();
-    const filtered = AppState.staff.filter(s =>
-      s.name.toLowerCase().includes(query) ||
-      s.code.toLowerCase().includes(query) ||
-      (s.station && s.station.toLowerCase().includes(query)) ||
-      (s.phone && s.phone.toLowerCase().includes(query))
-    );
+    const filtered = AppState.staff.filter(s => {
+      const staffAcc = s.accountId || s.account_id || 'ACC-001';
+      if (AppState.selectedAccountFilter && AppState.selectedAccountFilter !== 'ALL') {
+        if (staffAcc !== AppState.selectedAccountFilter) return false;
+      }
+      return (
+        s.name.toLowerCase().includes(query) ||
+        s.code.toLowerCase().includes(query) ||
+        staffAcc.toLowerCase().includes(query) ||
+        (s.station && s.station.toLowerCase().includes(query)) ||
+        (s.phone && s.phone.toLowerCase().includes(query))
+      );
+    });
 
     container.innerHTML = '';
 
     if (filtered.length === 0) {
       container.innerHTML = `
         <div style="background:#fff; border:1px solid var(--c-gray-border); padding:24px; text-align:center; color:var(--c-gray-dark); font-weight:700; font-size:12px; text-transform:uppercase;">
-          No staff members found.
+          No staff members found matching the current account and search filter.
         </div>`;
       return;
     }
@@ -2003,16 +2480,17 @@
     filtered.forEach(staff => {
       const row = document.createElement('div');
       row.className = 'staff-row-item';
+      const staffAcc = staff.accountId || staff.account_id || 'ACC-001';
 
       row.innerHTML = `
         <div>
-          <div style="display:flex; align-items:center; gap:6px;">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
             <span style="font-size:14px; font-weight:700; color:var(--c-black);">${escapeHtml(staff.name)}</span>
             <span class="waiter-id-tag">${escapeHtml(staff.code)}</span>
             ${!staff.active ? '<span style="background:#CBD5E1; color:#333; font-size:9px; font-weight:700; padding:2px 4px;">ARCHIVED</span>' : ''}
           </div>
           <div style="font-size:11px; color:var(--c-gray-dark); margin-top:2px;">
-            Station: ${escapeHtml(staff.station || 'General')} | Shift: <span class="shift-tag shift-${(staff.shift || 'Morning').toLowerCase()}">${escapeHtml(staff.shift || 'Morning')}</span> | Phone: ${escapeHtml(staff.phone || 'N/A')}
+            Station: <strong style="color:var(--c-navy-primary);">${escapeHtml(staff.station || 'General')}</strong> | Shift: <span class="shift-tag shift-${(staff.shift || 'Morning').toLowerCase()}">${escapeHtml(staff.shift || 'Morning')}</span> | Phone: ${escapeHtml(staff.phone || 'N/A')}
           </div>
         </div>
         <div class="staff-row-actions" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
@@ -2238,12 +2716,16 @@
     const modal = document.getElementById('modal-staff');
     const title = document.getElementById('modal-staff-title');
     const inputId = document.getElementById('staff-form-id');
+    const inputAccount = document.getElementById('staff-input-account');
     const inputName = document.getElementById('staff-input-name');
     const inputCode = document.getElementById('staff-input-code');
     const inputStation = document.getElementById('staff-input-station');
     const inputShift = document.getElementById('staff-input-shift');
     const inputPhone = document.getElementById('staff-input-phone');
     const errorBox = document.getElementById('staff-form-error');
+
+    // Refresh account options in dropdown
+    updateAccountSelectors();
 
     if (errorBox) {
       errorBox.style.display = 'none';
@@ -2253,6 +2735,7 @@
     if (staff) {
       if (title) title.textContent = 'EDIT STAFF MEMBER';
       if (inputId) inputId.value = staff.id;
+      if (inputAccount) inputAccount.value = staff.accountId || staff.account_id || 'ACC-001';
       if (inputName) inputName.value = staff.name;
       if (inputCode) inputCode.value = staff.code;
       if (inputStation) inputStation.value = staff.station || '';
@@ -2261,6 +2744,13 @@
     } else {
       if (title) title.textContent = 'ADD NEW STAFF MEMBER';
       if (inputId) inputId.value = '';
+      if (inputAccount) {
+        if (AppState.selectedAccountFilter && AppState.selectedAccountFilter !== 'ALL') {
+          inputAccount.value = AppState.selectedAccountFilter;
+        } else {
+          inputAccount.value = 'ACC-001';
+        }
+      }
       if (inputName) inputName.value = '';
       if (inputCode) inputCode.value = getNextStaffCode();
       if (inputStation) inputStation.value = '';
@@ -2332,7 +2822,7 @@
 
       if (nameEl) nameEl.textContent = AppState.manager.name || 'Manager';
       if (emailEl) emailEl.textContent = AppState.manager.email || '';
-      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'G';
+      if (initialsEl) initialsEl.textContent = AppState.manager.initials || 'MK';
 
       if (avatarImg) {
         if (AppState.manager.avatar) {
@@ -2390,7 +2880,7 @@
 
     const currentShift = AppState.currentShift || 'Morning';
     if (shiftEl) shiftEl.textContent = `${currentShift} Shift`;
-    if (mgrEl) mgrEl.textContent = AppState.manager.name || 'Mark Kamau';
+    if (mgrEl) mgrEl.textContent = AppState.manager.name || 'Mark Karanja';
 
     // Calculate attendance turnout for current date
     const dateKey = formatDateKey(AppState.currentDate);
@@ -2475,7 +2965,7 @@
 
     // Check Upper Tier E Section
     const chkESection = document.getElementById('cert-esection-val');
-    const eSection = TABLE_ROW_SECTIONS['esection'];
+    const eSection = TABLE_ROW_SECTIONS['upper_tier_all'] || TABLE_ROW_SECTIONS['esection'];
     const hasEAssigned = eSection && eSection.tables.some(tId => shiftAssignments[tId]);
     if (chkESection) {
       if (hasEAssigned) {
@@ -2940,7 +3430,6 @@
       { id: 'table_36', name: 'Table 36', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
 
       // 3. UPPER DINING (STEPPED / TIERED TABLES)
-      { id: 'table_37', name: 'Table 37', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
       { id: 'table_38', name: 'Table 38', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
       { id: 'table_39', name: 'Table 39', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
       { id: 'table_40', name: 'Table 40', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
@@ -2948,8 +3437,6 @@
       { id: 'table_42', name: 'Table 42', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
       { id: 'table_43', name: 'Table 43', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
       { id: 'table_44', name: 'Table 44', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
-      { id: 'table_45', name: 'Table 45', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
-      { id: 'table_46', name: 'Table 46', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
 
       // 4. SERVICE, PRODUCTION & RETAIL STATIONS
       { id: 'station_samosa', name: 'Samosa & Kababs Maker', section: 'Snacks & Grill', type: 'kitchen', capacity: 2, shape: 'rect' },
@@ -3399,27 +3886,20 @@
         <!-- ================= 7. UPPER ELEVATED / STEPPED DINING TABLES ================= -->
         <g id="upper-tiered-tables">
           <!-- Stepped Zone Background Outline -->
-          <path d="M 480 535 L 855 535 L 855 470 L 785 470 L 785 400 L 785 330 L 630 330 L 630 400 L 555 400 L 480 470 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 2"/>
+          <path d="M 555 535 L 855 535 L 855 470 L 785 470 L 785 400 L 555 400 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 2"/>
           
-          <text x="670" y="324" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="800" fill="#64748B" letter-spacing="1">ELEVATED DINING SECTION (TIERS 1 - 3)</text>
+          <text x="670" y="392" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="800" fill="#64748B" letter-spacing="1">ELEVATED DINING SECTION (TIERS 1 - 2)</text>
 
-          <!-- TIER 3 (TOP STEP - RED PEN OUTLINE FROM SKETCH) -->
-          <rect x="625" y="330" width="150" height="66" fill="#FEF2F2" stroke="#DC2626" stroke-width="2.5" rx="2"/>
-          <text x="700" y="342" text-anchor="middle" font-size="8" font-weight="900" fill="#DC2626">TIER 3 (TOP PLATFORM)</text>
-          ${renderUpperTable('table_45', 665, 365, 45, true)}
-          ${renderUpperTable('table_46', 740, 365, 46, true)}
-
-          <!-- TIER 2 (MIDDLE STEP - 3 TABLES) -->
-          <rect x="555" y="400" width="225" height="66" fill="#F8FAFC" stroke="#64748B" stroke-width="1.5" rx="2"/>
+          <!-- TIER 2 (TOP STEP - 3 TABLES) -->
+          <rect x="555" y="400" width="230" height="66" fill="#F8FAFC" stroke="#64748B" stroke-width="1.5" rx="2"/>
           <text x="560" y="412" font-size="7.5" font-weight="800" fill="#64748B">TIER 2</text>
           ${renderUpperTable('table_42', 590, 435, 42, false)}
           ${renderUpperTable('table_43', 665, 435, 43, false)}
           ${renderUpperTable('table_44', 740, 435, 44, false)}
 
-          <!-- TIER 1 (BASE ROW - 5 TABLES HORIZONTAL) -->
-          <rect x="480" y="470" width="375" height="65" fill="#F8FAFC" stroke="#64748B" stroke-width="1.5" rx="2"/>
-          <text x="485" y="482" font-size="7.5" font-weight="800" fill="#64748B">TIER 1</text>
-          ${renderUpperTable('table_37', 515, 505, 37, false)}
+          <!-- TIER 1 (BASE ROW - 4 TABLES HORIZONTAL) -->
+          <rect x="555" y="470" width="300" height="65" fill="#F8FAFC" stroke="#64748B" stroke-width="1.5" rx="2"/>
+          <text x="560" y="482" font-size="7.5" font-weight="800" fill="#64748B">TIER 1</text>
           ${renderUpperTable('table_38', 590, 505, 38, false)}
           ${renderUpperTable('table_39', 665, 505, 39, false)}
           ${renderUpperTable('table_40', 740, 505, 40, false)}
@@ -3847,13 +4327,13 @@
       label: 'Tables 21, 24, 27, 30, 33, 36'
     },
 
-    // Upper Tier ("E Section" / Elevated Balcony - 37-46)
+    // Upper Tier ("E Section" / Elevated Balcony - 38-44)
     'upper_tier_all': {
       id: 'upper_tier_all',
-      name: 'E Section (Upper Tier · All 10 Tables)',
+      name: 'E Section (Upper Tier · 7 Tables)',
       shortName: 'E Section',
-      tables: ['table_37', 'table_38', 'table_39', 'table_40', 'table_41', 'table_42', 'table_43', 'table_44', 'table_45', 'table_46'],
-      label: 'Tables 37 to 46 (Tiers 1, 2 & 3)'
+      tables: ['table_38', 'table_39', 'table_40', 'table_41', 'table_42', 'table_43', 'table_44'],
+      label: 'Tables 38 to 44 (Tiers 1 & 2)'
     }
   };
 
@@ -4680,9 +5160,9 @@
       } else if (staffEntries.length === 1) {
         const waiterName = staffEntries[0][0];
         if (assignedTablesCount === def.tables.length) {
-          return `- *E Section*: ${waiterName} (Allocated to 1 Person - Tables 37 to 46)`;
+          return `- *E Section*: ${waiterName} (Allocated to 1 Person - Tables 38 to 44)`;
         } else {
-          return `- *E Section*: ${waiterName} (${assignedTablesCount}/10 tables)`;
+          return `- *E Section*: ${waiterName} (${assignedTablesCount}/${def.tables.length} tables)`;
         }
       } else {
         staffEntries.sort((a, b) => b[1] - a[1]);
@@ -5205,6 +5685,8 @@ _Dispatched by Ribhouse Restaurant Operations_`;
       formStaff.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('staff-form-id').value.trim();
+        const accountInput = document.getElementById('staff-input-account');
+        const accountId = (accountInput && accountInput.value ? accountInput.value.trim() : '') || 'ACC-001';
         const name = document.getElementById('staff-input-name').value.trim();
         const codeInput = document.getElementById('staff-input-code');
         const code = (codeInput && codeInput.value ? codeInput.value.trim() : '') || getNextStaffCode();
@@ -5234,7 +5716,7 @@ _Dispatched by Ribhouse Restaurant Operations_`;
             const res = await fetch(`/api/staff/${encodeURIComponent(id)}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code, name, station, shift, phone })
+              body: JSON.stringify({ code, name, station, shift, phone, accountId })
             });
 
             const data = await res.json();
@@ -5265,7 +5747,7 @@ _Dispatched by Ribhouse Restaurant Operations_`;
             const res = await fetch('/api/staff', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code, name, station, shift, phone })
+              body: JSON.stringify({ code, name, station, shift, phone, accountId })
             });
 
             const data = await res.json();
@@ -5446,6 +5928,14 @@ _Dispatched by Ribhouse Restaurant Operations_`;
           } catch (e) {
             console.error('Logout error:', e);
           }
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(MANAGER_INFO_KEY);
+            localStorage.removeItem(AVATAR_KEY);
+            localStorage.removeItem('waiter_attendance_state_v3');
+            localStorage.removeItem('executive_manager_profile');
+            localStorage.removeItem('executive_manager_avatar');
+          } catch (err) {}
           window.location.replace('/login.html?loggedout=1');
         }
       });
@@ -5454,6 +5944,7 @@ _Dispatched by Ribhouse Restaurant Operations_`;
     // Manager Session Pill & Executive Dropdown Menu
     const btnManagerSessionMenu = document.getElementById('btn-manager-session-menu');
     const dropdownProfile = document.getElementById('manager-profile-dropdown');
+    const btnDropAccounts = document.getElementById('btn-dropdown-accounts');
     const btnDropHandover = document.getElementById('btn-dropdown-handover');
     const btnDropPrint = document.getElementById('btn-dropdown-print');
     const btnDropPasskeys = document.getElementById('btn-dropdown-passkeys');
@@ -5464,6 +5955,13 @@ _Dispatched by Ribhouse Restaurant Operations_`;
       btnManagerSessionMenu.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleManagerProfileDropdown();
+      });
+    }
+
+    if (btnDropAccounts) {
+      btnDropAccounts.addEventListener('click', () => {
+        closeManagerProfileDropdown();
+        openAccountsModal();
       });
     }
 
@@ -5825,6 +6323,226 @@ _Dispatched by Ribhouse Restaurant Operations_`;
         }
       });
     }
+
+    // =========================================================================
+    // ACCOUNTS & MULTI-ACCOUNT DIRECTORY EVENT LISTENERS
+    // =========================================================================
+
+    // Staff Directory Toolbar: Open Accounts Directory Modal
+    const btnOpenAccountsModal = document.getElementById('btn-open-accounts-modal');
+    if (btnOpenAccountsModal) {
+      btnOpenAccountsModal.addEventListener('click', () => {
+        openAccountsModal();
+      });
+    }
+
+    // Quick New Account Button in Staff Modal
+    const btnQuickNewAccount = document.getElementById('btn-quick-new-account');
+    if (btnQuickNewAccount) {
+      btnQuickNewAccount.addEventListener('click', () => {
+        openAccountsModal();
+        const toggleBtn = document.getElementById('btn-toggle-add-account');
+        const formUpsert = document.getElementById('form-account-upsert');
+        if (toggleBtn && formUpsert && (formUpsert.style.display === 'none' || !formUpsert.style.display)) {
+          toggleBtn.click();
+        }
+      });
+    }
+
+    // Account Filter Dropdown Selectors Across Views
+    const selectDailyAcc = document.getElementById('select-daily-account-filter');
+    const selectStaffAcc = document.getElementById('select-staff-account-filter');
+    const selectSummaryAcc = document.getElementById('select-summary-account-filter');
+
+    if (selectDailyAcc) {
+      selectDailyAcc.addEventListener('change', (e) => {
+        setAccountFilter(e.target.value);
+      });
+    }
+    if (selectStaffAcc) {
+      selectStaffAcc.addEventListener('change', (e) => {
+        setAccountFilter(e.target.value);
+      });
+    }
+    if (selectSummaryAcc) {
+      selectSummaryAcc.addEventListener('change', (e) => {
+        setAccountFilter(e.target.value);
+      });
+    }
+
+    // Accounts Directory Modal Controls
+    const btnCloseAccounts = document.getElementById('btn-close-accounts-modal');
+    const btnDismissAccounts = document.getElementById('btn-dismiss-accounts-modal');
+    if (btnCloseAccounts) btnCloseAccounts.addEventListener('click', closeAccountsModal);
+    if (btnDismissAccounts) btnDismissAccounts.addEventListener('click', closeAccountsModal);
+
+    // Account Details Modal Controls
+    const btnCloseAccDetails = document.getElementById('btn-close-account-details');
+    const btnDismissAccDetails = document.getElementById('btn-dismiss-account-details');
+    if (btnCloseAccDetails) btnCloseAccDetails.addEventListener('click', closeAccountDetailsModal);
+    if (btnDismissAccDetails) btnDismissAccDetails.addEventListener('click', closeAccountDetailsModal);
+
+    // Search Accounts Input
+    const searchAccountsInput = document.getElementById('search-accounts-input');
+    if (searchAccountsInput) {
+      searchAccountsInput.addEventListener('input', (e) => {
+        AppState.accountSearchQuery = e.target.value;
+        renderAccountsModalList();
+      });
+    }
+
+    // Toggle Inline Add/Edit Account Form
+    const btnToggleAddAccount = document.getElementById('btn-toggle-add-account');
+    const formAccountUpsert = document.getElementById('form-account-upsert');
+    const btnCancelAccountForm = document.getElementById('btn-cancel-account-form');
+
+    if (btnToggleAddAccount && formAccountUpsert) {
+      btnToggleAddAccount.addEventListener('click', () => {
+        const isHidden = formAccountUpsert.style.display === 'none' || !formAccountUpsert.style.display;
+        if (isHidden) {
+          formAccountUpsert.style.display = 'block';
+          formAccountUpsert.reset();
+          const modeInput = document.getElementById('account-form-mode');
+          if (modeInput) modeInput.value = 'create';
+          const headerTitle = document.getElementById('account-form-header-title');
+          if (headerTitle) headerTitle.textContent = 'Register New Account';
+          const idInput = document.getElementById('account-input-id');
+          if (idInput) {
+            idInput.disabled = false;
+            // Generate next account ID suggestion (e.g. ACC-003)
+            const existingNums = (AppState.accounts || [])
+              .map(a => parseInt(a.id.replace(/\D/g, ''), 10))
+              .filter(n => !isNaN(n));
+            const nextNum = (existingNums.length > 0 ? Math.max(...existingNums) : 0) + 1;
+            idInput.value = `ACC-${String(nextNum).padStart(3, '0')}`;
+          }
+          btnToggleAddAccount.textContent = '▲ Hide Account Form';
+        } else {
+          formAccountUpsert.style.display = 'none';
+          btnToggleAddAccount.textContent = '+ Register New Account';
+        }
+      });
+    }
+
+    if (btnCancelAccountForm && formAccountUpsert) {
+      btnCancelAccountForm.addEventListener('click', () => {
+        formAccountUpsert.style.display = 'none';
+        formAccountUpsert.reset();
+        if (btnToggleAddAccount) btnToggleAddAccount.textContent = '+ Register New Account';
+      });
+    }
+
+    // Save / Upsert Account Form Submit Handler
+    if (formAccountUpsert) {
+      formAccountUpsert.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const mode = document.getElementById('account-form-mode')?.value || 'create';
+        const idInput = document.getElementById('account-input-id');
+        const id = (idInput?.value || '').trim().toUpperCase();
+        const name = (document.getElementById('account-input-name')?.value || '').trim();
+        const branch = (document.getElementById('account-input-branch')?.value || '').trim();
+        const status = document.getElementById('account-input-status')?.value || 'Active';
+        const email = (document.getElementById('account-input-email')?.value || '').trim();
+        const phone = (document.getElementById('account-input-phone')?.value || '').trim();
+        const description = (document.getElementById('account-input-desc')?.value || '').trim();
+        const errorBox = document.getElementById('account-form-error');
+
+        if (!name) {
+          showToast('Please provide an account or business name.');
+          return;
+        }
+
+        if (errorBox) {
+          errorBox.style.display = 'none';
+          errorBox.textContent = '';
+        }
+
+        const saveBtn = document.getElementById('btn-save-account-record');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving Account...';
+        }
+
+        try {
+          if (mode === 'create') {
+            const res = await fetch('/api/accounts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, name, branch, status, email, phone, description })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+              const msg = data.message || 'Could not register account in database.';
+              if (errorBox) {
+                errorBox.textContent = msg;
+                errorBox.style.display = 'block';
+              }
+              showToast(msg);
+              return;
+            }
+
+            AppState.accounts.push(data.account);
+            showToast(`Account "${data.account.name}" (${data.account.id}) registered successfully!`);
+          } else {
+            // Edit existing
+            const res = await fetch(`/api/accounts/${encodeURIComponent(id)}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, branch, status, email, phone, description })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+              const msg = data.message || 'Could not update account in database.';
+              if (errorBox) {
+                errorBox.textContent = msg;
+                errorBox.style.display = 'block';
+              }
+              showToast(msg);
+              return;
+            }
+
+            const idx = AppState.accounts.findIndex(a => a.id === id);
+            if (idx !== -1) {
+              AppState.accounts[idx] = Object.assign(AppState.accounts[idx], data.account);
+            }
+            showToast(`Account "${name}" (${id}) updated successfully!`);
+          }
+
+          saveState();
+          updateAccountSelectors();
+          renderAccountsModalList();
+          renderStaffDirectory();
+          formAccountUpsert.reset();
+          formAccountUpsert.style.display = 'none';
+          if (btnToggleAddAccount) btnToggleAddAccount.textContent = '+ Register New Account';
+        } catch (err) {
+          console.error('Error saving account:', err);
+          const msg = 'Network error: could not connect to database server.';
+          if (errorBox) {
+            errorBox.textContent = msg;
+            errorBox.style.display = 'block';
+          }
+          showToast(msg);
+        } finally {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Account';
+          }
+        }
+      });
+    }
+
+    // Delegated click listener for any account badge clicked
+    document.addEventListener('click', (e) => {
+      const badge = e.target.closest('.account-badge-clickable');
+      if (badge) {
+        const accId = badge.getAttribute('data-account-id');
+        if (accId) {
+          e.stopPropagation();
+          openAccountDetailsModal(accId);
+        }
+      }
+    });
 
     // Close Modals on Overlay Click
     document.querySelectorAll('.modal-overlay').forEach(overlay => {

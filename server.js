@@ -129,6 +129,62 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // Ensure accounts table exists
+    await dbPool.execute(`
+      CREATE TABLE IF NOT EXISTS \`accounts\` (
+        \`id\` VARCHAR(64) NOT NULL,
+        \`name\` VARCHAR(128) NOT NULL,
+        \`manager_id\` VARCHAR(64) NULL,
+        \`email\` VARCHAR(191) NULL,
+        \`phone\` VARCHAR(64) DEFAULT '',
+        \`branch\` VARCHAR(128) DEFAULT 'Main Branch',
+        \`description\` TEXT NULL,
+        \`status\` VARCHAR(32) DEFAULT 'Active',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_account_manager\` (\`manager_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Ensure staff table has account_id column
+    try {
+      await dbPool.execute('ALTER TABLE `staff` ADD COLUMN `account_id` VARCHAR(64) DEFAULT "ACC-001" AFTER `id`;');
+    } catch (ignore) {}
+
+    // Ensure initial accounts seeded if empty
+    try {
+      const [accCount] = await dbPool.execute('SELECT COUNT(*) as count FROM `accounts`');
+      if (accCount[0].count === 0) {
+        const [mgrRows] = await dbPool.execute('SELECT id, name, email FROM `managers` ORDER BY created_at ASC');
+        if (mgrRows.length >= 2) {
+          await dbPool.execute(`
+            INSERT INTO \`accounts\` (id, name, manager_id, email, phone, branch, description, status)
+            VALUES 
+              ('ACC-001', ?, ?, ?, '+254 700 000001', 'Executive Main Lounge', 'Primary restaurant dining floor and main service station', 'Active'),
+              ('ACC-002', ?, ?, ?, '+254 700 000002', 'Terrace & VIP Section', 'Exclusive terrace dining and private VIP executive suite', 'Active')
+          `, [
+            mgrRows[0].name + ' (Main Floor)', mgrRows[0].id, mgrRows[0].email,
+            mgrRows[1].name + ' (VIP & Terrace)', mgrRows[1].id, mgrRows[1].email
+          ]);
+        } else if (mgrRows.length === 1) {
+          await dbPool.execute(`
+            INSERT INTO \`accounts\` (id, name, manager_id, email, phone, branch, description, status)
+            VALUES 
+              ('ACC-001', ?, ?, ?, '+254 700 000001', 'Executive Main Lounge', 'Primary restaurant dining floor and main service station', 'Active'),
+              ('ACC-002', 'VIP & Terrace Account', NULL, 'vip@executive.com', '+254 700 000002', 'Terrace & VIP Section', 'Exclusive terrace dining and private VIP executive suite', 'Active')
+          `, [mgrRows[0].name + ' (Main Floor)', mgrRows[0].id, mgrRows[0].email]);
+        } else {
+          await dbPool.execute(`
+            INSERT INTO \`accounts\` (id, name, manager_id, email, phone, branch, description, status)
+            VALUES 
+              ('ACC-001', 'Executive Main Lounge', NULL, 'main@executive.com', '+254 700 000001', 'Main Floor', 'Primary dining floor and main service station', 'Active'),
+              ('ACC-002', 'Terrace & VIP Section', NULL, 'terrace@executive.com', '+254 700 000002', 'Terrace & VIP', 'Exclusive terrace dining and private VIP executive suite', 'Active')
+          `);
+        }
+      }
+    } catch (ignore) {}
+
     // 4. Ensure managers table is ready (no default credentials seeded)
     const [rows] = await dbPool.execute('SELECT COUNT(*) as count FROM `managers`');
     console.log(`[AUTH] Managers in system: ${rows[0].count}`);
@@ -282,10 +338,24 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // 5. Regenerate Session ID on Login to Prevent Session Fixation Attacks
-    req.session.regenerate((err) => {
+    req.session.regenerate(async (err) => {
       if (err) {
         console.error('[AUTH] Session regeneration error:', err);
         return res.status(500).json({ success: false, message: 'Session error. Please try again.' });
+      }
+
+      // Query assigned account for this manager
+      let userAccountId = 'ACC-001';
+      try {
+        const [accRows] = await dbPool.execute(
+          'SELECT id FROM `accounts` WHERE manager_id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
+          [manager.id, manager.email]
+        );
+        if (accRows && accRows.length > 0) {
+          userAccountId = accRows[0].id;
+        }
+      } catch (e) {
+        console.warn('[AUTH] Error resolving account for manager:', e.message);
       }
 
       // Store authenticated manager state in session
@@ -294,6 +364,7 @@ app.post('/api/auth/login', async (req, res) => {
         name: manager.name,
         email: manager.email,
         avatar: manager.avatar || null,
+        accountId: userAccountId,
         loginTime: Date.now()
       };
 
@@ -304,7 +375,8 @@ app.post('/api/auth/login', async (req, res) => {
           id: manager.id,
           name: manager.name,
           email: manager.email,
-          avatar: manager.avatar || null
+          avatar: manager.avatar || null,
+          accountId: userAccountId
         }
       });
     });
@@ -330,7 +402,8 @@ app.get('/api/auth/me', (req, res) => {
         id: req.session.manager.id,
         name: req.session.manager.name,
         email: req.session.manager.email,
-        avatar: req.session.manager.avatar || null
+        avatar: req.session.manager.avatar || null,
+        accountId: req.session.manager.accountId || 'ACC-001'
       }
     });
   }
@@ -967,16 +1040,28 @@ app.post('/api/auth/passkey/login-verify', async (req, res) => {
     delete req.session.currentWebAuthnChallenge;
 
     // Regenerate session ID to prevent fixation and set authenticated manager
-    req.session.regenerate((err) => {
+    req.session.regenerate(async (err) => {
       if (err) {
         console.error('[WEBAUTHN] Session error on passkey login:', err);
         return res.status(500).json({ success: false, message: 'Session error. Please try again.' });
       }
 
+      let userAccountId = 'ACC-001';
+      try {
+        const [accRows] = await dbPool.execute(
+          'SELECT id FROM `accounts` WHERE manager_id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
+          [passkey.manager_id, passkey.manager_email]
+        );
+        if (accRows && accRows.length > 0) {
+          userAccountId = accRows[0].id;
+        }
+      } catch (e) {}
+
       req.session.manager = {
         id: passkey.manager_id,
         name: passkey.manager_name,
         email: passkey.manager_email,
+        accountId: userAccountId,
         loginTime: Date.now(),
         authMethod: 'passkey'
       };
@@ -989,7 +1074,8 @@ app.post('/api/auth/passkey/login-verify', async (req, res) => {
         manager: {
           id: passkey.manager_id,
           name: passkey.manager_name,
-          email: passkey.manager_email
+          email: passkey.manager_email,
+          accountId: userAccountId
         },
         redirect: '/'
       });
@@ -1071,15 +1157,280 @@ app.post('/api/auth/passkeys/:id/rename', requireAuth, async (req, res) => {
 // STAFF MANAGEMENT API ROUTES (MySQL Direct Persistence)
 // ============================================================================
 
+// =========================================================================
+// ACCOUNTS & MULTI-ACCOUNT MANAGEMENT API
+// =========================================================================
+
+/**
+ * GET /api/accounts
+ * Retrieves all registered accounts with aggregated metrics (total staff, active staff, turnout)
+ */
+app.get('/api/accounts', requireAuth, async (req, res) => {
+  try {
+    const [accounts] = await dbPool.execute(`
+      SELECT a.*, 
+             COUNT(s.id) AS total_staff,
+             SUM(CASE WHEN s.active = 1 THEN 1 ELSE 0 END) AS active_staff
+      FROM \`accounts\` a
+      LEFT JOIN \`staff\` s ON a.id = s.account_id
+      GROUP BY a.id
+      ORDER BY a.id ASC
+    `);
+
+    // Fetch today's attendance turnout for each account
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [attRows] = await dbPool.execute(`
+      SELECT s.account_id, att.status, COUNT(*) AS count
+      FROM \`attendance\` att
+      JOIN \`staff\` s ON att.staff_id = s.id
+      WHERE att.date = ?
+      GROUP BY s.account_id, att.status
+    `, [todayStr]);
+
+    const statsByAcc = {};
+    attRows.forEach(r => {
+      if (!statsByAcc[r.account_id]) statsByAcc[r.account_id] = { P: 0, A: 0, L: 0, O: 0 };
+      statsByAcc[r.account_id][r.status] = r.count;
+    });
+
+    const enriched = accounts.map(acc => {
+      const todayStat = statsByAcc[acc.id] || { P: 0, A: 0, L: 0, O: 0 };
+      const totalStaff = parseInt(acc.total_staff || 0, 10);
+      const activeStaff = parseInt(acc.active_staff || 0, 10);
+      const presentToday = todayStat.P || 0;
+      const turnoutRate = activeStaff > 0 ? Math.round((presentToday / activeStaff) * 100) : 0;
+
+      return {
+        id: acc.id,
+        name: acc.name,
+        managerId: acc.manager_id,
+        email: acc.email || '',
+        phone: acc.phone || '',
+        branch: acc.branch || 'Main Branch',
+        description: acc.description || '',
+        status: acc.status || 'Active',
+        createdAt: acc.created_at,
+        totalStaff,
+        activeStaff,
+        presentToday,
+        turnoutRate
+      };
+    });
+
+    return res.json({ success: true, accounts: enriched });
+  } catch (err) {
+    console.error('[ACCOUNTS] Error fetching accounts:', err);
+    return res.status(500).json({ success: false, message: 'Could not fetch accounts: ' + err.message });
+  }
+});
+
+/**
+ * GET /api/accounts/:id
+ * Retrieves detailed profile for a specific account with its assigned staff
+ */
+app.get('/api/accounts/:id', requireAuth, async (req, res) => {
+  try {
+    const accId = req.params.id;
+    const [rows] = await dbPool.execute('SELECT * FROM `accounts` WHERE id = ?', [accId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+    const acc = rows[0];
+
+    const [staffRows] = await dbPool.execute(
+      'SELECT id, account_id, code, name, station, shift, phone, active, created_at FROM `staff` WHERE account_id = ? ORDER BY code ASC',
+      [accId]
+    );
+
+    return res.json({
+      success: true,
+      account: {
+        id: acc.id,
+        name: acc.name,
+        managerId: acc.manager_id,
+        email: acc.email || '',
+        phone: acc.phone || '',
+        branch: acc.branch || 'Main Branch',
+        description: acc.description || '',
+        status: acc.status || 'Active',
+        createdAt: acc.created_at
+      },
+      staff: staffRows.map(s => ({
+        id: s.id,
+        accountId: s.account_id || accId,
+        code: s.code,
+        name: s.name,
+        station: s.station || '',
+        shift: s.shift || 'Morning',
+        phone: s.phone || '',
+        active: s.active === 1
+      }))
+    });
+  } catch (err) {
+    console.error('[ACCOUNTS] Error fetching account details:', err);
+    return res.status(500).json({ success: false, message: 'Could not fetch account details: ' + err.message });
+  }
+});
+
+/**
+ * POST /api/accounts
+ * Registers a new account entry
+ */
+app.post('/api/accounts', requireAuth, async (req, res) => {
+  try {
+    let { id, name, managerId, email, phone, branch, description, status } = req.body;
+    name = (name || '').trim();
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Account name is required.' });
+    }
+
+    if (!id || !id.trim()) {
+      const [allAcc] = await dbPool.execute('SELECT id FROM `accounts`');
+      let maxNum = 0;
+      allAcc.forEach(a => {
+        const match = a.id.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      });
+      id = 'ACC-' + String(maxNum + 1).padStart(3, '0');
+    } else {
+      id = id.trim().toUpperCase();
+    }
+
+    const [existing] = await dbPool.execute('SELECT id FROM `accounts` WHERE id = ?', [id]);
+    if (existing.length > 0) {
+      return res.status(409).json({ success: false, message: `Account ID "${id}" is already in use.` });
+    }
+
+    await dbPool.execute(`
+      INSERT INTO \`accounts\` (id, name, manager_id, email, phone, branch, description, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      id,
+      name,
+      managerId || null,
+      (email || '').trim().toLowerCase(),
+      (phone || '').trim(),
+      (branch || 'Main Branch').trim(),
+      (description || '').trim(),
+      status || 'Active'
+    ]);
+
+    console.log(`[ACCOUNTS] Account created: ${name} (${id})`);
+
+    return res.status(201).json({
+      success: true,
+      message: `Account "${name}" (${id}) created successfully.`,
+      account: {
+        id,
+        name,
+        managerId: managerId || null,
+        email: email || '',
+        phone: phone || '',
+        branch: branch || 'Main Branch',
+        description: description || '',
+        status: status || 'Active',
+        totalStaff: 0,
+        activeStaff: 0,
+        turnoutRate: 0
+      }
+    });
+  } catch (err) {
+    console.error('[ACCOUNTS] Error creating account:', err);
+    return res.status(500).json({ success: false, message: 'Database error creating account: ' + err.message });
+  }
+});
+
+/**
+ * PUT /api/accounts/:id
+ * Updates account details
+ */
+app.put('/api/accounts/:id', requireAuth, async (req, res) => {
+  try {
+    const accId = req.params.id;
+    let { name, email, phone, branch, description, status } = req.body;
+    name = (name || '').trim();
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Account name is required.' });
+    }
+
+    const [resUpdate] = await dbPool.execute(`
+      UPDATE \`accounts\`
+      SET name = ?, email = ?, phone = ?, branch = ?, description = ?, status = ?
+      WHERE id = ?
+    `, [
+      name,
+      (email || '').trim().toLowerCase(),
+      (phone || '').trim(),
+      (branch || 'Main Branch').trim(),
+      (description || '').trim(),
+      status || 'Active',
+      accId
+    ]);
+
+    if (resUpdate.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: `Account "${name}" updated.`,
+      account: {
+        id: accId,
+        name,
+        email: email || '',
+        phone: phone || '',
+        branch: branch || 'Main Branch',
+        description: description || '',
+        status: status || 'Active'
+      }
+    });
+  } catch (err) {
+    console.error('[ACCOUNTS] Error updating account:', err);
+    return res.status(500).json({ success: false, message: 'Database error updating account.' });
+  }
+});
+
+/**
+ * DELETE /api/accounts/:id
+ * Removes an account, reassigning staff to default ACC-001
+ */
+app.delete('/api/accounts/:id', requireAuth, async (req, res) => {
+  try {
+    const accId = req.params.id;
+    if (accId === 'ACC-001') {
+      return res.status(400).json({ success: false, message: 'Default Account ACC-001 cannot be deleted.' });
+    }
+
+    await dbPool.execute('UPDATE `staff` SET account_id = "ACC-001" WHERE account_id = ?', [accId]);
+    await dbPool.execute('DELETE FROM `accounts` WHERE id = ?', [accId]);
+
+    return res.json({ success: true, message: `Account ${accId} deleted. Any associated staff were reassigned to ACC-001.` });
+  } catch (err) {
+    console.error('[ACCOUNTS] Error deleting account:', err);
+    return res.status(500).json({ success: false, message: 'Database error deleting account.' });
+  }
+});
+
+// =========================================================================
+// STAFF MANAGEMENT API (WITH ACCOUNT ID SUPPORT)
+// =========================================================================
+
 /**
  * GET /api/staff
- * Retrieves all staff members from MySQL
+ * Retrieves staff members from MySQL strictly for the authenticated manager's account
  */
 app.get('/api/staff', requireAuth, async (req, res) => {
   try {
-    const [rows] = await dbPool.execute('SELECT id, code, name, station, shift, phone, active, created_at FROM `staff` ORDER BY code ASC');
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+    const query = 'SELECT id, account_id, code, name, station, shift, phone, active, created_at FROM `staff` WHERE account_id = ? ORDER BY code ASC';
+
+    const [rows] = await dbPool.execute(query, [managerAccountId]);
     const staff = rows.map(s => ({
       id: s.id,
+      accountId: s.account_id || managerAccountId,
       code: s.code,
       name: s.name,
       station: s.station || '',
@@ -1120,7 +1471,7 @@ app.get('/api/staff/next-code', requireAuth, async (req, res) => {
 
 /**
  * POST /api/staff
- * Adds a whole new staff member directly to MySQL `staff` table as a distinct entry
+ * Adds a new staff member automatically tagged with the authenticated manager's account
  */
 app.post('/api/staff', requireAuth, async (req, res) => {
   try {
@@ -1130,6 +1481,9 @@ app.post('/api/staff', requireAuth, async (req, res) => {
     station = (station || '').trim();
     shift = (shift || 'Morning').trim();
     phone = (phone || '').trim();
+
+    // Automatically assign to authenticated manager's account
+    const finalAccountId = req.session.manager?.accountId || 'ACC-001';
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Full name is required.' });
@@ -1163,14 +1517,15 @@ app.post('/api/staff', requireAuth, async (req, res) => {
     const staffId = 'st_' + Date.now();
 
     await dbPool.execute(`
-      INSERT INTO \`staff\` (id, code, name, station, shift, phone, active)
-      VALUES (?, ?, ?, ?, ?, ?, 1)
-    `, [staffId, code, name, station, shift, phone]);
+      INSERT INTO \`staff\` (id, account_id, code, name, station, shift, phone, active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    `, [staffId, finalAccountId, code, name, station, shift, phone]);
 
-    console.log(`[STAFF] New staff entry created: ${name} (${code}, ID: ${staffId}) by manager ${req.session.manager?.email}`);
+    console.log(`[STAFF] New staff entry created: ${name} (${code}, Account: ${finalAccountId}, ID: ${staffId}) by manager ${req.session.manager?.email}`);
 
     const newStaff = {
       id: staffId,
+      accountId: finalAccountId,
       code,
       name,
       station,
@@ -1181,7 +1536,7 @@ app.post('/api/staff', requireAuth, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: `Staff member "${name}" added to database as a new entry.`,
+      message: `Staff member "${name}" added to database.`,
       staff: newStaff
     });
   } catch (err) {
@@ -1192,11 +1547,22 @@ app.post('/api/staff', requireAuth, async (req, res) => {
 
 /**
  * PUT /api/staff/:id
- * Updates an existing staff record in MySQL
+ * Updates an existing staff record in MySQL (with account ownership verification)
  */
 app.put('/api/staff/:id', requireAuth, async (req, res) => {
   try {
     const staffId = req.params.id;
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+
+    // Verify ownership: Target staff must belong to this manager's account
+    const [targetStaff] = await dbPool.execute('SELECT id, account_id FROM `staff` WHERE id = ?', [staffId]);
+    if (targetStaff.length === 0) {
+      return res.status(404).json({ success: false, message: 'Staff record not found.' });
+    }
+    if (targetStaff[0].account_id !== managerAccountId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized: You can only edit staff in your own account.' });
+    }
+
     let { code, name, station, shift, phone, active } = req.body;
     name = (name || '').trim();
     code = (code || '').trim();
@@ -1232,20 +1598,21 @@ app.put('/api/staff/:id', requireAuth, async (req, res) => {
     const [result] = await dbPool.execute(`
       UPDATE \`staff\`
       SET code = ?, name = ?, station = ?, shift = ?, phone = ?, active = ?
-      WHERE id = ?
-    `, [code, name, station, shift, phone, isActive, staffId]);
+      WHERE id = ? AND account_id = ?
+    `, [code, name, station, shift, phone, isActive, staffId, managerAccountId]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Staff record not found.' });
     }
 
-    console.log(`[STAFF] Staff ${staffId} (${name}) updated in database.`);
+    console.log(`[STAFF] Staff ${staffId} (${name}, Account: ${managerAccountId}) updated in database.`);
 
     return res.json({
       success: true,
       message: `Staff member "${name}" updated.`,
       staff: {
         id: staffId,
+        accountId: managerAccountId,
         code,
         name,
         station,
@@ -1262,12 +1629,23 @@ app.put('/api/staff/:id', requireAuth, async (req, res) => {
 
 /**
  * DELETE /api/staff/:id
- * Removes a staff record from MySQL (cascades attendance records via foreign key)
+ * Removes a staff record from MySQL (with account ownership verification)
  */
 app.delete('/api/staff/:id', requireAuth, async (req, res) => {
   try {
     const staffId = req.params.id;
-    const [result] = await dbPool.execute('DELETE FROM `staff` WHERE id = ?', [staffId]);
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
+
+    // Verify ownership: Target staff must belong to this manager's account
+    const [targetStaff] = await dbPool.execute('SELECT id, account_id FROM `staff` WHERE id = ?', [staffId]);
+    if (targetStaff.length === 0) {
+      return res.status(404).json({ success: false, message: 'Staff record not found in database.' });
+    }
+    if (targetStaff[0].account_id !== managerAccountId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized: You can only remove staff from your own account.' });
+    }
+
+    const [result] = await dbPool.execute('DELETE FROM `staff` WHERE id = ? AND account_id = ?', [staffId, managerAccountId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Staff record not found in database.' });
     }
@@ -1326,7 +1704,6 @@ const FLOOR_PLAN_STATIONS = [
   { id: 'table_36', name: 'Table 36', section: 'Main Dining (Right)', type: 'table', capacity: 4, shape: 'square' },
 
   // ================= 3. UPPER DINING (STEPPED / TIERED TABLES) =================
-  { id: 'table_37', name: 'Table 37', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
   { id: 'table_38', name: 'Table 38', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
   { id: 'table_39', name: 'Table 39', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
   { id: 'table_40', name: 'Table 40', section: 'Upper Dining (Tier 1)', type: 'table', capacity: 4, shape: 'square' },
@@ -1334,8 +1711,6 @@ const FLOOR_PLAN_STATIONS = [
   { id: 'table_42', name: 'Table 42', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
   { id: 'table_43', name: 'Table 43', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
   { id: 'table_44', name: 'Table 44', section: 'Upper Dining (Tier 2)', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_45', name: 'Table 45', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
-  { id: 'table_46', name: 'Table 46', section: 'Upper Dining (Tier 3)', type: 'table', capacity: 4, shape: 'square' },
 
   // ================= 4. SERVICE, PRODUCTION & RETAIL STATIONS =================
   { id: 'station_samosa', name: 'Samosa & Kababs Maker', section: 'Snacks & Grill', type: 'kitchen', capacity: 2, shape: 'rect' },
@@ -1391,28 +1766,33 @@ app.get('/api/floorplan/assignments', requireAuth, async (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const date = (req.query.date || todayStr).trim();
     const shift = (req.query.shift || 'Morning').trim();
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
 
-    // 1. Fetch active staff
+    // 1. Fetch active staff belonging to this manager's account
     const [staffRows] = await dbPool.execute(
-      'SELECT id, code, name, station, shift, phone, active FROM `staff` WHERE active = 1 ORDER BY code ASC'
+      'SELECT id, code, name, station, shift, phone, active FROM `staff` WHERE active = 1 AND account_id = ? ORDER BY code ASC',
+      [managerAccountId]
     );
 
-    // 2. Fetch daily attendance for this date
+    // 2. Fetch daily attendance for this date (scoped to manager's staff)
     const [attRows] = await dbPool.execute(
-      'SELECT staff_id, status FROM `attendance` WHERE `date` = ?',
-      [date]
+      `SELECT a.staff_id, a.status 
+       FROM \`attendance\` a
+       JOIN \`staff\` s ON a.staff_id = s.id
+       WHERE a.date = ? AND s.account_id = ?`,
+      [date, managerAccountId]
     );
     const attendanceMap = {};
     attRows.forEach(a => { attendanceMap[a.staff_id] = a.status; });
 
-    // 3. Fetch explicit table assignments
+    // 3. Fetch explicit table assignments (scoped to manager's staff or unassigned)
     const [assignRows] = await dbPool.execute(
       `SELECT ta.id, ta.station_id, ta.staff_id, ta.notes, ta.date, ta.shift,
               s.name as staff_name, s.code as staff_code, s.phone as staff_phone
        FROM \`table_assignments\` ta
        LEFT JOIN \`staff\` s ON ta.staff_id = s.id
-       WHERE ta.date = ? AND ta.shift = ?`,
-      [date, shift]
+       WHERE ta.date = ? AND ta.shift = ? AND (s.account_id = ? OR ta.staff_id IS NULL)`,
+      [date, shift, managerAccountId]
     );
 
     const assignmentByStation = {};
@@ -1636,14 +2016,59 @@ app.post('/api/floorplan/send-whatsapp', requireAuth, async (req, res) => {
 
 /**
  * GET /api/state
- * Returns complete database state (staff, attendance, reminders, settings, security)
+ * Returns complete database state (accounts, staff, attendance, reminders, settings, security)
  */
 app.get('/api/state', requireAuth, async (req, res) => {
   try {
-    // 1. Fetch Staff
-    const [staffRows] = await dbPool.execute('SELECT id, code, name, station, shift, phone, active FROM `staff` ORDER BY code ASC');
+    let currentManager = req.session.manager || null;
+    let userAccId = currentManager?.accountId || 'ACC-001';
+
+    if (currentManager && currentManager.id) {
+      try {
+        const [mRows] = await dbPool.execute('SELECT id, name, email, avatar FROM `managers` WHERE id = ? LIMIT 1', [currentManager.id]);
+        if (mRows.length > 0) {
+          const [mAccRows] = await dbPool.execute(
+            'SELECT id FROM `accounts` WHERE manager_id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
+            [mRows[0].id, mRows[0].email]
+          );
+          userAccId = (mAccRows && mAccRows.length > 0) ? mAccRows[0].id : (currentManager.accountId || 'ACC-001');
+          currentManager = {
+            ...currentManager,
+            name: mRows[0].name,
+            email: mRows[0].email,
+            avatar: mRows[0].avatar || null,
+            accountId: userAccId
+          };
+          req.session.manager = currentManager;
+        }
+      } catch (e) {}
+    }
+
+    // 1. Fetch Manager's Account ONLY (Strict Privacy: no other accounts sent over wire)
+    const [accRows] = await dbPool.execute(
+      'SELECT id, name, manager_id, email, phone, branch, description, status, created_at FROM `accounts` WHERE id = ?',
+      [userAccId]
+    );
+    const accounts = accRows.map(a => ({
+      id: a.id,
+      name: a.name,
+      managerId: a.manager_id,
+      email: a.email || '',
+      phone: a.phone || '',
+      branch: a.branch || 'Main Branch',
+      description: a.description || '',
+      status: a.status || 'Active',
+      createdAt: a.created_at
+    }));
+
+    // 2. Fetch Staff belonging strictly to this manager's account
+    const [staffRows] = await dbPool.execute(
+      'SELECT id, account_id, code, name, station, shift, phone, active FROM `staff` WHERE account_id = ? ORDER BY code ASC',
+      [userAccId]
+    );
     const staff = staffRows.map(s => ({
       id: s.id,
+      accountId: s.account_id || userAccId,
       code: s.code,
       name: s.name,
       station: s.station || '',
@@ -1652,8 +2077,13 @@ app.get('/api/state', requireAuth, async (req, res) => {
       active: s.active === 1
     }));
 
-    // 2. Fetch Attendance
-    const [attRows] = await dbPool.execute('SELECT DATE_FORMAT(`date`, "%Y-%m-%d") as date_str, staff_id, status, note FROM `attendance`');
+    // 3. Fetch Attendance strictly for this manager's staff
+    const [attRows] = await dbPool.execute(`
+      SELECT DATE_FORMAT(a.date, "%Y-%m-%d") as date_str, a.staff_id, a.status, a.note 
+      FROM \`attendance\` a
+      JOIN \`staff\` s ON a.staff_id = s.id
+      WHERE s.account_id = ?
+    `, [userAccId]);
     const attendance = {};
     attRows.forEach(row => {
       if (!attendance[row.date_str]) attendance[row.date_str] = {};
@@ -1663,7 +2093,7 @@ app.get('/api/state', requireAuth, async (req, res) => {
       };
     });
 
-    // 3. Fetch Reminders
+    // 4. Fetch Reminders
     const [remRows] = await dbPool.execute('SELECT id, title, due_time, priority, completed, created_at FROM `reminders` ORDER BY created_at DESC');
     const reminders = remRows.map(r => ({
       id: r.id,
@@ -1674,7 +2104,7 @@ app.get('/api/state', requireAuth, async (req, res) => {
       createdAt: r.created_at
     }));
 
-    // 4. Fetch Settings
+    // 5. Fetch Settings
     const [setRows] = await dbPool.execute('SELECT setting_key, setting_value FROM `settings`');
     const settings = {
       businessName: 'Ribhouse Restaurant',
@@ -1684,7 +2114,7 @@ app.get('/api/state', requireAuth, async (req, res) => {
       settings[s.setting_key] = s.setting_value;
     });
 
-    // 5. Fetch Security Settings
+    // 6. Fetch Security Settings
     const [secRows] = await dbPool.execute('SELECT setting_key, setting_value FROM `security`');
     const security = {
       pin: '1234',
@@ -1698,25 +2128,10 @@ app.get('/api/state', requireAuth, async (req, res) => {
       }
     });
 
-    let currentManager = req.session.manager || null;
-    if (currentManager && currentManager.id) {
-      try {
-        const [mRows] = await dbPool.execute('SELECT id, name, email, avatar FROM `managers` WHERE id = ? LIMIT 1', [currentManager.id]);
-        if (mRows.length > 0) {
-          currentManager = {
-            ...currentManager,
-            name: mRows[0].name,
-            email: mRows[0].email,
-            avatar: mRows[0].avatar || null
-          };
-          req.session.manager = currentManager;
-        }
-      } catch (e) {}
-    }
-
     return res.json({
       success: true,
       state: {
+        accounts,
         staff,
         attendance,
         reminders,
@@ -1770,36 +2185,40 @@ app.post('/api/manager/avatar', requireAuth, async (req, res) => {
 app.post('/api/save', requireAuth, async (req, res) => {
   const connection = await dbPool.getConnection();
   try {
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
     const { staff, attendance, settings, reminders } = req.body;
     await connection.beginTransaction();
 
-    // 1. Sync Staff
+    // 1. Sync Staff (Strictly scoped to manager's account, never modifying other accounts)
     if (Array.isArray(staff)) {
       for (const s of staff) {
         if (!s || !s.id) continue;
-        const [existing] = await connection.execute('SELECT id FROM `staff` WHERE id = ?', [s.id]);
+        const [existing] = await connection.execute('SELECT id, account_id FROM `staff` WHERE id = ?', [s.id]);
         if (existing.length > 0) {
-          await connection.execute(`
-            UPDATE \`staff\`
-            SET code = ?, name = ?, station = ?, shift = ?, phone = ?, active = ?
-            WHERE id = ?
-          `, [s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0, s.id]);
+          // Strictly only update if it belongs to this manager's account
+          if (existing[0].account_id === managerAccountId) {
+            await connection.execute(`
+              UPDATE \`staff\`
+              SET code = ?, name = ?, station = ?, shift = ?, phone = ?, active = ?
+              WHERE id = ? AND account_id = ?
+            `, [s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0, s.id, managerAccountId]);
+          }
         } else {
           // Check if code doesn't exist before inserting new
           const [codeCheck] = await connection.execute('SELECT id FROM `staff` WHERE code = ?', [s.code]);
           if (codeCheck.length === 0) {
             await connection.execute(`
-              INSERT INTO \`staff\` (id, code, name, station, shift, phone, active)
-              VALUES (?, ?, ?, ?, ?, ?, ?)
-            `, [s.id, s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0]);
+              INSERT INTO \`staff\` (id, account_id, code, name, station, shift, phone, active)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [s.id, managerAccountId, s.code, s.name, s.station || '', s.shift || 'Morning', s.phone || '', s.active ? 1 : 0]);
           }
         }
       }
     }
 
-    // 2. Sync Attendance
+    // 2. Sync Attendance (Strictly for staff in this manager's account)
     if (attendance && typeof attendance === 'object') {
-      const [currentStaffRows] = await connection.execute('SELECT id FROM `staff`');
+      const [currentStaffRows] = await connection.execute('SELECT id FROM `staff` WHERE account_id = ?', [managerAccountId]);
       const validStaffIds = new Set(currentStaffRows.map(r => r.id));
 
       for (const [dateKey, dayRecords] of Object.entries(attendance)) {
@@ -2050,12 +2469,13 @@ app.post('/api/reports/generate', requireAuth, async (req, res) => {
     const { type, referenceDate } = req.body;
     const reportType = (type || 'WEEKLY').toUpperCase();
     const ref = referenceDate ? new Date(referenceDate) : new Date();
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
 
     let result = null;
     if (reportType === 'WEEKLY') {
-      result = await generateWeeklyReport(dbPool, ref);
+      result = await generateWeeklyReport(dbPool, ref, managerAccountId);
     } else if (reportType === 'MONTHLY') {
-      result = await generateMonthlyReport(dbPool, ref.getFullYear(), ref.getMonth());
+      result = await generateMonthlyReport(dbPool, ref.getFullYear(), ref.getMonth(), managerAccountId);
     } else {
       return res.status(400).json({ success: false, message: 'Invalid report type (WEEKLY or MONTHLY).' });
     }
@@ -2131,8 +2551,9 @@ app.get('/api/reports/download-monthly-pdf', requireAuth, async (req, res) => {
     const today = new Date();
     const year = req.query.year ? parseInt(req.query.year, 10) : today.getFullYear();
     const month = req.query.month !== undefined ? parseInt(req.query.month, 10) : today.getMonth();
+    const managerAccountId = req.session.manager?.accountId || 'ACC-001';
 
-    const report = await generateMonthlyReport(dbPool, year, month);
+    const report = await generateMonthlyReport(dbPool, year, month, managerAccountId);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Restaurant_Attendance_${month + 1}_${year}.pdf"`);

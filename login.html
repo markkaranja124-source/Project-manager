@@ -1217,6 +1217,41 @@
 
             const verifyData = await verifyRes.json();
             if (verifyRes.ok && verifyData.success) {
+              try {
+                localStorage.removeItem('waiter_attendance_register_v1');
+                localStorage.removeItem('executive_manager_info_v1');
+                localStorage.removeItem('executive_manager_avatar_v1');
+                localStorage.removeItem('waiter_attendance_state_v3');
+                localStorage.removeItem('executive_manager_profile');
+                localStorage.removeItem('executive_manager_avatar');
+                if (verifyData.manager) {
+                  let initials = 'AR';
+                  const mName = verifyData.manager.name;
+                  const mEmail = verifyData.manager.email;
+                  if (mName && mName.trim()) {
+                    const parts = mName.trim().split(/\s+/).filter(Boolean);
+                    if (parts.length >= 2) initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                    else if (parts.length === 1 && parts[0].length >= 2) initials = parts[0].substring(0, 2).toUpperCase();
+                    else if (parts.length === 1) initials = parts[0][0].toUpperCase();
+                  } else if (mEmail && mEmail.trim()) {
+                    const local = mEmail.split('@')[0].replace(/[^a-zA-Z]/g, '');
+                    if (local.length >= 2) initials = local.substring(0, 2).toUpperCase();
+                    else if (local.length === 1) initials = local.toUpperCase();
+                  }
+                  const mgrInfo = {
+                    id: verifyData.manager.id || '',
+                    name: verifyData.manager.name || 'Manager',
+                    email: verifyData.manager.email || '',
+                    initials: initials,
+                    accountId: verifyData.manager.accountId || ''
+                  };
+                  localStorage.setItem('executive_manager_info_v1', JSON.stringify(mgrInfo));
+                  if (verifyData.manager.avatar) {
+                    localStorage.setItem('executive_manager_avatar_v1', verifyData.manager.avatar);
+                  }
+                }
+              } catch (storageErr) {}
+
               // Open app immediately upon fingerprint match!
               window.location.replace('/');
               return;
@@ -1329,10 +1364,46 @@
           const data = await response.json();
 
           if (response.ok && data.success) {
+            // Wipe any stale cached session data from a previously logged in manager
+            try {
+              localStorage.removeItem('waiter_attendance_register_v1');
+              localStorage.removeItem('executive_manager_info_v1');
+              localStorage.removeItem('executive_manager_avatar_v1');
+              localStorage.removeItem('waiter_attendance_state_v3');
+              localStorage.removeItem('executive_manager_profile');
+              localStorage.removeItem('executive_manager_avatar');
+              if (data.manager) {
+                let initials = 'AR';
+                const mName = data.manager.name;
+                const mEmail = data.manager.email;
+                if (mName && mName.trim()) {
+                  const parts = mName.trim().split(/\s+/).filter(Boolean);
+                  if (parts.length >= 2) initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                  else if (parts.length === 1 && parts[0].length >= 2) initials = parts[0].substring(0, 2).toUpperCase();
+                  else if (parts.length === 1) initials = parts[0][0].toUpperCase();
+                } else if (mEmail && mEmail.trim()) {
+                  const local = mEmail.split('@')[0].replace(/[^a-zA-Z]/g, '');
+                  if (local.length >= 2) initials = local.substring(0, 2).toUpperCase();
+                  else if (local.length === 1) initials = local.toUpperCase();
+                }
+                const mgrInfo = {
+                  id: data.manager.id || '',
+                  name: data.manager.name || 'Manager',
+                  email: data.manager.email || '',
+                  initials: initials,
+                  accountId: data.manager.accountId || ''
+                };
+                localStorage.setItem('executive_manager_info_v1', JSON.stringify(mgrInfo));
+                if (data.manager.avatar) {
+                  localStorage.setItem('executive_manager_avatar_v1', data.manager.avatar);
+                }
+              }
+            } catch (storageErr) {}
+
             showFeedback('Access granted. Initializing manager console...', 'success');
             setTimeout(() => {
               window.location.replace('/');
-            }, 500);
+            }, 350);
           } else {
             const errorMsg = data.message || 'Invalid email or password credentials.';
             showFeedback(errorMsg, 'error');

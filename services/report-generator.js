@@ -88,12 +88,18 @@ async function buildAttendancePdf({
   periodLabel,
   businessName,
   branch,
-  dbPool
+  dbPool,
+  accountId = null
 }) {
-  // 1. Fetch Staff
-  const [staffRows] = await dbPool.execute(
-    'SELECT id, code, name, station, shift FROM staff ORDER BY code ASC'
-  );
+  // 1. Fetch Staff (scoped strictly to accountId if provided)
+  let staffQuery = 'SELECT id, account_id, code, name, station, shift FROM staff';
+  let staffParams = [];
+  if (accountId) {
+    staffQuery += ' WHERE account_id = ?';
+    staffParams.push(accountId);
+  }
+  staffQuery += ' ORDER BY code ASC';
+  const [staffRows] = await dbPool.execute(staffQuery, staffParams);
 
   // 2. Fetch Attendance in Date Range
   const startStr = formatDateStr(periodStart);
@@ -147,6 +153,7 @@ async function buildAttendancePdf({
     return {
       code: staff.code,
       name: staff.name,
+      accountId: staff.account_id || 'ACC-001',
       station: staff.station || '-',
       shift: staff.shift || 'Morning',
       present: p,
@@ -399,7 +406,7 @@ async function buildAttendancePdf({
 /**
  * Public API: Generate Weekly Report (Monday to Sunday)
  */
-async function generateWeeklyReport(dbPool, referenceDate = new Date()) {
+async function generateWeeklyReport(dbPool, referenceDate = new Date(), accountId = null) {
   const { monday, sunday } = getWeekRange(referenceDate);
   const settings = await getBusinessSettings(dbPool);
 
@@ -412,14 +419,15 @@ async function generateWeeklyReport(dbPool, referenceDate = new Date()) {
     periodLabel,
     businessName: settings.businessName,
     branch: settings.branch,
-    dbPool
+    dbPool,
+    accountId
   });
 }
 
 /**
  * Public API: Generate Monthly Report (1st to last day, dynamic length)
  */
-async function generateMonthlyReport(dbPool, year = new Date().getFullYear(), monthIndex = new Date().getMonth() - 1) {
+async function generateMonthlyReport(dbPool, year = new Date().getFullYear(), monthIndex = new Date().getMonth() - 1, accountId = null) {
   // If monthIndex is -1 (January requested for previous month), wrap to December previous year
   if (monthIndex < 0) {
     monthIndex = 11;
@@ -437,7 +445,8 @@ async function generateMonthlyReport(dbPool, year = new Date().getFullYear(), mo
     periodLabel,
     businessName: settings.businessName,
     branch: settings.branch,
-    dbPool
+    dbPool,
+    accountId
   });
 }
 
