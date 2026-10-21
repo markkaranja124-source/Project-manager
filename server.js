@@ -185,7 +185,35 @@ async function initDatabase() {
       }
     } catch (ignore) {}
 
-    // 4. Ensure managers table is ready (no default credentials seeded)
+    // 4. Ensure generated_reports table has account_id column
+    try {
+      const [chkRep] = await dbPool.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'generated_reports' AND COLUMN_NAME = 'account_id'
+      `);
+      if (chkRep.length === 0) {
+        await dbPool.execute('ALTER TABLE generated_reports ADD COLUMN account_id VARCHAR(64) NULL AFTER id');
+        console.log('[DB] Added account_id column to generated_reports table.');
+      }
+    } catch (err) {
+      console.warn('[DB] Error checking/adding account_id on generated_reports:', err.message);
+    }
+
+    // 5. Purge any legacy unassigned or mock reminders
+    try {
+      await dbPool.execute(`
+        DELETE FROM reminders 
+        WHERE id IN ('rem_101', 'rem_102') 
+           OR title LIKE '%Morning Shift Turnout%' 
+           OR title LIKE '%Absentee Report Sheet%' 
+           OR manager_id IS NULL 
+           OR manager_id = ''
+      `);
+    } catch (err) {
+      console.warn('[DB] Error clearing legacy reminders:', err.message);
+    }
+
+    // 6. Ensure managers table is ready (no default credentials seeded)
     const [rows] = await dbPool.execute('SELECT COUNT(*) as count FROM `managers`');
     console.log(`[AUTH] Managers in system: ${rows[0].count}`);
   } catch (err) {
@@ -2128,8 +2156,12 @@ app.get('/api/state', requireAuth, async (req, res) => {
       };
     });
 
-    // 4. Fetch Reminders
-    const [remRows] = await dbPool.execute('SELECT id, title, due_time, priority, completed, created_at FROM `reminders` ORDER BY created_at DESC');
+    // 4. Fetch Reminders (isolated strictly per manager)
+    const currentMgrId = currentManager?.id || (req.session.manager ? req.session.manager.id : '');
+    const [remRows] = await dbPool.execute(
+      'SELECT id, title, due_time, priority, completed, created_at FROM `reminders` WHERE manager_id = ? ORDER BY created_at DESC',
+      [currentMgrId]
+    );
     const reminders = remRows.map(r => ({
       id: r.id,
       title: r.title,
@@ -2270,18 +2302,20 @@ app.post('/api/save', requireAuth, async (req, res) => {
       }
     }
 
-    // 4. Sync Reminders
+    // 4. Sync Reminders (strictly scoped to current manager)
     if (Array.isArray(reminders)) {
+      const currentMgrId = currentManager?.id || (req.session.manager ? req.session.manager.id : '');
       for (const r of reminders) {
+        if (!r.title || r.id === 'rem_101' || r.id === 'rem_102') continue;
         await connection.execute(`
-          INSERT INTO \`reminders\` (id, title, due_time, priority, completed)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO \`reminders\` (id, manager_id, title, due_time, priority, completed)
+          VALUES (?, ?, ?, ?, ?, ?)
           ON DUPLICATE KEY UPDATE
             title = VALUES(title),
             due_time = VALUES(due_time),
             priority = VALUES(priority),
             completed = VALUES(completed)
-        `, [r.id, r.title, r.dueTime || '10:00', r.priority || 'MEDIUM', r.completed ? 1 : 0]);
+        `, [r.id, currentMgrId, r.title, r.dueTime || '10:00', r.priority || 'MEDIUM', r.completed ? 1 : 0]);
       }
     }
 
@@ -2306,17 +2340,20 @@ const activeDueAlerts = new Map();
 
 /**
  * GET /api/reminders
- * Fetch all reminders for the manager
+ * Fetch all reminders for the manager (isolated strictly to current manager session)
  */
 app.get('/api/reminders', requireAuth, async (req, res) => {
   try {
+    const managerId = req.session.manager ? req.session.manager.id : '';
     const [rows] = await dbPool.execute(
       `SELECT id, manager_id, title, description, 
               DATE_FORMAT(reminder_date, "%Y-%m-%d") as reminder_date, 
               reminder_time, repeat_type, repeat_day, notification_type, 
               is_active, last_triggered, snooze_until, created_at, updated_at 
        FROM reminders 
-       ORDER BY reminder_time ASC`
+       WHERE manager_id = ?
+       ORDER BY reminder_time ASC`,
+      [managerId]
     );
     return res.json({ success: true, reminders: rows });
   } catch (err) {
@@ -2327,7 +2364,7 @@ app.get('/api/reminders', requireAuth, async (req, res) => {
 
 /**
  * POST /api/reminders
- * Create or update a manager reminder
+ * Create or update a manager reminder (strictly scoped to manager session)
  */
 app.post('/api/reminders', requireAuth, async (req, res) => {
   try {
@@ -2359,14 +2396,14 @@ app.post('/api/reminders', requireAuth, async (req, res) => {
     const managerId = req.session.manager ? req.session.manager.id : null;
 
     if (id) {
-      // Update existing
+      // Update existing (verifying ownership)
       await dbPool.execute(
         `UPDATE reminders SET 
            title = ?, description = ?, reminder_date = ?, reminder_time = ?, 
            repeat_type = ?, repeat_day = ?, notification_type = ?, is_active = ?, 
            snooze_until = NULL 
-         WHERE id = ?`,
-        [cleanTitle, cleanDesc, cleanDate, cleanTime, cleanRepeat, cleanRepeatDay, cleanNotif, cleanActive, id]
+         WHERE id = ? AND manager_id = ?`,
+        [cleanTitle, cleanDesc, cleanDate, cleanTime, cleanRepeat, cleanRepeatDay, cleanNotif, cleanActive, id, managerId]
       );
       return res.json({ success: true, message: 'Reminder updated successfully.' });
     } else {
@@ -2388,12 +2425,13 @@ app.post('/api/reminders', requireAuth, async (req, res) => {
 
 /**
  * DELETE /api/reminders/:id
- * Delete a reminder
+ * Delete a reminder (verifying ownership)
  */
 app.delete('/api/reminders/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await dbPool.execute('DELETE FROM reminders WHERE id = ?', [id]);
+    const managerId = req.session.manager ? req.session.manager.id : '';
+    await dbPool.execute('DELETE FROM reminders WHERE id = ? AND manager_id = ?', [id, managerId]);
     activeDueAlerts.delete(id);
     return res.json({ success: true, message: 'Reminder deleted.' });
   } catch (err) {
@@ -2409,12 +2447,13 @@ app.delete('/api/reminders/:id', requireAuth, async (req, res) => {
 app.post('/api/reminders/:id/snooze', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const managerId = req.session.manager ? req.session.manager.id : '';
     const minutes = parseInt(req.body.minutes || 10, 10);
     const validMinutes = [5, 10, 30].includes(minutes) ? minutes : 10;
 
     await dbPool.execute(
-      'UPDATE reminders SET snooze_until = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?',
-      [validMinutes, id]
+      'UPDATE reminders SET snooze_until = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ? AND manager_id = ?',
+      [validMinutes, id, managerId]
     );
 
     // Remove from active alerts until snooze expires
@@ -2434,9 +2473,10 @@ app.post('/api/reminders/:id/snooze', requireAuth, async (req, res) => {
 app.post('/api/reminders/:id/dismiss', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const managerId = req.session.manager ? req.session.manager.id : '';
     await dbPool.execute(
-      'UPDATE reminders SET snooze_until = NULL, last_triggered = NOW() WHERE id = ?',
-      [id]
+      'UPDATE reminders SET snooze_until = NULL, last_triggered = NOW() WHERE id = ? AND manager_id = ?',
+      [id, managerId]
     );
     activeDueAlerts.delete(id);
     return res.json({ success: true, message: 'Reminder dismissed.' });
@@ -2451,7 +2491,8 @@ app.post('/api/reminders/:id/dismiss', requireAuth, async (req, res) => {
  * Polled by active manager client to trigger audio chime and modal alarm
  */
 app.get('/api/reminders/due', requireAuth, (req, res) => {
-  const alerts = Array.from(activeDueAlerts.values());
+  const managerId = req.session.manager ? req.session.manager.id : '';
+  const alerts = Array.from(activeDueAlerts.values()).filter(a => !a.managerId || a.managerId === managerId);
   return res.json({ success: true, due: alerts, dueReminders: alerts });
 });
 
@@ -2462,19 +2503,26 @@ app.get('/api/reminders/due', requireAuth, (req, res) => {
 
 /**
  * GET /api/reports
- * Fetch history of all generated PDF reports
+ * Fetch history of generated PDF reports scoped strictly to current manager's account
  */
 app.get('/api/reports', requireAuth, async (req, res) => {
   try {
+    const currentMgr = req.session.manager;
+    let userAccId = currentMgr ? currentMgr.accountId : null;
+    if (!userAccId && currentMgr && currentMgr.id) {
+      userAccId = await getOrCreateManagerAccountId(currentMgr.id, currentMgr.name, currentMgr.email);
+    }
     const [rows] = await dbPool.execute(
-      `SELECT id, report_type, 
+      `SELECT id, account_id, report_type, 
               DATE_FORMAT(period_start, "%Y-%m-%d") as period_start, 
               DATE_FORMAT(period_end, "%Y-%m-%d") as period_end, 
               filename, file_size, total_staff, turnout_rate, delivery_status, 
               whatsapp_status, whatsapp_error, generated_at 
        FROM generated_reports 
+       WHERE account_id = ?
        ORDER BY generated_at DESC 
-       LIMIT 50`
+       LIMIT 50`,
+      [userAccId || 'ACC-NONE']
     );
     return res.json({ success: true, reports: rows });
   } catch (err) {
@@ -2714,6 +2762,7 @@ async function checkSchedulerTick() {
 
       activeDueAlerts.set(rem.id, {
         id: rem.id,
+        managerId: rem.manager_id,
         title: rem.title,
         description: rem.description || '',
         reminder_time: rem.reminder_time,

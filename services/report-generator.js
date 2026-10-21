@@ -375,10 +375,11 @@ async function buildAttendancePdf({
   // 4. Save Record in generated_reports table
   await dbPool.execute(
     `INSERT INTO generated_reports 
-     (id, report_type, period_start, period_end, filename, file_path, file_size, total_staff, turnout_rate, delivery_status, whatsapp_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'GENERATED', 'DISABLED')`,
+     (id, account_id, report_type, period_start, period_end, filename, file_path, file_size, total_staff, turnout_rate, delivery_status, whatsapp_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'GENERATED', 'DISABLED')`,
     [
       reportId,
+      accountId || null,
       reportType,
       startStr,
       endStr,

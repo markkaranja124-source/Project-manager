@@ -671,6 +671,9 @@
           const data = await response.json();
 
           if (response.ok && data.success) {
+            try {
+              ['waiter_attendance_register_v1', 'waiter_attendance_register_v2', 'waiter_attendance_register_v3', 'waiter_attendance_register_v4', 'waiter_attendance_register_v5', 'executive_manager_avatar_v1', 'executive_manager_info_v1', 'waiter_attendance_state_v3'].forEach(k => localStorage.removeItem(k));
+            } catch (clearErr) {}
             showFeedback('Manager account created successfully! Redirecting to login...', 'success');
             setTimeout(() => {
               window.location.replace('/login.html?registered=1');

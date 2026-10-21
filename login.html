@@ -1249,6 +1249,8 @@
                   if (verifyData.manager.avatar) {
                     localStorage.setItem('executive_manager_avatar_v1', verifyData.manager.avatar);
                   }
+                  // Wipe old session records cache
+                  ['waiter_attendance_register_v1', 'waiter_attendance_register_v2', 'waiter_attendance_register_v3', 'waiter_attendance_register_v4', 'waiter_attendance_register_v5'].forEach(k => localStorage.removeItem(k));
                 }
               } catch (storageErr) {}
 
@@ -1397,6 +1399,8 @@
                 if (data.manager.avatar) {
                   localStorage.setItem('executive_manager_avatar_v1', data.manager.avatar);
                 }
+                // Wipe old session records cache
+                ['waiter_attendance_register_v1', 'waiter_attendance_register_v2', 'waiter_attendance_register_v3', 'waiter_attendance_register_v4', 'waiter_attendance_register_v5'].forEach(k => localStorage.removeItem(k));
               }
             } catch (storageErr) {}
 

@@ -6,9 +6,16 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'waiter_attendance_register_v1';
+  const STORAGE_KEY = 'waiter_attendance_register_v5';
   const AVATAR_KEY = 'executive_manager_avatar_v1';
   const MANAGER_INFO_KEY = 'executive_manager_info_v1';
+
+  // Immediately purge obsolete caches from older versions
+  try {
+    ['waiter_attendance_register_v1', 'waiter_attendance_register_v2', 'waiter_attendance_register_v3', 'waiter_attendance_register_v4'].forEach(k => {
+      localStorage.removeItem(k);
+    });
+  } catch (e) {}
 
   // Helper to extract 2-letter uppercase initials from manager name or email
   function getManagerInitials(name, email) {
@@ -200,7 +207,12 @@
         });
         AppState.attendance = (parsed.attendance && typeof parsed.attendance === 'object') ? parsed.attendance : {};
         AppState.settings = parsed.settings || AppState.settings;
-        AppState.reminders = Array.isArray(parsed.reminders) ? parsed.reminders : [];
+        AppState.reminders = (Array.isArray(parsed.reminders) ? parsed.reminders : []).filter(r => {
+          if (!r || !r.title) return false;
+          if (r.id === 'rem_101' || r.id === 'rem_102') return false;
+          if (typeof r.title === 'string' && (r.title.includes('Morning Shift') || r.title.includes('Absentee Report'))) return false;
+          return true;
+        });
         if (parsed.security) {
           AppState.security.pin = parsed.security.pin || '1234';
           AppState.security.autoLockMinutes = parsed.security.autoLockMinutes !== undefined ? parsed.security.autoLockMinutes : 5;
@@ -1350,6 +1362,7 @@
     if (dateInput && !dateInput.value) {
       dateInput.value = formatDateKey(new Date());
     }
+    renderReminders();
     loadRemindersFromDatabase();
     const modal = document.getElementById('modal-reminders');
     if (modal) modal.classList.add('active');

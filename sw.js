@@ -1,12 +1,12 @@
 // Service Worker for offline capability - Network First
-const CACHE_NAME = 'waiter-register-v5.2-pdf-download';
+const CACHE_NAME = 'waiter-register-v5.4-clean-reminders';
 const ASSETS = [
   './',
   './index.html',
   './login.html',
   './signup.html',
   './styles.css?v=2.6',
-  './app.js?v=3.7',
+  './app.js?v=4.0',
   './manifest.json?v=5',
   './icon-192.png?v=5',
   './icon-512.png?v=5',

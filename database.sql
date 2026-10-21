@@ -252,8 +252,3 @@ INSERT INTO `security` (`setting_key`, `setting_value`) VALUES
   ('autoLockMinutes', '5')
 ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 
--- Insert Initial Reminders
-INSERT INTO `reminders` (`id`, `title`, `due_time`, `priority`, `completed`) VALUES
-  ('rem_101', 'Review Morning Shift Turnout & Unmarked Waiters', '10:00', 'HIGH', 0),
-  ('rem_102', 'Audit End-of-Month Absentee Report Sheet', '17:00', 'MEDIUM', 0)
-ON DUPLICATE KEY UPDATE `title` = VALUES(`title`);
